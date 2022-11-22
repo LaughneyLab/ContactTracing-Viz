@@ -1,0 +1,12 @@
+dash[compress]
+dash-bio
+dash-cytoscape
+dash-bootstrap-components
+plotly
+pandas
+networkx
+python-igraph
+scanpy
+numpy
+scipy
+orjson
