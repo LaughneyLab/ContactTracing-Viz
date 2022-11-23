@@ -38,7 +38,7 @@ layout = [
         ])
     ),
     dcc.Store(id='builtin-data-selection', storage_type='memory'),
-    dcc.Store(id='custom-data-selection', storage_type='memory')
+    dcc.Store(id='custom-data-selection', storage_type='memory'),
 ]
 
 if not config.ALLOW_UPLOADS:
@@ -55,6 +55,8 @@ def make_data_summary(file_path: str, file_name: str, custom=False):
         elif file_name == 'Human CIN':
             descriptions.append(html.P('Human CIN FIXME', className="card-text"))
 
+    buttons = make_data_redirect_buttons()
+
     return dbc.Container([
             dbc.Card([
                 dbc.CardHeader(wrap_icon('fa-database', "Selected File")),
@@ -70,7 +72,7 @@ def make_data_summary(file_path: str, file_name: str, custom=False):
                             html.Tr([html.Td("User Uploaded?"), html.Td("Yes" if custom else "No")]),
                         ])
                     ], bordered=True, responsive=True),
-                    make_data_redirect_buttons()
+                    buttons,
                 ])
             ], color="information", inverse=False),
         ])
@@ -117,18 +119,32 @@ def transition_to_custom_upload():
             accept='.h5ad',
             multiple=False
         ),
-        html.Div(id='file-upload-message')], fluid=True),
-        # Dummy to prevent callbacks error
-        html.Div(id='unselect-button', style={'display': 'none'})
+        html.Div(id='file-upload-message')], fluid=True)
     ]
+
+
+# Wire callback for the reset button
+@callback(
+    Output('reset-data-indicator', 'data'),
+    State('reset-data-indicator', 'data'),
+    Input('unselect-button', 'n_clicks'),
+    prevent_initial_call=True
+)
+def reset_data(reset_data, unselect_button):
+    if dash.ctx.triggered_id != 'unselect-button':
+        raise PreventUpdate
+
+    return 0 if not reset_data else reset_data + 1
 
 
 @callback(
     Output('data-session', 'data'),
     Input('builtin-data-selection', 'data'),
-    Input('custom-data-selection', 'data')
+    Input('custom-data-selection', 'data'),
+    Input('reset-data-indicator', 'data'),
+    prevent_initial_call=True
 )
-def set_selected_data(builtin_data, custom_data):
+def set_selected_data(builtin_data, custom_data, reset_data):
     triggered = dash.ctx.triggered_id
     if triggered == 'builtin-data-selection':
         return builtin_data
@@ -143,9 +159,11 @@ def set_selected_data(builtin_data, custom_data):
     Output(component_id='main-content-container', component_property='children'),
     Input(component_id='mouse-cin', component_property='n_clicks'),
     Input(component_id='human-cin', component_property='n_clicks'),
-    Input(component_id='upload-button', component_property='n_clicks')
+    Input(component_id='upload-button', component_property='n_clicks'),
+    Input(component_id='reset-data-indicator', component_property='data'),
+    prevent_initial_call=True
 )
-def update_data_selected(mouse_cin, human_cin, upload_button):
+def update_data_selected(mouse_cin, human_cin, upload_button, reset_data):
     clicked = dash.ctx.triggered_id
     if clicked == 'mouse-cin':
         return transition_to_data_summary('data/mouse_degboth.h5ad', 'Mouse CIN')
@@ -156,6 +174,8 @@ def update_data_selected(mouse_cin, human_cin, upload_button):
             return None, transition_to_custom_upload()
         else:
             return None, dbc.Alert(wrap_icon('fa-triangle-exclamation', "File uploads are disabled on this server"), color='warning')
+    elif clicked == 'reset-data-indicator':
+        return None, []
     else:
         raise PreventUpdate
 

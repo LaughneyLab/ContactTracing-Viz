@@ -12,6 +12,15 @@ def jumbotron(title, main_content, sub_content, *additional_content, dark=False)
     ], fluid=True, className='py-3'), className="p-3 rounded-3 " + ('bg-dark text-white' if dark else 'bg-light'))
 
 
+def interactive_panel(title, *content, dark=False):
+    return dbc.Card([
+        dbc.CardHeader(title),
+        dbc.CardBody([
+            html.Div(content)
+        ])
+    ], className='mb-3 ' + ('bg-dark text-white' if dark else 'bg-light'))
+
+
 def wrap_icon(icon, *content, right=False, high_margin='.75em', low_margin='.18em'):
     elements = [(html.Span(c) if isinstance(c, str) else c) for c in content]
     icon = html.I(className='fas '+icon, style={'margin-left': high_margin if right else low_margin, 'margin-right': low_margin if right else high_margin})

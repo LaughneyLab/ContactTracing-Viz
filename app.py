@@ -43,7 +43,8 @@ layout = html.Div([
         className='mb-5'
     ),
     dcc.Store(id='data-session', storage_type='session'),  # Temporary session storage
-    html.Div(id='page-content', children=dbc.Container(dash.page_container, fluid=True, class_name='m-5 pt-5'))
+    dcc.Store(id='reset-data-indicator', storage_type='memory', data=0),
+    html.Div(id='page-content', children=dbc.Container(dash.page_container, fluid=True, class_name='mt-5 pt-5'))
 ])
 
 app.layout = dbc.Container(fluid=True,
@@ -52,9 +53,10 @@ app.layout = dbc.Container(fluid=True,
 
 @app.callback(
     Output('data-selection', 'children'),
-    Input('data-session', 'data')
+    Input('data-session', 'data'),
+    Input('reset-data-indicator', 'data')
 )
-def update_data_selection(data):
+def update_data_selection(data, reset):
     prefix = 'Selected Data: '
     if data is None:
         return prefix + "Nothing"
