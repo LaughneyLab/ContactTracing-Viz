@@ -1,0 +1,1 @@
+ALLOW_UPLOADS = False

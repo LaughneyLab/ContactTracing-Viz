@@ -239,4 +239,5 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
-data/
+data/*.*sv
+data/*.h5ad

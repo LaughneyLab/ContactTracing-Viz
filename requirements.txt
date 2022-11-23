@@ -10,3 +10,4 @@ scanpy
 numpy
 scipy
 orjson
+humanize
