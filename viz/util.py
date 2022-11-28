@@ -1,11 +1,30 @@
+from typing import Set
+
 import networkx as nx
 import numpy as np
 from matplotlib import cm, colors
-import plotly.express as px
-import plotly.graph_objects as go
-import plotly
 import math
 import itertools
+
+
+def celltype_to_colors(celltypes: list):
+    default_colors = [colors.to_hex(c) for c in cm.tab10.colors]
+    # Color labels from paper
+    color_override = {
+        "Tumor cells": '#a3d106',
+        "T cells": '#f47d06',
+        "PMN/gMDSC": '#11eafb',
+        "B cells": '#f9d319',
+        "pDC": '#51119a',
+        "cDC": '#c438fb',
+        "Fibroblast cells": '#226c04',
+        "NK cells": '#ea0d0c',
+        "Macrophages/mMDSC": '#0047cf'
+    }
+    celltype2color = dict()
+    for i, ct in enumerate(celltypes):
+        celltype2color[ct] = color_override.get(ct, default_colors[i])
+    return celltype2color
 
 
 def enhance_plotly_export(fig, height, scaleratio):
