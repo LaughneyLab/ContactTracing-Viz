@@ -1,15 +1,50 @@
+import os
+from typing import Set
+
 import anndata as ad
+import numpy as np
 import scanpy as sc
 import pandas as pd
 
 
 def read_ct_data(path: str) -> ad.AnnData:
     ct = sc.read(path, backed='r')  # Low memory mode
-    gene_is_ligand = dict()
-    for gene in ct.var.index:
-        gene_is_ligand[gene] = ct[ct.obs['target'] == gene].obs.head(1)['ligand'].get(0, False)
-    ct.uns['gene_is_ligand'] = gene_is_ligand
     return ct
+
+
+def prune_ct_data(path: str, inplace=False):
+    """
+    Strip out all unused data from the data file to improve performance.
+    """
+    if inplace:
+        pruned_path = path
+    else:
+        pruned_path = path.replace('.h5ad', '_pruned.h5ad')
+        if os.path.exists(pruned_path):
+            return pruned_path
+
+    ct = sc.read(path, backed='r')  # Low memory mode
+    new_ct = ad.AnnData(np.zeros_like(ct.X, dtype=np.float32))
+    # Select only the data we need
+    new_ct.obs['cell type'] = ct.obs['cell type']
+    new_ct.obs['target'] = ct.obs['target']
+    new_ct.obs['ligand'] = ct.obs['ligand'].astype(int)
+    new_ct.obs['receptor'] = ct.obs['receptor'].astype(int)
+    new_ct.obs['DA_score'] = ct.obs['DA_score']
+    new_ct.var.index = ct.var.index
+    new_ct.layers['fdr'] = ct.layers['fdr']
+    new_ct.layers['log2FC'] = ct.layers['log2FC']
+    new_ct.layers['p.bonf'] = ct.layers['p.bonf']
+    new_ct.layers['fdr.i1'] = ct.layers['fdr.i1']
+    del ct
+    gene_is_ligand = dict()
+    for gene in new_ct.var.index:
+        gene_is_ligand[gene] = new_ct[new_ct.obs['target'] == gene].obs.head(1)['ligand'].get(0, False)
+    new_ct.uns['gene_is_ligand'] = gene_is_ligand
+    if inplace:
+        os.remove(path)
+    new_ct.write_h5ad(pruned_path)
+    return pruned_path
 
 
 def read_interactions(path: str, condition_name='highCIN_vs_lowCIN') -> pd.DataFrame:
@@ -39,7 +74,7 @@ def get_downstream_ligands(ct_res, receptor, receptor_celltype, min_log2fc=0.01,
                                      'log2FC': receptor_res.layers['log2FC'].flatten(),
                                      'fdr': receptor_res.layers['fdr'].flatten(),
                                      'p.bonf': receptor_res.layers['p.bonf'].flatten(),
-                                     'is_ligand': [gene2ligand[g] for g in receptor_res.var.index]})
+                                     'is_ligand': [bool(gene2ligand[g]) for g in receptor_res.var.index]})
     downstream_ligands = downstream_genes[downstream_genes.is_ligand &
                                           (abs(downstream_genes.log2FC) > min_log2fc) &
                                           (downstream_genes.fdr < max_fdr)].gene

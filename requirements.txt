@@ -11,3 +11,8 @@ numpy
 scipy
 orjson
 humanize
+# Default diskcache queue
+diskcache
+multiprocess
+psutil
+dill==0.3.4

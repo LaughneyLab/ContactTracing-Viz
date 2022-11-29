@@ -241,3 +241,4 @@ cython_debug/
 
 data/*.*sv
 data/*.h5ad
+ct_viz_cache/

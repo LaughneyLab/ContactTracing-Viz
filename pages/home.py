@@ -8,6 +8,7 @@ from dash import html, callback, Output, Input, dcc, State
 from dash.exceptions import PreventUpdate
 
 from data import config
+from viz.data import prune_ct_data
 from viz.web import jumbotron, wrap_icon, make_data_redirect_buttons
 
 dash.register_page(__name__,
@@ -79,8 +80,6 @@ def make_data_summary(file_path: str, file_name: str, custom=False):
 
 
 def transition_to_data_summary(file_path: str, file_name: str, custom=False):
-    # TODO: Display basic data summary
-    # TODO: Set state to point to this file for analyses
     # Redirect to data summary page
 
     data = {'filename': file_name, 'path': file_path, 'custom': custom}
@@ -166,9 +165,9 @@ def set_selected_data(builtin_data, custom_data, reset_data):
 def update_data_selected(mouse_cin, human_cin, upload_button, reset_data):
     clicked = dash.ctx.triggered_id
     if clicked == 'mouse-cin':
-        return transition_to_data_summary('data/mouse_degboth.h5ad', 'Mouse CIN')
+        return transition_to_data_summary('data/mouse_degboth_pruned.h5ad', 'Mouse CIN')
     elif clicked == 'human-cin':
-        return transition_to_data_summary('data/human_degboth.h5ad', 'Human CIN')
+        return transition_to_data_summary('data/human_degboth_pruned.h5ad', 'Human CIN')
     elif clicked == 'upload-button':
         if config.ALLOW_UPLOADS:
             return None, transition_to_custom_upload()
@@ -185,6 +184,7 @@ def update_data_selected(mouse_cin, human_cin, upload_button, reset_data):
     Output(component_id='file-upload-message', component_property='children'),
     Input(component_id='upload-data', component_property='contents'),
     Input(component_id='upload-data', component_property='filename'),
+    background=True
 )
 def update_file_upload(contents, filename):
     if contents is None:
@@ -204,5 +204,8 @@ def update_file_upload(contents, filename):
     with open(file_path, 'wb') as f:
         f.write(base64.decodebytes(contents))
 
-    return transition_to_data_summary(contents, filename, custom=True)
+    pruned_file_path = prune_ct_data(file_path)
+    os.remove(file_path)
+
+    return transition_to_data_summary(pruned_file_path, filename, custom=True)
 

@@ -1,10 +1,69 @@
+import os
+import shutil
 import sys
 
 import dash
 from dash import Dash, html, dcc, Output, Input
 import dash_bootstrap_components as dbc
 
+from data.config import LONG_CALLBACK_EXPIRY
+from viz.data import prune_ct_data
 from viz.web import wrap_icon
+
+
+# Workaround for dill crashes: Ref: https://github.com/uqfoundation/dill/issues/332#issuecomment-908826972
+try:
+    import dill
+    import abc
+    @dill.register(abc.ABCMeta)
+    def save_abc(pickler, obj):
+        dill.StockPickler.save_type(pickler, obj)
+except:
+    pass
+
+
+# Workaround for recursion error in dbc by removing the deprecated wrappers
+# Ref: https://github.com/facultyai/dash-bootstrap-components/issues/892
+try:
+    def setstate_wrapper(self, state):
+        # ensure deprecated & wrapped fields are set to avoid recursive stack explosion in __getattr__
+        self.deprecated = state.get("deprecated", None)
+        self.wrapped = state.get("wrapped", None)
+
+    setattr(dbc._V1DeprecationWarningWrapper, '__setstate__', setstate_wrapper)
+except:
+    pass
+
+
+def prepare_builtin_data():
+    print("Optimizing builtin data (this may take awhile)...")
+    for file in os.listdir('data'):
+        if file.endswith('.h5ad') and not file.endswith('_pruned.h5ad'):
+            prune_ct_data(os.path.join('data', file))
+
+
+if __name__ == '__main__':
+    prepare_builtin_data()
+
+
+callback_manager = None
+if 'REDIS_URL' in os.environ:
+    try:
+        from dash import CeleryManager
+        from celery import Celery
+        celery_app = Celery(__name__, broker=os.environ['REDIS_URL'], backend=os.environ['REDIS_URL'])
+        callback_manager = CeleryManager(celery_app, expire=LONG_CALLBACK_EXPIRY)
+    except:
+        callback_manager = None
+if callback_manager is None:
+    print("WARNING: Celery not available, falling back to diskcache", file=sys.stderr)
+    from dash import DiskcacheManager
+    from diskcache import Cache
+    # Don't remove unless its the main process
+    if __name__ == "__main__" and os.path.exists('./ct_viz_cache'):
+        shutil.rmtree('./ct_viz_cache')
+    callback_manager = DiskcacheManager(Cache('./ct_viz_cache'), expire=LONG_CALLBACK_EXPIRY)
+
 
 app = Dash(__name__,
            suppress_callback_exceptions=True,
@@ -16,7 +75,8 @@ app = Dash(__name__,
            ],
            title='ContactTracing',
            external_stylesheets=[dbc.themes.MINTY, dbc.icons.FONT_AWESOME],
-           use_pages=True)
+           use_pages=True,
+           background_callback_manager=callback_manager)
 
 layout = html.Div([
     dbc.Navbar(
@@ -66,10 +126,12 @@ def update_data_selection(data, reset):
 
 if __name__ == '__main__':
     debug = sys.argv[1] == 'debug'
+   # debug = False
     app.run(port=8050,
             debug=debug,
             dev_tools_ui=debug,
             dev_tools_props_check=debug,
             dev_tools_serve_dev_bundles=debug,
             dev_tools_hot_reload=debug,
-            dev_tools_hot_reload_interval=15)
+            dev_tools_prune_errors=False,
+            use_reloader=False)

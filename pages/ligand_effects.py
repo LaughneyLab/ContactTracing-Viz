@@ -3,16 +3,16 @@ import math
 import anndata as ad
 import dash
 import dash_bootstrap_components as dbc
-from dash import html, callback, Output, Input
+from dash import html, callback, Output, Input, dcc, State
 import numpy as np
 import pandas as pd
-import plotly.express as px
 import plotly.graph_objects as go
-import plotly
 import networkx as nx
+from dash.exceptions import PreventUpdate
 from matplotlib import colors, cm
 
-from viz.data import get_diff_abundance, get_interaction_fdr, get_effective_logfc, get_downstream_ligands, read_ct_data
+from viz.data import get_diff_abundance, get_interaction_fdr, get_effective_logfc, get_downstream_ligands, read_ct_data, \
+    read_interactions
 from viz.util import enhance_plotly_export, celltype_to_colors, get_quiver_arrows
 from viz.web import interactive_panel, wrap_icon
 
@@ -25,7 +25,7 @@ dash.register_page(__name__,
 def build_interface() -> list:
     controls = [  # Each CardGroup is a row
         dbc.CardGroup([
-            dbc.Card(
+            dbc.Card([
                 dbc.CardHeader("Network Layout"),
                 dbc.CardBody([
                     dbc.Select(
@@ -38,10 +38,10 @@ def build_interface() -> list:
                         persistence=True, persistence_type='session', value='planar'
                     ),
                     html.P("abc", className='card-text'),
-                ]),
+                ])],
                 outline=True, color='light'
             ),
-            dbc.Card(
+            dbc.Card([
                 dbc.CardHeader("Emitting Cell Type"),
                 dbc.CardBody([
                     dbc.Select(
@@ -50,10 +50,10 @@ def build_interface() -> list:
                         persistence=False
                     ),
                     html.P("abc", className='card-text'),
-                ]),
+                ])],
                 outline=True, color='light'
             ),
-            dbc.Card(
+            dbc.Card([
                 dbc.CardHeader("Emitted Ligands"),
                 dbc.CardBody([
                     dbc.Input(
@@ -63,62 +63,146 @@ def build_interface() -> list:
                         persistence=False
                     ),
                     html.P("abc", className='card-text'),
-                ]),
+                ])],
                 outline=True, color='light'
             ),
         ]),
         dbc.CardGroup([
-            dbc.Card(
+            dbc.Card([
                 dbc.CardHeader("Minimum Expression"),
                 dbc.CardBody([
-                    dbc.Slider()
+                    dbc.Input(
+                        id='min_expression',
+                        debounce=True,
+                        max=1,
+                        min=0,
+                        step=0.01,
+                        value=0,
+                        persistence=False
+                    ),
                     html.P("abc", className='card-text'),
-                ]),
+                ])],
                 outline=True, color='light'
             ),
-            dbc.Card(
+            dbc.Card([
                 dbc.CardHeader("Interaction FDR cutoff"),
                 dbc.CardBody([
+                    dbc.Input(
+                        id='interaction_fdr',
+                        debounce=True,
+                        max=1,
+                        min=0,
+                        step=0.01,
+                        value=0.05,
+                        persistence=True, persistence_type='session'
+                    ),
                     html.P("abc", className='card-text'),
-                ]),
+                ])],
                 outline=True, color='light'
             ),
         ]),
         dbc.CardGroup([
-            dbc.Card(
+            dbc.Card([
                 dbc.CardHeader("Minimum abs(LogFC)"),
                 dbc.CardBody([
+                    dbc.Input(
+                        id='min_logfc',
+                        debounce=True,
+                        max=1,
+                        min=0,
+                        step=0.01,
+                        value=0,
+                        persistence=False
+                    ),
                     html.P("abc", className='card-text'),
-                ]),
+                ])],
                 outline=True, color='light'
             ),
-            dbc.Card(
+            dbc.Card([
                 dbc.CardHeader("log2FC FDR cutoff"),
                 dbc.CardBody([
+                    dbc.Input(
+                        id='logfc_fdr',
+                        debounce=True,
+                        max=1,
+                        min=0,
+                        step=0.01,
+                        value=0.05,
+                        persistence=True, persistence_type='session'
+                    ),
                     html.P("abc", className='card-text'),
-                ]),
+                ])],
                 outline=True, color='light'
             ),
         ]),
         dbc.CardGroup([
-            dbc.Card(
-                dbc.CardHeader("Network Building Iteratiosn"),
+            dbc.Card([
+                dbc.CardHeader("Network Building Iterations"),
                 dbc.CardBody([
+                    dbc.Input(
+                        id='iterations',
+                        type='number',
+                        debounce=True,
+                        max=100,
+                        min=1,
+                        step=1,
+                        value=10,
+                        persistence=True, persistence_type='session'
+                    ),
                     html.P("abc", className='card-text'),
-                ]),
+                ])],
                 outline=True, color='light'
             ),
-            dbc.Card(
+            dbc.Card([
                 dbc.CardHeader("Plot"),
                 dbc.CardBody([
+                    dbc.Button(
+                        "Submit",
+                        id='submit-button',
+                        size='lg',
+                        color="primary",
+                        className='me-1',
+                        n_clicks=0
+                    ),
                     html.P("abc", className='card-text'),
-                ]),
+                ])],
                 outline=True, color='light'
             )
         ])
     ]
 
-    results = []
+    results = [
+        dbc.Card([
+            dbc.CardHeader('Figure'),
+            dbc.CardBody(
+                html.P(
+                    [html.Div(id='spinner-holder'),
+                     dbc.Progress(id='progress-bar',
+                                  striped=True,
+                                  animated=True,
+                                  value=0,
+                                  style={'visibility': 'hidden'}),
+                     dcc.Graph(id='network-graph',
+                               animate=True,
+                               config={
+                                   'displaylogo': False,
+                                   'showTips': True,
+                                   'toImageButtonOptions': {
+                                       'format': 'png',  # one of png, svg, jpeg, webp
+                                       'filename': 'exported_image',
+                                       'height': 800,
+                                       'width': 1200,
+                                       'scale': 6  # Multiply title/legend/axis/canvas sizes by this factor
+                                   },
+                                   'watermark': False,
+                               },
+                               )],
+                    className='card-text'
+                )
+            ),
+            dbc.CardFooter('This is a figure')
+        ], color='light')
+    ]
 
     return [
         html.Div(controls),
@@ -127,17 +211,93 @@ def build_interface() -> list:
 
 
 @callback(
+    Output('network-graph', 'figure'),
+    Input('data-session', 'data'),
+    Input('submit-button', 'n_clicks'),
+    State('network-layout', 'value'),
+    State('cell-type', 'value'),
+    State('ligands', 'value'),
+    State('min_expression', 'value'),
+    State('interaction_fdr', 'value'),
+    State('min_logfc', 'value'),
+    State('logfc_fdr', 'value'),
+    State('iterations', 'value'),
+    background=True,  # Run in background
+    prevent_initial_call=True,
+    running=[  # Disable the button while the callback is running
+        (Output('submit-button', 'disabled'), True, False),
+        (Output('progress-bar', 'style'), {'visibility': 'visible'}, {'visibility': 'hidden'})
+    ],
+    progress=[  # Show a progress bar while the callback is running
+        Output('progress-bar', "value"),
+        Output('progress-bar', "max")
+    ]
+)
+def make_graph(set_progress, data, n_clicks, network_layout, cell_type, ligands, min_expression, interaction_fdr, min_logfc, logfc_fdr, iterations):
+    if data is None or n_clicks == 0:
+        raise PreventUpdate
+    set_progress((0, 100))
+
+    # Do some work
+
+    file = data['path']
+    interaction_file = data['tsv']
+    adata = read_ct_data(file)
+    interactions = read_interactions(interaction_file)
+    fig = pseudotime_interaction_propagation_graph(
+        ct=adata,
+        orig_df=interactions,
+        seed_cell=cell_type,
+        seed_ligands=ligands,
+        iterations=int(iterations),
+        interaction_fdr_cutoff=float(interaction_fdr),
+        min_logfc=float(min_logfc),
+        logfc_fdr_cutoff=float(logfc_fdr),
+        min_expression=int(min_expression),
+        layout=network_layout,
+        set_progress_callback=set_progress
+    )
+
+    return fig
+
+
+@callback(
     Output('cell-type', 'options'),
     Output('cell-type', 'value'),
-    Input('data-session', 'data')
+    Output('min_expression', 'max'),
+    Output('min_expression', 'value'),
+    Output('min_logfc', 'max'),
+    Output('min_logfc', 'value'),
+    Input('data-session', 'data'),
+    background=True,  # Run in background,
+    running=[  # Disable the button while the callback is running
+        (Output('submit-button', 'disabled'), True, False),
+        (Output('spinner-holder', 'children'), [
+            dbc.Spinner(color='primary',
+                        size='md',
+                        fullscreen=True,
+                        type='grow')],
+         []),
+    ]
 )
 def initialize_options(data):
+    from viz.data import read_ct_data, read_interactions
+    print(data)
     if data is None:
-        return [], ''
-    file = data['filename']
+        return [], '', \
+               1, 0, \
+               1, 0
+    file = data['path']
+    interaction_file = data['tsv']
     adata = read_ct_data(file)
-    celltypes = list(adata.obs['celltype'].unique())
-    return [{'label': ct, 'value': ct} for ct in celltypes], celltypes[0]
+    interactions = read_interactions(interaction_file)
+    max_exp = max(max(interactions.expression_ligand), max(interactions.expression_receptor))
+    max_logfc = max(max(interactions.MAST_log2FC_ligand.abs()), max(interactions.MAST_log2FC_receptor.abs()))
+    celltypes = list(adata.obs['cell type'].unique())
+    return [{'label': ct, 'value': ct} for ct in celltypes], celltypes[0], \
+           max_exp, 0, \
+           max_logfc, 0
+
 
 def get_gene_type(df, gene):
     # Get gene type label
@@ -153,15 +313,15 @@ def get_gene_type(df, gene):
         return "Gene"
 
 
-def make_plot_from_graph(G: nx.DiGraph, orig_df, layout="Planar Layout") -> go.Figure:
+def make_plot_from_graph(G: nx.DiGraph, orig_df, layout="planar") -> go.Figure:
     scaleratio = 1.5
     height = 800
 
-    if layout == 'Spring Layout':
+    if layout == 'spring':
         pos = nx.spring_layout(G, weight='weight', iterations=150, seed=1234567890, threshold=1e-6)
-    elif layout == "Planar Layout":
+    elif layout == "planar":
         pos = nx.planar_layout(G)
-    elif layout == "Circular Layout":
+    elif layout == "circular":
         pos = nx.circular_layout(G)
     else:
         raise AssertionError("Can't recognize layout " + layout)
@@ -478,7 +638,8 @@ def make_plot_from_graph(G: nx.DiGraph, orig_df, layout="Planar Layout") -> go.F
                         yaxis=dict(showgrid=False, zeroline=False, showticklabels=False, scaleratio=scaleratio,
                                    scaleanchor="x"))
                     )
-    return enhance_plotly_export(fig, height, scaleratio)
+    #return enhance_plotly_export(fig, height, scaleratio)
+    return fig
 
 
 def pseudotime_interaction_propagation_graph(ct: ad.AnnData,
@@ -490,7 +651,8 @@ def pseudotime_interaction_propagation_graph(ct: ad.AnnData,
                                              min_logfc=0.01,
                                              logfc_fdr_cutoff=0.05,
                                              min_expression=0,
-                                             layout="Planar Layout"):
+                                             layout="Planar Layout",
+                                             set_progress_callback=None):
     if isinstance(seed_ligands, str):
         ligands = []
         for ligand in seed_ligands.split(","):
@@ -586,6 +748,7 @@ def pseudotime_interaction_propagation_graph(ct: ad.AnnData,
 
             frontier = new_frontier
         Gs.append(curr_G.copy())
+        set_progress_callback(((t+1)//iterations * 100, 100))
 
     return make_plot_from_graph(Gs[-1], df, layout=layout)
 
