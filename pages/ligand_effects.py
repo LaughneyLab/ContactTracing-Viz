@@ -14,7 +14,7 @@ from matplotlib import colors, cm
 from viz.data import get_diff_abundance, get_interaction_fdr, get_effective_logfc, get_downstream_ligands, read_ct_data, \
     read_interactions
 from viz.util import enhance_plotly_export, celltype_to_colors, get_quiver_arrows
-from viz.web import interactive_panel, wrap_icon
+from viz.web import interactive_panel, wrap_icon, control_panel, control_panel_element, figure_output
 
 dash.register_page(__name__,
                    path='/ligand-effects',
@@ -23,190 +23,128 @@ dash.register_page(__name__,
 
 
 def build_interface() -> list:
-    controls = [  # Each CardGroup is a row
-        dbc.CardGroup([
-            dbc.Card([
-                dbc.CardHeader("Network Layout"),
-                dbc.CardBody([
-                    dbc.Select(
-                        id='network-layout',
-                        options=[
-                            {'label': 'Planar Layout', 'value': 'planar'},
-                            {'label': 'Spring Layout', 'value': 'spring'},
-                            {'label': 'Circular Layout', 'value': 'circular'},
-                        ],
-                        persistence=True, persistence_type='session', value='planar'
-                    ),
-                    html.P("abc", className='card-text'),
-                ])],
-                outline=True, color='light'
-            ),
-            dbc.Card([
-                dbc.CardHeader("Emitting Cell Type"),
-                dbc.CardBody([
-                    dbc.Select(
-                        id='cell-type',
-                        options=[],  # Filled in by callback
-                        persistence=False
-                    ),
-                    html.P("abc", className='card-text'),
-                ])],
-                outline=True, color='light'
-            ),
-            dbc.Card([
-                dbc.CardHeader("Emitted Ligands"),
-                dbc.CardBody([
-                    dbc.Input(
-                        id='ligands',
-                        autofocus=True,
-                        placeholder='Example: Ccl2,Apoe',
-                        persistence=False
-                    ),
-                    html.P("abc", className='card-text'),
-                ])],
-                outline=True, color='light'
-            ),
-        ]),
-        dbc.CardGroup([
-            dbc.Card([
-                dbc.CardHeader("Minimum Expression"),
-                dbc.CardBody([
-                    dbc.Input(
-                        id='min_expression',
-                        debounce=True,
-                        max=1,
-                        min=0,
-                        step=0.01,
-                        value=0,
-                        persistence=False
-                    ),
-                    html.P("abc", className='card-text'),
-                ])],
-                outline=True, color='light'
-            ),
-            dbc.Card([
-                dbc.CardHeader("Interaction FDR cutoff"),
-                dbc.CardBody([
-                    dbc.Input(
-                        id='interaction_fdr',
-                        debounce=True,
-                        max=1,
-                        min=0,
-                        step=0.01,
-                        value=0.05,
-                        persistence=True, persistence_type='session'
-                    ),
-                    html.P("abc", className='card-text'),
-                ])],
-                outline=True, color='light'
-            ),
-        ]),
-        dbc.CardGroup([
-            dbc.Card([
-                dbc.CardHeader("Minimum abs(LogFC)"),
-                dbc.CardBody([
-                    dbc.Input(
-                        id='min_logfc',
-                        debounce=True,
-                        max=1,
-                        min=0,
-                        step=0.01,
-                        value=0,
-                        persistence=False
-                    ),
-                    html.P("abc", className='card-text'),
-                ])],
-                outline=True, color='light'
-            ),
-            dbc.Card([
-                dbc.CardHeader("log2FC FDR cutoff"),
-                dbc.CardBody([
-                    dbc.Input(
-                        id='logfc_fdr',
-                        debounce=True,
-                        max=1,
-                        min=0,
-                        step=0.01,
-                        value=0.05,
-                        persistence=True, persistence_type='session'
-                    ),
-                    html.P("abc", className='card-text'),
-                ])],
-                outline=True, color='light'
-            ),
-        ]),
-        dbc.CardGroup([
-            dbc.Card([
-                dbc.CardHeader("Network Building Iterations"),
-                dbc.CardBody([
-                    dbc.Input(
-                        id='iterations',
-                        type='number',
-                        debounce=True,
-                        max=100,
-                        min=1,
-                        step=1,
-                        value=10,
-                        persistence=True, persistence_type='session'
-                    ),
-                    html.P("abc", className='card-text'),
-                ])],
-                outline=True, color='light'
-            ),
-            dbc.Card([
-                dbc.CardHeader("Plot"),
-                dbc.CardBody([
-                    dbc.Button(
-                        "Submit",
-                        id='submit-button',
-                        size='lg',
-                        color="primary",
-                        className='me-1',
-                        n_clicks=0
-                    ),
-                    html.P("abc", className='card-text'),
-                ])],
-                outline=True, color='light'
-            )
-        ])
-    ]
+    controls = control_panel(
+        [
+            control_panel_element("Network Layout", 'abc',
+                                  dbc.Select(
+                                      id='network-layout',
+                                      options=[
+                                          {'label': 'Planar Layout', 'value': 'planar'},
+                                          {'label': 'Spring Layout', 'value': 'spring'},
+                                          {'label': 'Circular Layout', 'value': 'circular'},
+                                      ],
+                                      persistence=True, persistence_type='session', value='planar'
+                                  )),
+            control_panel_element('Emitting Cell Type', 'abc',
+                                  dbc.Select(
+                                    id='cell-type',
+                                    options=[],  # Filled in by callback
+                                    persistence=False
+                                  )),
+            control_panel_element("Emitted Ligands", 'abc',
+                                  dbc.Input(
+                                      id='ligands',
+                                      autofocus=True,
+                                      placeholder='Example: Ccl2,Apoe',
+                                      persistence=False
+                                  ))
+        ], [
+            control_panel_element("Minimum Expression", "abc",
+                                  dcc.Slider(
+                                      id='min_expression',
+                                      min=0,
+                                      max=1,
+                                      step=0.01,
+                                      value=0,
+                                      marks=None,
+                                      tooltip={'placement': 'bottom'},
+                                      persistence=False,
+                                      className='form-range'
+                                  )),
+            control_panel_element("Interaction FDR Cutoff", "abc",
+                                  dcc.Slider(
+                                      id='interaction_fdr',
+                                      max=1,
+                                      min=0,
+                                      step=0.01,
+                                      value=0.05,
+                                      marks=None,
+                                      tooltip={'placement': 'bottom'},
+                                      persistence=True, persistence_type='session',
+                                      className='form-range'
+                                  ))
+        ], [
+            control_panel_element("Minimum abs(Log2FC)", "abc",
+                                  dcc.Slider(
+                                      id='min_logfc',
+                                      max=1,
+                                      min=0,
+                                      step=0.01,
+                                      value=0,
+                                      marks=None,
+                                      tooltip={'placement': 'bottom'},
+                                      persistence=False,
+                                      className='form-range'
+                                  )),
+            control_panel_element("log2FC FDR Cutoff", "abc",
+                                  dcc.Slider(
+                                      id='logfc_fdr',
+                                      max=1,
+                                      min=0,
+                                      step=0.01,
+                                      value=0.05,
+                                      marks=None,
+                                      tooltip={'placement': 'bottom'},
+                                      persistence=True, persistence_type='session',
+                                      className='form-range'
+                                  ))
+        ], [
+            control_panel_element("Network Building Iterations", "abc",
+                                  dbc.Input(
+                                      id='iterations',
+                                      type='number',
+                                      debounce=True,
+                                      max=100,
+                                      min=1,
+                                      step=1,
+                                      value=10,
+                                      persistence=True, persistence_type='session'
+                                  )),
+            control_panel_element("Plot", "abc",
+                                  dbc.Button(
+                                      "Submit",
+                                      id='submit-button',
+                                      size='lg',
+                                      color="primary",
+                                      className='me-1',
+                                      n_clicks=0
+                                  ))
+        ]
+    )
 
-    results = [
-        dbc.Card([
-            dbc.CardHeader('Figure'),
-            dbc.CardBody(
-                html.P(
-                    [html.Div(id='spinner-holder'),
-                     dbc.Progress(id='progress-bar',
-                                  striped=True,
-                                  animated=True,
-                                  value=0,
-                                  style={'visibility': 'hidden'}),
-                     dcc.Graph(id='network-graph',
-                               animate=True,
-                               config={
-                                   'displaylogo': False,
-                                   'showTips': True,
-                                   'toImageButtonOptions': {
-                                       'format': 'png',  # one of png, svg, jpeg, webp
-                                       'filename': 'exported_image',
-                                       'height': 800,
-                                       'width': 1200,
-                                       'scale': 6  # Multiply title/legend/axis/canvas sizes by this factor
-                                   },
-                                   'watermark': False,
-                               },
-                               )],
-                    className='card-text'
-                )
-            ),
-            dbc.CardFooter('This is a figure')
-        ], color='light')
-    ]
+    results = figure_output(
+        title='Ligand Network Figure',
+        footer="This is a figure",
+        element=dcc.Graph(id='network-graph',
+                          animate=True,
+                          #figure={},  # Filled in by callback
+                          config={
+                             'displaylogo': False,
+                             'showTips': True,
+                             'toImageButtonOptions': {
+                                'format': 'png',  # one of png, svg, jpeg, webp
+                                'filename': 'exported_image',
+                                'height': 800,
+                                'width': 1200,
+                                'scale': 6  # Multiply title/legend/axis/canvas sizes by this factor
+                             },
+                             'watermark': False
+                          })
+    )
 
     return [
-        html.Div(controls),
-        html.Div(results)
+        controls,
+        results
     ]
 
 
@@ -234,7 +172,7 @@ def build_interface() -> list:
     ]
 )
 def make_graph(set_progress, data, n_clicks, network_layout, cell_type, ligands, min_expression, interaction_fdr, min_logfc, logfc_fdr, iterations):
-    if data is None or n_clicks == 0:
+    if data is None or n_clicks == 0 or ligands is None:
         raise PreventUpdate
     set_progress((0, 100))
 
@@ -289,11 +227,12 @@ def initialize_options(data):
                1, 0
     file = data['path']
     interaction_file = data['tsv']
-    adata = read_ct_data(file)
+ #   adata = read_ct_data(file)
     interactions = read_interactions(interaction_file)
     max_exp = max(max(interactions.expression_ligand), max(interactions.expression_receptor))
     max_logfc = max(max(interactions.MAST_log2FC_ligand.abs()), max(interactions.MAST_log2FC_receptor.abs()))
-    celltypes = list(adata.obs['cell type'].unique())
+    celltypes = list(sorted(set(interactions.cell_type_ligand) | set(interactions.cell_type_receptor)))
+  #  celltypes = list(adata.obs['cell type'].unique())
     return [{'label': ct, 'value': ct} for ct in celltypes], celltypes[0], \
            max_exp, 0, \
            max_logfc, 0
