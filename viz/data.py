@@ -30,7 +30,7 @@ def prune_ct_data(path: str, inplace=False):
     new_ct.obs['target'] = ct.obs['target']
     new_ct.obs['ligand'] = ct.obs['ligand'].astype(int)
     new_ct.obs['receptor'] = ct.obs['receptor'].astype(int)
-    new_ct.obs['DA_score'] = ct.obs['DA_score']
+    #new_ct.obs['DA_score'] = ct.obs['DA_score']
     new_ct.var.index = ct.var.index
     new_ct.layers['fdr'] = ct.layers['fdr']
     new_ct.layers['log2FC'] = ct.layers['log2FC']
@@ -53,6 +53,8 @@ def read_interactions(path: str, condition_name='highCIN_vs_lowCIN') -> pd.DataF
     df["MAST_log2FC_ligand"] = df[f'MAST_log2FC_{condition_name}_ligand']
     df["MAST_fdr_receptor"] = df[f'MAST_fdr_{condition_name}_receptor']
     df["MAST_log2FC_receptor"] = df[f'MAST_log2FC_{condition_name}_receptor']
+    df["numSigI1_fdr_receptor"] = df[f'numSigI1_fdr25_receptor']
+    df["numDEG_fdr_receptor"] = df[f'numDEG_fdr25_receptor']
     return df
 
 

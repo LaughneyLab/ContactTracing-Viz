@@ -46,10 +46,78 @@ def enhance_plotly_export(fig, height, scaleratio):
     return fig
 
 
-# Copied from networkx to fix a weird crash, and add space multiplier between layers
+# Initial placement of nodes in layers
+def space_elements(elements, attributes):
+    # Visually space out high degree nodes
+    sorted_elements = list(sorted(zip(elements, attributes), key=lambda x: x[1], reverse=True))
+    sorted_elements = [x[0] for x in sorted_elements]
+
+    # Approximate positions
+    positions = []
+    finished = False
+    for i in range(1, len(sorted_elements)):
+        range_obj = range(i) if i % 2 == 1 else range(i - 1, -1, -1)
+        for j in range_obj:
+            positions.append(((2*j) + 1) / ((2**i)))
+            if len(positions) == len(sorted_elements):
+                finished = True
+                break
+        if finished:
+            break
+
+    element2position = dict(zip(sorted_elements, positions))
+    return list(sorted(elements, key=lambda e: element2position[e]))
+
+
+# Bias node placement based on the initial placement
+def space_elements_from_previous(G, elements, prev_elements):
+    elem2score = dict()
+    prev2degree = {e: G.degree(e) for e in prev_elements}
+    total_degree = sum(prev2degree.values())
+    for elem in elements:
+        elem2score[elem] = 0
+        for prev_elem in enumerate(prev_elements):
+            if G.has_edge(prev_elem, elem) or G.has_edge(elem, prev_elem):
+                elem2score[elem] += prev2degree[prev_elem] / total_degree
+
+    initial_sorted_elements = list(sorted(elements, key=lambda x: elem2score[x], reverse=False))
+
+    sorted_elements = []
+    for elem in prev_elements:
+        for elem2 in initial_sorted_elements:
+            if (not G.has_edge(elem, elem2) and not G.has_edge(elem2, elem)) or elem2 in sorted_elements:
+                continue
+            sorted_elements.append(elem2)
+
+    return sorted_elements
+
+
+def downstream_degree(G, node):
+    return len(list(nx.descendants(G, node)))
+
+
+# Layout nodes to represent a timeline
+def timeline_layout(G, step_attr="step", scaleratio=1.0, scale=30):
+    return multipartite_layout(G, subset_key=step_attr, scale=1, space_mult_x=scale * scaleratio, space_mult_y=scale*2, ordering=list(range(max(nx.get_node_attributes(G, step_attr).values()))))
+    node2step = nx.get_node_attributes(G, step_attr)
+    node2descendent_count = dict()
+    for node in G.nodes:
+        node2descendent_count[node] = len(list(nx.descendants(G, node)))
+    all_steps = sorted(list(set(node2step.values())))
+
+    step2ordered_nodes = dict()
+    for step in all_steps:
+        nodes = [n for n in G.nodes if node2step[n] == step]
+        nodes = space_elements(nodes, [node2descendent_count[n] for n in nodes])
+        step2ordered_nodes[step] = nodes
+
+
+
+
+# Adapted from networkx to fix a weird crash, and add space multiplier between layers
 # Also allow for setting the explict ordering of layers
 def multipartite_layout(G, subset_key="subset", align="vertical", scale=1, center=None, space_mult_x=1, space_mult_y=1,
-                        ordering=None):
+                        ordering=None, weigh_degree=True):
     """Position nodes in layers of straight lines.
 
     Parameters
@@ -122,6 +190,7 @@ def multipartite_layout(G, subset_key="subset", align="vertical", scale=1, cente
     nodes = []
     width = len(layers)
     height = max(len(l) for l in layers)
+    prev_layer = None
     for i, (_, layer) in enumerate(layers):
         layer_elements = len(layer)
         xs = np.repeat(i * space_mult_x, layer_elements)
@@ -140,6 +209,12 @@ def multipartite_layout(G, subset_key="subset", align="vertical", scale=1, cente
             pos = layer_pos
         else:
             pos = np.concatenate([pos, layer_pos])
+        if weigh_degree:
+            if prev_layer is None:
+                layer = space_elements(layer, [downstream_degree(G, n) for n in layer])
+            else:
+                layer = space_elements_from_previous(G, layer, prev_layer)
+            prev_layer = layer
         nodes.extend(layer)
     pos = nx.rescale_layout(pos, scale=scale) + center
     if align == "horizontal":

@@ -165,7 +165,7 @@ def set_selected_data(builtin_data, custom_data, reset_data):
 def update_data_selected(mouse_cin, human_cin, upload_button, reset_data):
     clicked = dash.ctx.triggered_id
     if clicked == 'mouse-cin':
-        return transition_to_data_summary('data/mouse_degboth_pruned.h5ad', 'Mouse CIN')
+        return transition_to_data_summary('data/mouse_deg_fixed_pruned.h5ad', 'Mouse CIN')
     elif clicked == 'human-cin':
         return transition_to_data_summary('data/human_degboth_pruned.h5ad', 'Human CIN')
     elif clicked == 'upload-button':
