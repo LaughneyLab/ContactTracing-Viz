@@ -79,7 +79,7 @@ def get_downstream_ligands(ct_res, receptor, receptor_celltype, min_log2fc=0.01,
                                      'is_ligand': [bool(gene2ligand[g]) for g in receptor_res.var.index]})
     downstream_ligands = downstream_genes[downstream_genes.is_ligand &
                                           (abs(downstream_genes.log2FC) > min_log2fc) &
-                                          (downstream_genes.fdr < max_fdr)].gene
+                                          (downstream_genes.fdr <= max_fdr)].gene
 
     return set(downstream_ligands)
 

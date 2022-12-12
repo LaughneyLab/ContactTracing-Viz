@@ -442,6 +442,12 @@ def get_gene_type(df, gene):
         return "Gene"
 
 
+def get_all_edge_attr_for_node(G, node, attr):
+    successor_attrs = [G[node][s][attr] for s in G.successors(node)]
+    predecessor_attrs = [G[p][node][attr] for p in G.predecessors(node)]
+    return successor_attrs + predecessor_attrs
+
+
 def make_plot_from_graph(G: nx.DiGraph, orig_df, layout="planar") -> go.Figure:
     scaleratio = 1.5
     height = 800
@@ -488,7 +494,7 @@ def make_plot_from_graph(G: nx.DiGraph, orig_df, layout="planar") -> go.Figure:
     max_abs_logfc = None
     min_abs_logfc = None
     for edge in G.edges():
-        logfc = G[edge[0]][edge[1]]['ligand_logfc']
+        logfc = G[edge[0]][edge[1]]['response_logfc']
         if max_logfc is None:
             min_logfc = max_logfc = logfc
             min_abs_logfc = max_abs_logfc = abs(logfc)
@@ -545,7 +551,7 @@ def make_plot_from_graph(G: nx.DiGraph, orig_df, layout="planar") -> go.Figure:
     for edge in G.edges():
         x0, y0 = pos[edge[0]]
         x1, y1 = pos[edge[1]]
-        logfc = G[edge[0]][edge[1]]['ligand_logfc']
+        logfc = G[edge[0]][edge[1]]['response_logfc']
         ligand = G[edge[0]][edge[1]]['ligand']
         receptor = G[edge[0]][edge[1]]['receptor']
 
@@ -556,11 +562,11 @@ def make_plot_from_graph(G: nx.DiGraph, orig_df, layout="planar") -> go.Figure:
         deltaX = EDGE_PADDING * math.cos(angle)
         deltaY = EDGE_PADDING * math.sin(angle)
 
-        x0 += deltaX * .1
-        y0 += deltaY * .1
+        x0 += deltaX * .5
+        y0 += deltaY * .5
 
-        x1 -= deltaX * .3
-        y1 -= deltaY * .3
+        x1 -= deltaX * .5
+        y1 -= deltaY * .5
 
         # edge_x += [x0, x1, None]
         # edge_y += [y0, y1, None]
@@ -622,9 +628,8 @@ def make_plot_from_graph(G: nx.DiGraph, orig_df, layout="planar") -> go.Figure:
         gene = G.nodes[node]['gene']
         gene_type = G.nodes[node]['gene_type']
 
-        neighbors = set(G.predecessors(node)) | set(G.successors(node))
-        ligand_logfc = max([G[node][neighbor]['ligand_logfc'] for neighbor in neighbors] + [0], key=abs)
-        receptor_logfc = max([G[node][neighbor]['ligand_logfc'] for neighbor in neighbors] + [0], key=abs)
+        ligand_logfc = max(get_all_edge_attr_for_node(G, node, "ligand_logfc") + [0], key=abs)
+        receptor_logfc = max(get_all_edge_attr_for_node(G, node, "receptor_logfc") + [0], key=abs)
 
         if step == 0:  # Initial gene
             gene_type += '-initial'
@@ -667,9 +672,18 @@ def make_plot_from_graph(G: nx.DiGraph, orig_df, layout="planar") -> go.Figure:
         genetype2nodes[gene_type][4].append(ligand_logfc)
         genetype2nodes[gene_type][5].append(receptor_logfc)
 
+    # Get the size range
+    max_node_logfc = max(nx.get_edge_attributes(G, 'weight').values())
+    min_node_logfc = min(nx.get_edge_attributes(G, 'weight').values())
+
+    MIN_NODE_SIZE = 8
+    MAX_NODE_SIZE = 27
+    NODE_SIZE_RANGE = MAX_NODE_SIZE - MIN_NODE_SIZE
+
     nodes = []
     for gene_type in genetype2nodes.keys():
         gene_xs, gene_ys, texts, celltypes, ligand_logfc, receptor_logfc = genetype2nodes[gene_type]
+
         is_initial = gene_type.endswith('-initial')
         if is_initial:
             gene_type = gene_type.replace('-initial', '')
@@ -679,6 +693,8 @@ def make_plot_from_graph(G: nx.DiGraph, orig_df, layout="planar") -> go.Figure:
         # if symbol == 'arrow-up':
         # Need to adjust y-values to center the triangle
         # gene_ys = [y*.95 for y in gene_ys]
+
+        node_sizes = [(MIN_NODE_SIZE + (NODE_SIZE_RANGE*(abs(logfc)/max_node_logfc))) * (1.25 if 'triangle-up' in symbol else 1) for logfc in receptor_logfc]  # Triangles visually appear smaller than expected
 
         node_trace = go.Scatter(
             name=gene_type,
@@ -690,7 +706,8 @@ def make_plot_from_graph(G: nx.DiGraph, orig_df, layout="planar") -> go.Figure:
             showlegend=False,
             marker=dict(
                 color=[celltype2colors[celltype] for celltype in celltypes],
-                size=15 * (1.4 if 'triangle-up' in symbol else 1),  # Triangles visually appear smaller than expected
+                opacity=1,
+                size=node_sizes,
                 line=dict(width=1, color='black')
             )
         )
@@ -737,6 +754,41 @@ def make_plot_from_graph(G: nx.DiGraph, orig_df, layout="planar") -> go.Figure:
                 line=dict(width=1, color='black')
             )
         ))
+    # legend for node size
+    legends.append(go.Scatter(
+        name="{:.0E}".format(max_node_logfc),
+        x=[None], y=[None],
+        marker_symbol='circle',
+        mode='markers',
+        showlegend=True,
+        # visible = 'legendonly',
+        legendgroup='nodesize',
+        legendgrouptitle=dict(
+            text='Ligand-Induced abs(LogFC)'
+        ),
+        marker=dict(
+            color='grey',
+            size=MAX_NODE_SIZE,
+            line=dict(width=1, color='black')
+        )
+    ))
+    legends.append(go.Scatter(
+        name="{:.0E}".format(min_node_logfc),
+        x=[None], y=[None],
+        marker_symbol='circle',
+        mode='markers',
+        showlegend=True,
+        # visible = 'legendonly',
+        legendgroup='nodesize',
+        legendgrouptitle=dict(
+            text='Ligand-Induced abs(LogFC)'
+        ),
+        marker=dict(
+            color='grey',
+            size=MIN_NODE_SIZE,
+            line=dict(width=1, color='black')
+        )
+    ))
 
     if len(nodes) == 0:
         annotations.append(dict(
@@ -833,7 +885,7 @@ def pseudotime_interaction_propagation_graph(ct: ad.AnnData,
                         receptor_celltype = row['cell_type_receptor']
                         next_node = f"{receptor_celltype}_{receptor}_receptor"
 
-                        if get_interaction_fdr(ct, celltype, ligand, receptor) < interaction_fdr_cutoff:
+                        if get_interaction_fdr(ct, celltype, ligand, receptor) > interaction_fdr_cutoff:
                             continue
 
                         if not curr_G.has_node(next_node):
@@ -843,13 +895,14 @@ def pseudotime_interaction_propagation_graph(ct: ad.AnnData,
                                             gene_type=get_gene_type(orig_df, receptor),
                                             #diff_abundance=get_diff_abundance(ct, seed_cell, seed_ligand)
                                             )
-                        if not curr_G.has_edge(node, next_node) and not curr_G.has_edge(next_node, node):
+                        if not curr_G.has_edge(node, next_node):
                             curr_G.add_edge(node, next_node,
                                             t=t, ligand=node,
                                             receptor=next_node,
+                                            response_logfc=row['MAST_log2FC_receptor'],
                                             ligand_logfc=row['MAST_log2FC_ligand'],
                                             receptor_logfc=row['MAST_log2FC_receptor'],
-                                            weight=abs(row['MAST_log2FC_ligand']),
+                                            weight=max(abs(row['MAST_log2FC_ligand']), abs(row['MAST_log2FC_receptor'])),
                                             numDEG=row['numDEG_fdr_receptor'],
                                             numInteractions=row['numSigI1_fdr_receptor'])
                             new_frontier.add(next_node)
@@ -866,7 +919,7 @@ def pseudotime_interaction_propagation_graph(ct: ad.AnnData,
                         ligand_celltype = row['cell_type_ligand']
                         next_node = f"{ligand_celltype}_{ligand}_ligand"
 
-                        if get_interaction_fdr(ct, celltype, receptor, ligand) < interaction_fdr_cutoff:
+                        if get_interaction_fdr(ct, celltype, receptor, ligand) > interaction_fdr_cutoff:
                             continue
 
                         if not curr_G.has_node(next_node):
@@ -876,13 +929,14 @@ def pseudotime_interaction_propagation_graph(ct: ad.AnnData,
                                             gene_type=get_gene_type(orig_df, ligand),
                                             #diff_abundance=get_diff_abundance(ct, seed_cell, seed_ligand)
                                             )
-                        if not curr_G.has_edge(node, next_node) and not curr_G.has_edge(next_node, node):
+                        if not curr_G.has_edge(node, next_node):
                             curr_G.add_edge(node, next_node,
                                             t=t, ligand=node,
                                             receptor=next_node,
+                                            response_logfc=row['MAST_log2FC_ligand'],
                                             ligand_logfc=row['MAST_log2FC_ligand'],
                                             receptor_logfc=row['MAST_log2FC_receptor'],
-                                            weight=abs(row['MAST_log2FC_ligand']),
+                                            weight=max(abs(row['MAST_log2FC_ligand']), abs(row['MAST_log2FC_receptor'])),
                                             numDEG=row['numDEG_fdr_receptor'],
                                             numInteractions=row['numSigI1_fdr_receptor'])
                             new_frontier.add(next_node)
