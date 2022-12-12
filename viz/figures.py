@@ -7,7 +7,7 @@ from matplotlib import cm, colors
 import pandas as pd
 import plotly.graph_objects as go
 
-from viz.data import get_interaction_fdr, get_effective_logfc, get_diff_abundance, get_downstream_ligands
+from viz.data import get_interaction_fdr, get_diff_abundance, get_downstream_ligands
 from viz.util import multipartite_layout, get_quiver_arrows, celltype_to_colors, timeline_layout
 
 
@@ -428,7 +428,6 @@ def bipartite_graph(df,
     return fig
 
 
-
 def get_gene_type(df, gene):
     # Get gene type label
     is_ligand = (df.ligand == gene).sum() > 0
@@ -489,7 +488,7 @@ def make_plot_from_graph(G: nx.DiGraph, orig_df, layout="planar") -> go.Figure:
     max_abs_logfc = None
     min_abs_logfc = None
     for edge in G.edges():
-        logfc = G[edge[0]][edge[1]]['logfc']
+        logfc = G[edge[0]][edge[1]]['ligand_logfc']
         if max_logfc is None:
             min_logfc = max_logfc = logfc
             min_abs_logfc = max_abs_logfc = abs(logfc)
@@ -511,7 +510,7 @@ def make_plot_from_graph(G: nx.DiGraph, orig_df, layout="planar") -> go.Figure:
         index = (value - min_color_threshold) // step_size
         return colorscale[min(max(int(index), 0), color_step - 1)]
 
-    # Can't hover over lines directly, so add ivisible points
+    # Can't hover over lines directly, so add invisible points
     # See https://stackoverflow.com/a/46039229/5179044
     interpolation_trace = go.Scatter(
         x=[],
@@ -526,7 +525,7 @@ def make_plot_from_graph(G: nx.DiGraph, orig_df, layout="planar") -> go.Figure:
             cmax=max_color_threshold,
             color=[],
             colorbar=dict(
-                title="Induced LogFC",
+                title="Ligand LogFC",
                 xanchor='left',
                 yanchor='top',
                 thickness=25,
@@ -546,7 +545,7 @@ def make_plot_from_graph(G: nx.DiGraph, orig_df, layout="planar") -> go.Figure:
     for edge in G.edges():
         x0, y0 = pos[edge[0]]
         x1, y1 = pos[edge[1]]
-        logfc = G[edge[0]][edge[1]]['logfc']
+        logfc = G[edge[0]][edge[1]]['ligand_logfc']
         ligand = G[edge[0]][edge[1]]['ligand']
         receptor = G[edge[0]][edge[1]]['receptor']
 
@@ -591,7 +590,7 @@ def make_plot_from_graph(G: nx.DiGraph, orig_df, layout="planar") -> go.Figure:
             hoverinfo='none',
             mode='lines'
         )
-        hover_text = f"Ligand: {ligand}<br>Receptor: {receptor}<br>logFC Effect: {logfc}"
+        hover_text = f"Ligand: {ligand}<br>Receptor: {receptor}<br>Ligand LogFC Effect: {logfc}"
         edge_trace.text = [hover_text] * (len(edge_x) + len(arrow_x))
         edge_traces.append(edge_trace)
 
@@ -623,11 +622,15 @@ def make_plot_from_graph(G: nx.DiGraph, orig_df, layout="planar") -> go.Figure:
         gene = G.nodes[node]['gene']
         gene_type = G.nodes[node]['gene_type']
 
+        neighbors = set(G.predecessors(node)) | set(G.successors(node))
+        ligand_logfc = max([G[node][neighbor]['ligand_logfc'] for neighbor in neighbors] + [0], key=abs)
+        receptor_logfc = max([G[node][neighbor]['ligand_logfc'] for neighbor in neighbors] + [0], key=abs)
+
         if step == 0:  # Initial gene
             gene_type += '-initial'
 
         if gene_type not in genetype2nodes:
-            genetype2nodes[gene_type] = ([], [], [], [])
+            genetype2nodes[gene_type] = ([], [], [], [], [], [])
         node_colors.append(celltype2colors[celltype])
         x, y = pos[node]
 
@@ -661,10 +664,12 @@ def make_plot_from_graph(G: nx.DiGraph, orig_df, layout="planar") -> go.Figure:
         genetype2nodes[gene_type][1].append(y)
         genetype2nodes[gene_type][2].append(f'Name: {gene}<br>Step: {step}')
         genetype2nodes[gene_type][3].append(celltype)
+        genetype2nodes[gene_type][4].append(ligand_logfc)
+        genetype2nodes[gene_type][5].append(receptor_logfc)
 
     nodes = []
     for gene_type in genetype2nodes.keys():
-        gene_xs, gene_ys, texts, celltypes = genetype2nodes[gene_type]
+        gene_xs, gene_ys, texts, celltypes, ligand_logfc, receptor_logfc = genetype2nodes[gene_type]
         is_initial = gene_type.endswith('-initial')
         if is_initial:
             gene_type = gene_type.replace('-initial', '')
@@ -839,12 +844,12 @@ def pseudotime_interaction_propagation_graph(ct: ad.AnnData,
                                             #diff_abundance=get_diff_abundance(ct, seed_cell, seed_ligand)
                                             )
                         if not curr_G.has_edge(node, next_node) and not curr_G.has_edge(next_node, node):
-                            logfc = get_effective_logfc(row['MAST_log2FC_ligand'], row["MAST_log2FC_receptor"])
                             curr_G.add_edge(node, next_node,
                                             t=t, ligand=node,
                                             receptor=next_node,
-                                            logfc=logfc,
-                                            weight=abs(logfc),
+                                            ligand_logfc=row['MAST_log2FC_ligand'],
+                                            receptor_logfc=row['MAST_log2FC_receptor'],
+                                            weight=abs(row['MAST_log2FC_ligand']),
                                             numDEG=row['numDEG_fdr_receptor'],
                                             numInteractions=row['numSigI1_fdr_receptor'])
                             new_frontier.add(next_node)
@@ -872,12 +877,12 @@ def pseudotime_interaction_propagation_graph(ct: ad.AnnData,
                                             #diff_abundance=get_diff_abundance(ct, seed_cell, seed_ligand)
                                             )
                         if not curr_G.has_edge(node, next_node) and not curr_G.has_edge(next_node, node):
-                            logfc = get_effective_logfc(row["MAST_log2FC_receptor"], row['MAST_log2FC_ligand'])
                             curr_G.add_edge(node, next_node,
                                             t=t, ligand=node,
                                             receptor=next_node,
-                                            logfc=logfc,
-                                            weight=abs(logfc),
+                                            ligand_logfc=row['MAST_log2FC_ligand'],
+                                            receptor_logfc=row['MAST_log2FC_receptor'],
+                                            weight=abs(row['MAST_log2FC_ligand']),
                                             numDEG=row['numDEG_fdr_receptor'],
                                             numInteractions=row['numSigI1_fdr_receptor'])
                             new_frontier.add(next_node)
@@ -886,5 +891,7 @@ def pseudotime_interaction_propagation_graph(ct: ad.AnnData,
         Gs.append(curr_G.copy())
         if set_progress_callback:
             set_progress_callback(((t+1)//iterations * 100, 100))
+        if len(frontier) == 0:
+            break
 
     return make_plot_from_graph(Gs[-1], df, layout=layout)

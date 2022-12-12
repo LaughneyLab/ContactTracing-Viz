@@ -83,30 +83,30 @@ def get_downstream_ligands(ct_res, receptor, receptor_celltype, min_log2fc=0.01,
 
     return set(downstream_ligands)
 
-
-def get_effective_logfc(from_logfc: float, to_logfc: float) -> float:
-    """
-    Get effective logFC, correcting for the ordering of the ligand and receptor.
-    :param from_logfc: LogFC of the ligand.
-    :param to_logfc: LogFC of the receptor.
-    :return: Direction corrected logFC.
-    """
-    # logfc from mast
-    if from_logfc < 0 and to_logfc < 0:
-        # Same direction, meaning positive correlation
-        return abs(to_logfc)
-    elif from_logfc > 0 and to_logfc > 0:
-        # Same direction, meaning positive correlation
-        return to_logfc
-    elif from_logfc < 0 and to_logfc > 0:
-        # Differing directions, negative correlation
-        return -to_logfc
-    elif from_logfc > 0 and to_logfc < 0:
-        # Differing directions, negative correlation
-        return to_logfc
-    else:
-        # Both 0
-        return 0
+#
+# def get_effective_logfc(from_logfc: float, to_logfc: float) -> float:
+#     """
+#     Get effective logFC, correcting for the ordering of the ligand and receptor.
+#     :param from_logfc: LogFC of the ligand.
+#     :param to_logfc: LogFC of the receptor.
+#     :return: Direction corrected logFC.
+#     """
+#     # logfc from mast
+#     if from_logfc < 0 and to_logfc < 0:
+#         # Same direction, meaning positive correlation
+#         return abs(to_logfc)
+#     elif from_logfc > 0 and to_logfc > 0:
+#         # Same direction, meaning positive correlation
+#         return to_logfc
+#     elif from_logfc < 0 and to_logfc > 0:
+#         # Differing directions, negative correlation
+#         return -to_logfc
+#     elif from_logfc > 0 and to_logfc < 0:
+#         # Differing directions, negative correlation
+#         return to_logfc
+#     else:
+#         # Both 0
+#         return 0
 
 
 def get_diff_abundance(ct_res, celltype, target):
