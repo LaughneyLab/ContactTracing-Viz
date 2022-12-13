@@ -7,7 +7,7 @@ from matplotlib import cm, colors
 import pandas as pd
 import plotly.graph_objects as go
 
-from viz.data import get_interaction_fdr, get_diff_abundance, get_downstream_ligands
+from viz.data import get_interaction_fdr, get_diff_abundance, get_downstream_ligands, get_interaction_logfc
 from viz.util import multipartite_layout, get_quiver_arrows, celltype_to_colors, timeline_layout
 
 
@@ -949,3 +949,94 @@ def pseudotime_interaction_propagation_graph(ct: ad.AnnData,
             break
 
     return make_plot_from_graph(Gs[-1], df, layout=layout)
+
+
+def polar_receptor_trace(ct: ad.AnnData, interactions: pd.DataFrame,
+                         receptor: str, celltype: str,
+                         min_logfc: float = 0, max_fdr: float = 0.05,
+                         main_node_color: str = "white", main_node_height: float = 1) -> go.Figure:
+    assert min_logfc >= 0
+
+    selected_inter = interactions[(interactions.receptor == receptor) & (interactions.cell_type_receptor == celltype)]
+    if selected_inter.shape[0] == 0:
+        return None
+    downstream_ligands = get_downstream_ligands(ct, receptor, celltype, min_logfc, max_fdr)
+    # Require all ligands to have passed previous filters
+    downstream_ligands = [ligand for ligand in downstream_ligands if ligand in selected_inter.ligand.values]
+    downstream_ligand_info = dict(
+        ligand=list(),
+        induced_logfc=list(),
+        interaction_effect=list()
+    )
+    for ligand in downstream_ligands:
+        interaction_effect = get_interaction_logfc(ct, celltype, receptor, ligand)
+        interaction_fdr = get_interaction_fdr(ct, celltype, receptor, ligand)
+        if interaction_fdr > max_fdr or interaction_effect < min_logfc:
+            continue
+        downstream_ligand_info['ligand'].append(ligand)
+        downstream_ligand_info['induced_logfc'].append(interaction_effect)
+        downstream_ligand_info['interaction_effect'].append(interaction_effect)
+    downstream_ligand_info = pd.DataFrame(downstream_ligand_info)
+
+    if downstream_ligand_info.shape[0] == 0:
+        return None
+
+    traces = []
+    annotations = []
+
+    # Label for the receptor/celltype
+    traces.append(go.Barpolar(
+        r=[main_node_height],
+        theta=[0],
+        thetaunit='degree',
+        width=[360],
+        opacity=1,
+        marker=dict(
+            color=main_node_color,
+            line=dict(
+                color='black',
+                width=2
+            )
+        )
+    ))
+    annotations.append(dict(
+        r=0,
+        theta=0,
+        clicktoshow="onoff",
+        text=receptor,
+        visible=True,
+        showarrow=False,
+        font=dict(
+            size=14,
+            color="black"
+        ),
+        align="center"
+    ))
+
+    # Make the figure
+    return go.Figure(
+        traces,
+        template=None,
+        polar=dict(
+            radialaxis=dict(
+                showticklabels=False,
+                ticks=''
+            ),
+            angularaxis=dict(
+                showticklabels=False,
+                ticks=''
+            )
+        ),
+        layout=go.Layout(
+            title='&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Downstream Ligand Effects',
+            titlefont_size=16,
+            showlegend=False,
+            hovermode='closest',
+            margin=dict(b=40, l=5, r=5, t=40),
+            autosize=False,
+            #width=height * scaleratio,
+            #height=height,
+            plot_bgcolor='white',
+            annotations=annotations
+        )
+    )

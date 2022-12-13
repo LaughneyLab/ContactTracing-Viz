@@ -117,3 +117,8 @@ def get_interaction_fdr(ct_res, celltype, target, gene):
     subset_ct = ct_res[(ct_res.obs['cell type'] == celltype) & (ct_res.obs['target'] == target)].layers['fdr.i1']
     return subset_ct[0, ct_res.var.index == gene][0]
 
+
+def get_interaction_logfc(ct_res, celltype, target, gene):
+    subset_ct = ct_res[(ct_res.obs['cell type'] == celltype) & (ct_res.obs['target'] == target)].layers['log2FC']
+    return subset_ct[0, ct_res.var.index == gene][0]
+
