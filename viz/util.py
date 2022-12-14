@@ -7,23 +7,26 @@ import math
 import itertools
 
 
+mouse_colors = {
+    "Tumor cells": '#a3d106',
+    "T cells": '#f47d06',
+    "PMN/gMDSC": '#11eafb',
+    "B cells": '#f9d319',
+    "pDC": '#51119a',
+    "cDC": '#c438fb',
+    "Fibroblast cells": '#226c04',
+    "NK cells": '#ea0d0c',
+    "Macrophages/mMDSC": '#0047cf'
+}
+
+
 def celltype_to_colors(celltypes: list):
     default_colors = [colors.to_hex(c) for c in cm.tab10.colors]
     # Color labels from paper
-    color_override = {
-        "Tumor cells": '#a3d106',
-        "T cells": '#f47d06',
-        "PMN/gMDSC": '#11eafb',
-        "B cells": '#f9d319',
-        "pDC": '#51119a',
-        "cDC": '#c438fb',
-        "Fibroblast cells": '#226c04',
-        "NK cells": '#ea0d0c',
-        "Macrophages/mMDSC": '#0047cf'
-    }
+
     celltype2color = dict()
     for i, ct in enumerate(celltypes):
-        celltype2color[ct] = color_override.get(ct, default_colors[i])
+        celltype2color[ct] = mouse_colors.get(ct, default_colors[i])
     return celltype2color
 
 

@@ -16,3 +16,4 @@ diskcache
 multiprocess
 psutil
 dill==0.3.4
+kaleido

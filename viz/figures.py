@@ -1,13 +1,16 @@
 import math
+from io import BytesIO
 
 import anndata as ad
 import networkx as nx
 import numpy as np
 from matplotlib import cm, colors
 import pandas as pd
+from PIL import Image
 import plotly.graph_objects as go
 
-from viz.data import get_interaction_fdr, get_diff_abundance, get_downstream_ligands, get_interaction_logfc
+from viz.data import get_interaction_fdr, get_diff_abundance, get_downstream_ligands, get_interaction_logfc, \
+    get_interaction_logfc_fdr
 from viz.util import multipartite_layout, get_quiver_arrows, celltype_to_colors, timeline_layout
 
 
@@ -951,92 +954,193 @@ def pseudotime_interaction_propagation_graph(ct: ad.AnnData,
     return make_plot_from_graph(Gs[-1], df, layout=layout)
 
 
-def polar_receptor_trace(ct: ad.AnnData, interactions: pd.DataFrame,
-                         receptor: str, celltype: str,
-                         min_logfc: float = 0, max_fdr: float = 0.05,
-                         main_node_color: str = "white", main_node_height: float = 1) -> go.Figure:
+def polar2cartesian(r, theta):
+    theta = np.deg2rad(theta)
+    return r * np.cos(theta), r * np.sin(theta)
+
+
+def polar_receptor_figure(ct: ad.AnnData, interactions: pd.DataFrame,
+                          celltype: str, receptor: str,
+                          min_logfc: float = 0, max_fdr: float = 0.05,
+                          main_node_color: str = "white", main_node_height: float = .33) -> Image:
     assert min_logfc >= 0
 
-    selected_inter = interactions[(interactions.receptor == receptor) & (interactions.cell_type_receptor == celltype)]
-    if selected_inter.shape[0] == 0:
-        return None
+    #selected_inter = interactions[(interactions.receptor == receptor) & (interactions.cell_type_receptor == celltype)]
+    #if selected_inter.shape[0] == 0:
+    #    return None
     downstream_ligands = get_downstream_ligands(ct, receptor, celltype, min_logfc, max_fdr)
     # Require all ligands to have passed previous filters
-    downstream_ligands = [ligand for ligand in downstream_ligands if ligand in selected_inter.ligand.values]
+    #downstream_ligands = [ligand for ligand in downstream_ligands if ligand in selected_inter.ligand.values]
     downstream_ligand_info = dict(
         ligand=list(),
         induced_logfc=list(),
-        interaction_effect=list()
+        interaction_effect=list(),
+        logfc_fdr=list()
     )
-    for ligand in downstream_ligands:
+    for ligand in set(downstream_ligands):
         interaction_effect = get_interaction_logfc(ct, celltype, receptor, ligand)
         interaction_fdr = get_interaction_fdr(ct, celltype, receptor, ligand)
+        interaction_logfc_fdr = get_interaction_logfc_fdr(ct, celltype, receptor, ligand)
         if interaction_fdr > max_fdr or interaction_effect < min_logfc:
             continue
         downstream_ligand_info['ligand'].append(ligand)
         downstream_ligand_info['induced_logfc'].append(interaction_effect)
-        downstream_ligand_info['interaction_effect'].append(interaction_effect)
+        downstream_ligand_info['interaction_effect'].append(max(-1*np.log(interaction_fdr + 1e-10), 1e-10))
+        downstream_ligand_info['logfc_fdr'].append(max(-1*np.log(interaction_logfc_fdr + 1e-10), 1e-10))
     downstream_ligand_info = pd.DataFrame(downstream_ligand_info)
 
     if downstream_ligand_info.shape[0] == 0:
         return None
 
-    traces = []
-    annotations = []
+    max_logfc = downstream_ligand_info.induced_logfc.max()
+    downstream_ligand_info['induced_logfc'] = downstream_ligand_info['induced_logfc'] / max_logfc
+    # Transform interaction effect
+    downstream_ligand_info['interaction_effect'] = downstream_ligand_info.interaction_effect / downstream_ligand_info.interaction_effect.sum()
+    downstream_ligand_info['logfc_fdr'] = downstream_ligand_info.logfc_fdr / downstream_ligand_info.logfc_fdr.sum()
 
-    # Label for the receptor/celltype
+    traces = []
+
+    downstream_ligand_info['interaction_rotation'] = downstream_ligand_info.interaction_effect * 360
+    downstream_ligand_info['start_angles'] = np.array([0] + list(downstream_ligand_info.interaction_rotation.cumsum())[:-1])
+    downstream_ligand_info['end_angles'] = downstream_ligand_info.interaction_rotation.cumsum()
+    downstream_ligand_info['midpoint_angles'] = (downstream_ligand_info.start_angles + downstream_ligand_info.end_angles) / 2
+    origin = polar2cartesian(0, 0)
+
+    annotations = []
+    annotations.append(dict(
+       x=origin[0],
+       y=origin[1],
+       xref="x",
+       yref="y",
+       clicktoshow="onoff",
+       text=receptor,
+       visible=True,
+       showarrow=False,
+       font=dict(
+           size=14,
+           color="black"
+       ),
+       align="center"
+    ))
+
+    for i, row in downstream_ligand_info.iterrows():
+        ligand = row.ligand
+        start_angle = row.start_angles
+        end_angle = row.end_angles
+        midpoint_angle = row.midpoint_angles
+        height = row.induced_logfc
+        regularized_distance = height * 0.5 + main_node_height
+        x, y = polar2cartesian(regularized_distance, midpoint_angle-90)
+
+        annotations.append(dict(
+            x=x,
+            y=y,
+            clicktoshow="onoff",
+            text=ligand,
+            visible=True,
+            showarrow=False,
+            font=dict(
+                size=14,
+                color="black"
+            ),
+            align="center",
+           # textangle=start_angle - 90
+        ))
+
+        dict(
+            x=origin[0],
+            y=origin[1],
+            xref="x",
+            yref="y",
+            clicktoshow="onoff",
+            text=receptor,
+            visible=True,
+            showarrow=False,
+            font=dict(
+                size=14,
+                color="black"
+            ),
+            align="center"
+        )
+
+    # Main figure
     traces.append(go.Barpolar(
-        r=[main_node_height],
-        theta=[0],
-        thetaunit='degree',
-        width=[360],
+        r0=0,
+        r=list(downstream_ligand_info.induced_logfc),
+        #theta=[0] + list((downstream_ligand_info.interaction_effect * 360).cumsum())[:-1],
+        width=list(downstream_ligand_info.interaction_rotation),
+        thetaunit="degrees",
         opacity=1,
+        base=main_node_height,
+        text=list(downstream_ligand_info.ligand),
         marker=dict(
-            color=main_node_color,
+            color=(['grey']*downstream_ligand_info.shape[0]),
             line=dict(
                 color='black',
                 width=2
             )
         )
     ))
-    annotations.append(dict(
-        r=0,
-        theta=0,
-        clicktoshow="onoff",
-        text=receptor,
-        visible=True,
-        showarrow=False,
-        font=dict(
-            size=14,
-            color="black"
-        ),
-        align="center"
+
+    traces.append(go.Barpolar(
+        r=[main_node_height],
+        theta=[0],
+        width=[360],
+        thetaunit="degrees",
+        opacity=1,
+        base=0,
+        text=[f"{celltype} {receptor}"],
+        marker=dict(
+            color=[main_node_color],
+            line=dict(
+                color='black',
+                width=2
+            )
+        )
     ))
 
-    # Make the figure
-    return go.Figure(
+    fig = go.Figure(
         traces,
-        template=None,
-        polar=dict(
-            radialaxis=dict(
-                showticklabels=False,
-                ticks=''
-            ),
-            angularaxis=dict(
-                showticklabels=False,
-                ticks=''
-            )
-        ),
         layout=go.Layout(
-            title='&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Downstream Ligand Effects',
+            title=f'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{receptor}+ {celltype} Effects',
             titlefont_size=16,
+            template=None,
             showlegend=False,
             hovermode='closest',
             margin=dict(b=40, l=5, r=5, t=40),
             autosize=False,
+            barmode='overlay',
             #width=height * scaleratio,
             #height=height,
             plot_bgcolor='white',
-            annotations=annotations
+            annotations=annotations,
+            polar=dict(
+                radialaxis=dict(
+                    showticklabels=False,
+                    ticks='',
+                    range=[0, 2],
+                    showgrid=False,
+                    showline=False,
+                    angle=0,
+                    tick0=0,
+                    tickangle=90,
+                ),
+                angularaxis=dict(
+                    showticklabels=False,
+                    ticks='',
+                    showgrid=False,
+                    rotation=0,
+                    tick0=0,
+                    tickangle=90,
+                )
+            ),
+            xaxis=dict(showgrid=False, zeroline=False, showticklabels=False, range=[-1, 1]),
+            yaxis=dict(showgrid=False, zeroline=False, showticklabels=False,
+                       scaleanchor="x", range=[-1, 1])
         )
     )
+
+    return fig
+
+    # Make the figure
+    return Image.open(BytesIO(fig.to_image(format="png", width=400, height=400, scale=1)), formats=['png'])
