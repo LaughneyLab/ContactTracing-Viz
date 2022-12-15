@@ -21,7 +21,7 @@ mouse_colors = {
 
 
 def celltype_to_colors(celltypes: list):
-    default_colors = [colors.to_hex(c) for c in cm.tab10.colors]
+    default_colors = [colors.to_hex(c) for c in cm.tab20.colors]
     # Color labels from paper
 
     celltype2color = dict()
@@ -51,6 +51,9 @@ def enhance_plotly_export(fig, height, scaleratio):
 
 # Initial placement of nodes in layers
 def space_elements(elements, attributes):
+    if len(elements) <= 2:
+        return elements
+
     # Visually space out high degree nodes
     sorted_elements = list(sorted(zip(elements, attributes), key=lambda x: x[1], reverse=True))
     sorted_elements = [x[0] for x in sorted_elements]
@@ -113,8 +116,6 @@ def timeline_layout(G, step_attr="step", scaleratio=1.0, scale=30):
         nodes = [n for n in G.nodes if node2step[n] == step]
         nodes = space_elements(nodes, [node2descendent_count[n] for n in nodes])
         step2ordered_nodes[step] = nodes
-
-
 
 
 # Adapted from networkx to fix a weird crash, and add space multiplier between layers

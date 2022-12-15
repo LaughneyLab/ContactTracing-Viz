@@ -1,5 +1,5 @@
 import os
-from typing import Set
+from typing import Set, List
 
 import anndata as ad
 import numpy as np
@@ -58,7 +58,7 @@ def read_interactions(path: str, condition_name='highCIN_vs_lowCIN') -> pd.DataF
     return df
 
 
-def get_downstream_ligands(ct_res, receptor, receptor_celltype, min_log2fc=0.01, max_fdr=0.05) -> Set[str]:
+def get_downstream_ligands(ct_res, receptor, receptor_celltype, min_log2fc=0.01, max_fdr=0.05) -> List[str]:
     """
     Get activated ligands downstream of a given receptor.
     :param ct_res: The results object.
@@ -69,9 +69,12 @@ def get_downstream_ligands(ct_res, receptor, receptor_celltype, min_log2fc=0.01,
     :return: Set of downstream ligands.
     """
     gene2ligand = ct_res.uns['gene_is_ligand']
-    receptor_res = ct_res[(ct_res.obs['target'] == receptor) & (ct_res.obs['cell type'] == receptor_celltype)]
+    if receptor is not None:
+        receptor_res = ct_res[(ct_res.obs['cell type'] == receptor_celltype) & (ct_res.obs['target'] == receptor)]
+    else:
+        receptor_res = ct_res[ct_res.obs['cell type'] == receptor_celltype]
     if receptor_res.shape[0] < 1:
-        return set()
+        return list()
     downstream_genes = pd.DataFrame({'gene': [g for g in receptor_res.var.index],
                                      'log2FC': receptor_res.layers['log2FC'].flatten(),
                                      'fdr': receptor_res.layers['fdr'].flatten(),
@@ -79,9 +82,10 @@ def get_downstream_ligands(ct_res, receptor, receptor_celltype, min_log2fc=0.01,
                                      'is_ligand': [bool(gene2ligand[g]) for g in receptor_res.var.index]})
     downstream_ligands = downstream_genes[downstream_genes.is_ligand &
                                           (abs(downstream_genes.log2FC) > min_log2fc) &
-                                          (downstream_genes.fdr <= max_fdr)].gene
+                                          (downstream_genes.fdr <= max_fdr)]
+    downstream_ligands = downstream_ligands.sort_values('log2FC', ascending=False)
 
-    return set(downstream_ligands)
+    return list(downstream_ligands.gene.unique())
 
 #
 # def get_effective_logfc(from_logfc: float, to_logfc: float) -> float:

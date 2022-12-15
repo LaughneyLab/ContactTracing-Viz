@@ -1,5 +1,6 @@
 import math
 from io import BytesIO
+from typing import List, Tuple, Optional
 
 import anndata as ad
 import networkx as nx
@@ -960,15 +961,19 @@ def polar2cartesian(r, theta):
 
 
 def polar_receptor_figure(ct: ad.AnnData, interactions: pd.DataFrame,
-                          celltype: str, receptor: str,
+                          celltype: str, receptor: Optional[str] = None,
+                          ligands: Optional[List[str]] = None,
                           min_logfc: float = 0, max_fdr: float = 0.05,
-                          main_node_color: str = "white", main_node_height: float = .33) -> Image:
+                          main_node_color: str = "white", main_node_height: float = .33) -> Tuple[go.Figure, List[str]]:
     assert min_logfc >= 0
 
     #selected_inter = interactions[(interactions.receptor == receptor) & (interactions.cell_type_receptor == celltype)]
     #if selected_inter.shape[0] == 0:
     #    return None
-    downstream_ligands = get_downstream_ligands(ct, receptor, celltype, min_logfc, max_fdr)
+    if ligands is None:
+        downstream_ligands = get_downstream_ligands(ct, receptor, celltype, min_logfc, max_fdr)
+    else:
+        downstream_ligands = set(ligands)
     # Require all ligands to have passed previous filters
     #downstream_ligands = [ligand for ligand in downstream_ligands if ligand in selected_inter.ligand.values]
     downstream_ligand_info = dict(
@@ -977,60 +982,73 @@ def polar_receptor_figure(ct: ad.AnnData, interactions: pd.DataFrame,
         interaction_effect=list(),
         logfc_fdr=list()
     )
-    for ligand in set(downstream_ligands):
-        interaction_effect = get_interaction_logfc(ct, celltype, receptor, ligand)
-        interaction_fdr = get_interaction_fdr(ct, celltype, receptor, ligand)
-        interaction_logfc_fdr = get_interaction_logfc_fdr(ct, celltype, receptor, ligand)
-        if interaction_fdr > max_fdr or interaction_effect < min_logfc:
+    for ligand in reversed(downstream_ligands):
+        if receptor is None:
+            interaction_effect = interactions[(interactions.ligand == ligand) & (interactions.cell_type_ligand == celltype)].MAST_log2FC_ligand.max()
+            interaction_fdr = 0
+            interaction_logfc_fdr = interactions[(interactions.ligand == ligand) & (interactions.cell_type_ligand == celltype) & (interactions.MAST_log2FC_ligand == interaction_effect)].MAST_fdr_ligand.min()
+        else:
+            interaction_effect = get_interaction_logfc(ct, celltype, receptor, ligand)
+            interaction_fdr = get_interaction_fdr(ct, celltype, receptor, ligand)
+            interaction_logfc_fdr = get_interaction_logfc_fdr(ct, celltype, receptor, ligand)
+        if interaction_fdr > max_fdr or interaction_effect < min_logfc or np.isnan(interaction_fdr):
             continue
         downstream_ligand_info['ligand'].append(ligand)
         downstream_ligand_info['induced_logfc'].append(interaction_effect)
-        downstream_ligand_info['interaction_effect'].append(max(-1*np.log(interaction_fdr + 1e-10), 1e-10))
-        downstream_ligand_info['logfc_fdr'].append(max(-1*np.log(interaction_logfc_fdr + 1e-10), 1e-10))
+        downstream_ligand_info['interaction_effect'].append(max(-1*np.log(interaction_fdr + 1e-5), 1e-5))
+        downstream_ligand_info['logfc_fdr'].append(max(-1*np.log(interaction_logfc_fdr + 1e-5), 1e-5))
     downstream_ligand_info = pd.DataFrame(downstream_ligand_info)
 
-    if downstream_ligand_info.shape[0] == 0:
-        return None
-
-    max_logfc = downstream_ligand_info.induced_logfc.max()
-    downstream_ligand_info['induced_logfc'] = downstream_ligand_info['induced_logfc'] / max_logfc
-    # Transform interaction effect
-    downstream_ligand_info['interaction_effect'] = downstream_ligand_info.interaction_effect / downstream_ligand_info.interaction_effect.sum()
-    downstream_ligand_info['logfc_fdr'] = downstream_ligand_info.logfc_fdr / downstream_ligand_info.logfc_fdr.sum()
-
-    traces = []
-
-    downstream_ligand_info['interaction_rotation'] = downstream_ligand_info.interaction_effect * 360
-    downstream_ligand_info['start_angles'] = np.array([0] + list(downstream_ligand_info.interaction_rotation.cumsum())[:-1])
-    downstream_ligand_info['end_angles'] = downstream_ligand_info.interaction_rotation.cumsum()
-    downstream_ligand_info['midpoint_angles'] = (downstream_ligand_info.start_angles + downstream_ligand_info.end_angles) / 2
     origin = polar2cartesian(0, 0)
 
     annotations = []
-    annotations.append(dict(
-       x=origin[0],
-       y=origin[1],
-       xref="x",
-       yref="y",
-       clicktoshow="onoff",
-       text=receptor,
-       visible=True,
-       showarrow=False,
-       font=dict(
-           size=14,
-           color="black"
-       ),
-       align="center"
-    ))
 
+    traces = []
+    if downstream_ligand_info.shape[0] > 0:
+        max_logfc = downstream_ligand_info.induced_logfc.max()
+        downstream_ligand_info['induced_logfc'] = (downstream_ligand_info['induced_logfc']+.05) / (max_logfc+0.05)
+        # Transform interaction effect
+        downstream_ligand_info['interaction_effect'] = downstream_ligand_info.interaction_effect / downstream_ligand_info.interaction_effect.sum()
+        downstream_ligand_info['logfc_fdr'] = downstream_ligand_info.logfc_fdr / downstream_ligand_info.logfc_fdr.sum()
+
+        downstream_ligand_info['interaction_rotation'] = downstream_ligand_info.interaction_effect * 360
+        downstream_ligand_info['interaction_rotation'] = downstream_ligand_info.interaction_rotation - ((downstream_ligand_info.interaction_rotation.sum() - 360)/downstream_ligand_info.shape[0])/2
+        downstream_ligand_info['start_angles'] = np.array([0] + list(downstream_ligand_info.interaction_rotation.cumsum())[:-1])
+        downstream_ligand_info['end_angles'] = downstream_ligand_info.interaction_rotation.cumsum()
+        downstream_ligand_info['midpoint_angles'] = (downstream_ligand_info.start_angles + downstream_ligand_info.end_angles) / 2
+
+    if receptor is not None:
+        annotations.append(dict(
+           x=origin[0],
+           y=origin[1],
+           xref="x",
+           yref="y",
+           clicktoshow="onoff",
+           text=receptor,
+           visible=True,
+           showarrow=False,
+           font=dict(
+               size=30,
+               color="black"
+           ),
+           align="center"
+        ))
+
+    theta_steps = []
     for i, row in downstream_ligand_info.iterrows():
+        if i == 0:
+            theta_step = 0
+        else:
+            last_theta = theta_steps[-1]
+            last_theta_step = downstream_ligand_info.interaction_rotation.iloc[i-1]/2
+            curr_theta_step = downstream_ligand_info.interaction_rotation.iloc[i]/2
+            theta_step = last_theta + last_theta_step + curr_theta_step
+        theta_steps.append(theta_step)
+
         ligand = row.ligand
-        start_angle = row.start_angles
-        end_angle = row.end_angles
-        midpoint_angle = row.midpoint_angles
         height = row.induced_logfc
-        regularized_distance = height * 0.5 + main_node_height
-        x, y = polar2cartesian(regularized_distance, midpoint_angle-90)
+        regularized_distance = 2*height/3   # * 0.5 + main_node_height
+        x, y = polar2cartesian(regularized_distance, theta_step)
 
         annotations.append(dict(
             x=x,
@@ -1040,7 +1058,7 @@ def polar_receptor_figure(ct: ad.AnnData, interactions: pd.DataFrame,
             visible=True,
             showarrow=False,
             font=dict(
-                size=14,
+                size=30,
                 color="black"
             ),
             align="center",
@@ -1053,7 +1071,7 @@ def polar_receptor_figure(ct: ad.AnnData, interactions: pd.DataFrame,
             xref="x",
             yref="y",
             clicktoshow="onoff",
-            text=receptor,
+            text=f"{receptor}+",
             visible=True,
             showarrow=False,
             font=dict(
@@ -1064,23 +1082,26 @@ def polar_receptor_figure(ct: ad.AnnData, interactions: pd.DataFrame,
         )
 
     # Main figure
-    traces.append(go.Barpolar(
-        r0=0,
-        r=list(downstream_ligand_info.induced_logfc),
-        #theta=[0] + list((downstream_ligand_info.interaction_effect * 360).cumsum())[:-1],
-        width=list(downstream_ligand_info.interaction_rotation),
-        thetaunit="degrees",
-        opacity=1,
-        base=main_node_height,
-        text=list(downstream_ligand_info.ligand),
-        marker=dict(
-            color=(['grey']*downstream_ligand_info.shape[0]),
-            line=dict(
-                color='black',
-                width=2
+    if downstream_ligand_info.shape[0] > 0:
+        traces.append(go.Barpolar(
+            r0=0,
+            r=list(downstream_ligand_info.induced_logfc),
+            theta0=0,
+            #theta=[0]*downstream_ligand_info.shape[0],
+            theta=theta_steps,
+            width=list(downstream_ligand_info.interaction_rotation),
+            thetaunit="degrees",
+            opacity=1,
+            base=main_node_height,
+            text=list(downstream_ligand_info.ligand),
+            marker=dict(
+                color=(['grey']*downstream_ligand_info.shape[0]),
+                line=dict(
+                    color='black',
+                    width=2
+                )
             )
-        )
-    ))
+        ))
 
     traces.append(go.Barpolar(
         r=[main_node_height],
@@ -1102,23 +1123,25 @@ def polar_receptor_figure(ct: ad.AnnData, interactions: pd.DataFrame,
     fig = go.Figure(
         traces,
         layout=go.Layout(
-            title=f'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{receptor}+ {celltype} Effects',
-            titlefont_size=16,
+            #title=f'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{receptor}+ {celltype} Effects',
+            #titlefont_size=16,
             template=None,
             showlegend=False,
             hovermode='closest',
-            margin=dict(b=40, l=5, r=5, t=40),
+            margin=dict(b=0, l=0, r=0, t=0),
             autosize=False,
             barmode='overlay',
             #width=height * scaleratio,
             #height=height,
-            plot_bgcolor='white',
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
             annotations=annotations,
             polar=dict(
+                bgcolor='rgba(0,0,0,0)',
                 radialaxis=dict(
                     showticklabels=False,
                     ticks='',
-                    range=[0, 2],
+                    range=[0, 1.5],
                     showgrid=False,
                     showline=False,
                     angle=0,
@@ -1140,7 +1163,311 @@ def polar_receptor_figure(ct: ad.AnnData, interactions: pd.DataFrame,
         )
     )
 
-    return fig
+    return fig, downstream_ligand_info['ligand'].tolist()
 
-    # Make the figure
-    return Image.open(BytesIO(fig.to_image(format="png", width=400, height=400, scale=1)), formats=['png'])
+
+def cascading_effects_figure(ct: ad.AnnData, interactions: pd.DataFrame,
+                             starting_ligands: List[str], celltype: str,
+                             min_logfc: float = 0, max_fdr: float = 0.05,
+                             numSigI1: int = 0, celltype_filters=None, iterations: int = 15):
+    if celltype_filters is None:
+        celltype_filters = []
+
+    interactions = interactions[(interactions.MAST_log2FC_ligand > min_logfc) & (interactions.MAST_fdr_ligand <= max_fdr) & (interactions.numSigI1_fdr_receptor >= numSigI1)]
+
+    G = nx.DiGraph()
+    celltype2colors = celltype_to_colors(interactions.cell_type_receptor.unique().tolist())
+    frontier = set()
+    for ligand in starting_ligands:
+        G.add_node(f"{ligand}_START", ligands=[ligand], fig=None, receptor=None, celltype=celltype, step=0)
+        frontier.add(f"{ligand}_START")
+    nodes_ignored = set()
+    from tqdm import tqdm
+    for i in tqdm(range(iterations)):
+        new_frontier = set()
+        for node in frontier:
+            # We are assuming that the interactions dataframe is already filtered
+            ligands = G.nodes[node]['ligands']
+            cell = G.nodes[node]['celltype']
+            selected_interactions = interactions[interactions.ligand.isin(ligands) & (interactions.cell_type_ligand == cell)]
+            for _, row in selected_interactions.iterrows():
+                new_node = f"{row.cell_type_receptor}_{row.receptor}"
+                if row.cell_type_receptor not in celltype_filters or G.has_edge(node, new_node) or new_node in nodes_ignored:
+                    continue
+
+                if not G.has_node(new_node):
+                    node_fig, ligands = polar_receptor_figure(ct, interactions, row.cell_type_receptor,
+                                                              row.receptor, None, min_logfc, max_fdr,
+                                                              main_node_color=celltype2colors[row.cell_type_receptor])
+
+                    if len(ligands) == 0:
+                        nodes_ignored.add(new_node)
+                        continue
+
+                    G.add_node(new_node,
+                               receptor=row.receptor,
+                               fig=node_fig,
+                               ligands=ligands,
+                               celltype=row.cell_type_receptor, step=i+1)
+                    new_frontier.add(new_node)
+
+                G.add_edge(node, new_node,
+                           logfc=row.MAST_log2FC_ligand,
+                           weight=abs(row.MAST_log2FC_ligand),
+                           ligand=row.ligand,
+                           receptor=row.receptor)
+
+        frontier = new_frontier
+        if len(frontier) == 0:
+            break
+
+    layout = timeline_layout(G, step_attr='step', scaleratio=1.5)
+    #layout = nx.spring_layout(G)
+    #shells = [[]]*(max([G.nodes[node]['step'] for node in G.nodes])+1)
+    #for node in G.nodes:
+    #    shells[G.nodes[node]['step']].append(node)
+    #layout = nx.shell_layout(G, shells)
+
+    cmap = cm.get_cmap('viridis')
+    color_step = 255
+    norm = colors.Normalize(vmin=0, vmax=color_step)
+    colorscale = []
+    for i in range(0, color_step):
+        colorscale.append(colors.rgb2hex(colors.colorConverter.to_rgb(cmap(norm(i)))))
+    # Reverse colorscale to have dark colors = high values
+    colorscale = colorscale[::-1]
+
+    min_logfc = None
+    max_logfc = None
+    max_abs_logfc = None
+    min_abs_logfc = None
+    for edge in G.edges():
+        logfc = G[edge[0]][edge[1]]['logfc']
+        if max_logfc is None:
+            min_logfc = max_logfc = logfc
+            min_abs_logfc = max_abs_logfc = abs(logfc)
+        else:
+            if logfc < min_logfc:
+                min_logfc = logfc
+            if logfc > max_logfc:
+                max_logfc = logfc
+            if abs(logfc) > max_abs_logfc:
+                max_abs_logfc = abs(logfc)
+            if abs(logfc) < min_abs_logfc:
+                min_abs_logfc = abs(logfc)
+
+    min_color_threshold = 0  # min_logfc
+    max_color_threshold = max_logfc  # max_logfc
+
+    def get_color(value, minimum, maximum):
+        step_size = (max_color_threshold - min_color_threshold) / (color_step - 1)
+        index = (value - min_color_threshold) // step_size
+        return colorscale[min(max(int(index), 0), color_step - 1)]
+
+
+    # Can't hover over lines directly, so add invisible points
+    # See https://stackoverflow.com/a/46039229/5179044
+    interpolation_trace = go.Scatter(
+        x=[],
+        y=[],
+        text=[],
+        mode='markers',
+        hoverinfo='text',
+        showlegend=False,
+        marker=dict(
+            opacity=0,
+            cmin=min_color_threshold,
+            cmax=max_color_threshold,
+            color=[],
+            colorbar=dict(
+                title="Ligand LogFC",
+                xanchor='left',
+                yanchor='top',
+                thickness=25,
+                titleside='right',
+                x=1,
+                y=1
+            ),
+            colorscale=[[i / (len(colorscale) - 1), col] for (i, col) in enumerate(colorscale)]
+        )
+    )
+    edge_traces = []
+    EDGE_PADDING = .05
+    MIN_WIDTH = 2
+    MAX_WIDTH = 6
+    INTERPOLATION_POINTS = 20
+
+    for edge in G.edges():
+        x0, y0 = layout[edge[0]]
+        x1, y1 = layout[edge[1]]
+        logfc = G[edge[0]][edge[1]]['logfc']
+        ligand = G[edge[0]][edge[1]]['ligand']
+        receptor = G[edge[0]][edge[1]]['receptor']
+
+        dif_x = x1 - x0
+        dif_y = y1 - y0
+        # total_len = math.hypot(dif_x, dif_y)
+        angle = math.atan2(dif_y, dif_x)
+        deltaX = EDGE_PADDING * math.cos(angle)
+        deltaY = EDGE_PADDING * math.sin(angle)
+
+        x0 += deltaX * .25
+        y0 += deltaY * .25
+
+        x1 -= deltaX * .75
+        y1 -= deltaY * .75
+
+        # edge_x += [x0, x1, None]
+        # edge_y += [y0, y1, None]
+        # start_x.append(x0)
+        # start_y.append(y0)
+        # end_x.append(x1)
+        # end_y.append(y1)
+
+        edge_x = [x0, x1, None]
+        edge_y = [y0, y1, None]
+        arrow_x, arrow_y = get_quiver_arrows([x0], [y0], [x1], [y1], 1)
+
+        color = get_color(logfc, min_logfc, max_logfc)
+        arrow_xs = edge_x + arrow_x
+        arrow_ys = edge_y + arrow_y
+        arrow_width = MIN_WIDTH + (MAX_WIDTH - MIN_WIDTH) * math.sqrt(
+            (abs(logfc) - min_abs_logfc) / (max_abs_logfc - min_abs_logfc + 1e-8))
+        edge_trace = go.Scatter(
+            x=arrow_xs, y=arrow_ys,
+            fill="toself",
+            fillcolor=color,
+            showlegend=False,
+            line=dict(
+                width=arrow_width,
+                color=color
+            ),
+            hoverinfo='none',
+            mode='lines'
+        )
+        hover_text = f"Ligand: {ligand}<br>Receptor: {receptor}<br>Ligand LogFC Effect: {logfc}"
+        edge_trace.text = [hover_text] * (len(edge_x) + len(arrow_x))
+        edge_traces.append(edge_trace)
+
+        step_x = dif_x / INTERPOLATION_POINTS
+        step_y = dif_y / INTERPOLATION_POINTS
+
+        for point in [(x0 + i * step_x, y0 + i * step_y) for i in range(0, INTERPOLATION_POINTS)]:
+            interpolation_trace['x'] += (point[0],)
+            interpolation_trace['y'] += (point[1],)
+            interpolation_trace['text'] += (hover_text,)
+            interpolation_trace['marker']['color'] += (color,)
+
+    node_x = []
+    node_y = []
+    initial_x = []
+    initial_y = []
+    images = []
+    annotations = []
+    for node in G.nodes():
+        x, y = layout[node]
+        if G.nodes[node]['fig'] is None:
+            initial_x.append(x)
+            initial_y.append(y)
+            annotations.append(dict(
+                x=x,
+                y=y,
+                xref='x',
+                yref='y',
+                clicktoshow='onoff',
+                text=G.nodes[node]['ligands'][0],
+                visible=True,
+                showarrow=False,
+                font=dict(
+                    size=14,
+                    color='black'
+                ),
+                align='center'
+            ))
+        else:
+            node_x.append(x)
+            node_y.append(y)
+            images.append(dict(
+                source=Image.open(BytesIO(G.nodes[node]['fig'].to_image(format="png", scale=2)), formats=['png']),
+                xref="x",
+                yref="y",
+                xanchor="center",
+                yanchor="middle",
+                x=x,
+                y=y,
+                sizex=.66,
+                sizey=.66,
+                sizing="contain",
+                opacity=1,
+                #layer="above",
+            ))
+
+    legends = []
+    for celltype in {G.nodes[node]['celltype'] for node in G.nodes}:
+        legends.append(go.Scatter(
+            name=celltype,
+            x=[None],
+            y=[None],
+            marker_symbol='circle',
+            mode='markers',
+            showlegend=True,
+            legendgroup='celltypes',
+            legendgrouptitle=dict(
+                text='Cell Type',
+            ),
+            marker=dict(
+                color=celltype2colors[celltype],
+                size=15,
+                line=dict(width=1, color='black')
+            )
+        ))
+
+    initial_trace = go.Scatter(
+        name="nodes",
+        x=initial_x,
+        y=initial_y,
+        mode='markers',
+        showlegend=False,
+        marker=dict(
+            color=[celltype2colors[G.nodes[node]['celltype']] for node in G.nodes() if G.nodes[node]['fig'] is None],
+            size=50,
+            line=dict(width=1, color='black')
+        )
+    )
+
+    node_trace = go.Scatter(
+        name="nodes",
+        x=node_x, y=node_y,
+        mode='markers',
+        showlegend=False,
+        marker=dict(
+            color='rgba(0,0,0,0)',
+            size=100,
+            line=dict(width=1, color='rgba(0,0,0,0)')
+        )
+    )
+
+    fig = go.Figure(data=[interpolation_trace] + edge_traces + [initial_trace, node_trace] + legends,
+                    layout=go.Layout(
+                        title="&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Receptor Network",
+                        titlefont_size=16,
+                        showlegend=True,
+                        hovermode='closest',
+                        margin=dict(b=30, l=5, r=5, t=30),
+                        autosize=False,
+                        width=1000,
+                        height=800,
+                        plot_bgcolor=None,
+                        images=images,
+                        annotations=annotations,
+                        legend=dict(
+                            yanchor="top",
+                            y=1,
+                            xanchor="left",
+                            x=1.15
+                        ),
+                        xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                        yaxis=dict(showgrid=False, zeroline=False, showticklabels=False, scaleratio=1, scaleanchor="x"))
+                    )
+
+    return fig
