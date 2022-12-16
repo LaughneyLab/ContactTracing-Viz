@@ -1,6 +1,9 @@
+import bisect
+import itertools
 import math
+from dataclasses import dataclass, field
 from io import BytesIO
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Set
 
 import anndata as ad
 import networkx as nx
@@ -959,6 +962,269 @@ def polar2cartesian(r, theta):
     theta = np.deg2rad(theta)
     return r * np.cos(theta), r * np.sin(theta)
 
+
+@dataclass(unsafe_hash=True)
+class PlotRing:
+    name: str
+    color: str
+    height: float
+    circumference: float
+    children: List['PlotRing'] = field(default_factory=list)
+    theta: float = 0  # computed later
+    start_height: float = 0  # computed later
+
+    def add_child(self, child):
+        # Add child in sorted order
+        bisect.insort(self.children, child, key=lambda x: (x.height, x.circumference))
+
+    def get_all_children(self):
+        return [self] + list(itertools.chain.from_iterable([c.get_all_children() for c in self.children]))
+
+    def get_max_height(self):
+        return self.height + max([c.get_max_height() for c in self.children], default=0)
+
+    def get_number_of_levels(self):
+        return max([c.get_number_of_levels() for c in self.children], default=0) + 1
+
+    def iter_rings(self):
+        # Breadth-first iteration to get list of lists
+        frontier = [self]
+        for level in range(self.get_number_of_levels()):
+            yield frontier
+            frontier = list(itertools.chain.from_iterable([c.children for c in frontier]))
+        if len(frontier) > 0:
+            raise Exception("Something went wrong")
+
+    def iter_hierarchy(self):
+        # Depth-first iteration of (parent, children) tuples
+        yield self, self.children
+        for child in self.children:
+            yield from child.iter_hierarchy()
+
+
+def plot_polar_data(rings: PlotRing, center_height: float) -> go.Figure:
+    # Normalize the data
+    # First ring is always the full circle
+    rings.circumference = 360
+    # Normalize the heights to be bounded by 0 and 1
+    max_height = rings.get_max_height()
+    # Reset center node height
+    rings.height = center_height*max_height
+    for ring_list in rings.iter_rings():
+        for r in ring_list:
+            r.height /= max_height
+    # Calculate circumference of each ring group
+    for parent, children in rings.iter_hierarchy():
+        total_circumference = sum([c.circumference for c in children])
+        curr_theta = parent.theta
+        last_child = parent
+        for child in children:
+            child.circumference = parent.circumference * (child.circumference / total_circumference)
+            child.theta = curr_theta
+            child.start_height = parent.start_height + parent.height
+            curr_theta += child.circumference/2 + last_child.circumference/2
+            last_child = child
+
+    # Build the figure
+    annotations = []
+    traces = []
+    for level, ring_list in enumerate(rings.iter_rings()):
+        if level == 0:  # Handle first circle
+            assert len(ring_list) == 1
+            node = ring_list[0]
+            annotations.append(dict(
+                x=0, y=0,
+                xref='x', yref='y',
+                clicktoshow='onoff',
+                text=node.name,
+                visible=True,
+                showarrow=False,
+                font=dict(
+                    size=25,
+                    color="black"
+                ),
+                align='center'
+            ))
+            traces.append(go.Barpolar(
+                r=[node.height],
+                theta=[0],
+                width=[360],
+                thetaunit='degrees',
+                opacity=1,
+                base=0,
+                text=node.name,
+                marker=dict(
+                    color=[node.color],
+                    line=dict(
+                        color='black',
+                        width=1
+                    )
+                )
+            ))
+        else:
+            thetas = []
+            circumferences = []
+            bases = []
+            colors = []
+            heights = []
+            names = []
+            for node in ring_list:
+                base = node.start_height
+                theta = node.theta
+                height = node.height
+                circumference = node.circumference
+                color = node.color
+                name = node.name
+
+                # Label
+                annotation_distance = 2*height/3
+                annotation_x, annotation_y = polar2cartesian(annotation_distance, theta)
+                annotations.append(dict(
+                    x=annotation_x, y=annotation_y,
+                    clicktoshow='onoff',
+                    text=name,
+                    visible=level < 3,
+                    showarrow=False,
+                    font=dict(
+                        size=20,
+                        color="black"
+                    ),
+                    align='center'
+                ))
+
+                # Ring info
+                thetas.append(theta)
+                circumferences.append(circumference)
+                bases.append(base)
+                colors.append(color)
+                heights.append(height)
+                names.append(name)
+
+            traces.append(go.Barpolar(
+                r0=0,
+                r=heights,
+                theta0=0,
+                theta=thetas,
+                width=circumferences,
+                thetaunit='degrees',
+                opacity=1,
+                base=bases,
+                text=names,
+                marker=dict(
+                    color=colors,
+                    line=dict(
+                        color='black',
+                        width=1
+                    )
+                )
+            ))
+        
+    fig = go.Figure(data=traces, layout=go.Layout(
+        template=None,
+        showlegend=False,
+        hovermode='closest',
+        margin=dict(l=0, r=0, t=0, b=0),
+        autosize=False,
+        barmode='overlay',
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        annotations=annotations,
+        polar=dict(
+            bgcolor='rgba(0,0,0,0)',
+            radialaxis=dict(
+                showticklabels=False,
+                ticks='',
+                range=[0, 1.5],
+                showgrid=False,
+                showline=False,
+                angle=0,
+                tick0=0,
+                tickangle=90
+            ),
+            angularaxis=dict(
+                ticks='',
+                showgrid=False,
+                rotation=0,
+                tick0=0,
+                tickangle=90,
+                direction='clockwise'
+            ),
+            xaxis=dict(
+                showgrid=False,
+                zeroline=False,
+                showticklabels=False,
+                range=[-1, 1]
+            ),
+            yaxis=dict(
+                showgrid=False,
+                zeroline=False,
+                showticklabels=False,
+                range=[-1, 1],
+                scaleanchor="x"
+            )
+        )
+    ))
+    return fig
+
+
+def radial_ligand_effect_figure(
+        ct: ad.AnnData, interactions: pd.DataFrame,
+        ligand: str, celltype: str,
+        min_logfc: float = 0, max_fdr: float = 0.05,
+        max_levels: int = 3, celltype_filter: Set[str] = None
+) -> go.Figure:
+    all_celltypes = set(ct.obs['cell type'].unique())
+    if celltype_filter is None:
+        celltype_filter = all_celltypes
+    celltype2color = celltype_to_colors(all_celltypes)
+
+    interactions = interactions[(interactions.MAST_log2FC_ligand > min_logfc) &
+                                (interactions.MAST_fdr_ligand <= max_fdr) &
+                                (interactions.celltype_receptor.isin(celltype_filter)) &
+                                (interactions.celltype_ligand.isin(celltype_filter))]
+
+    rings = PlotRing(ligand, celltype2color[celltype], 0, 360)
+
+    def build_downstream_rings(i: int,
+                               curr_ring: PlotRing,
+                               start: str,
+                               start_celltype: str,
+                               is_ligand: bool):
+        if i >= max_levels:
+            return
+
+        if is_ligand:
+            # Get and map receptors
+            filtered_interactions = interactions[(interactions.ligand == start)]
+            for i, row in filtered_interactions.iterrows():
+                receptor = row['receptor']
+                receptor_celltype = row['cell type_receptor']
+                next_ring = PlotRing(
+                    f"{receptor}+", celltype2color[receptor_celltype],
+                    row['numDEG_fdr25_receptor'], row['numSigI1_fdr25_receptor']
+                )
+                curr_ring.add_child(next_ring)
+                build_downstream_rings(i+1, next_ring, receptor, receptor_celltype, False)
+        else:
+            # Get and map ligands
+            downstream_ligands = get_downstream_ligands(ct, start, start_celltype, min_logfc, max_fdr)
+            for lig in downstream_ligands:
+                interaction_logfc = get_interaction_logfc(ct, start_celltype, start, lig)
+                interaction_fdr = get_interaction_fdr(ct, start_celltype, start, lig)
+                interaction_logfc_fdr = get_interaction_logfc_fdr(ct, start_celltype, start, lig)
+                if np.isnan(interaction_fdr) or interaction_fdr > max_fdr or interaction_logfc < min_logfc:
+                    continue
+                next_ring = PlotRing(
+                    lig, celltype2color[start_celltype],
+                    interaction_logfc, interaction_logfc
+                )
+                curr_ring.add_child(next_ring)
+                build_downstream_rings(i+1, next_ring, lig, start_celltype, True)
+
+    build_downstream_rings(0, rings, ligand, celltype, True)
+
+    # TODO: TEST
+    return plot_polar_data(rings, .2)
 
 def polar_receptor_figure(ct: ad.AnnData, interactions: pd.DataFrame,
                           celltype: str, receptor: Optional[str] = None,
