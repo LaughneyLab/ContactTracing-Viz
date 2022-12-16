@@ -81,7 +81,7 @@ def get_downstream_ligands(ct_res, receptor, receptor_celltype, min_log2fc=0.01,
                                      'p.bonf': receptor_res.layers['p.bonf'].flatten(),
                                      'is_ligand': [bool(gene2ligand[g]) for g in receptor_res.var.index]})
     downstream_ligands = downstream_genes[downstream_genes.is_ligand &
-                                          (abs(downstream_genes.log2FC) > min_log2fc) &
+                                          (abs(downstream_genes.log2FC) >= min_log2fc) &
                                           (downstream_genes.fdr <= max_fdr)]
     downstream_ligands = downstream_ligands.sort_values('log2FC', ascending=False)
 
