@@ -7,6 +7,22 @@ import math
 import itertools
 
 
+class ColorTransformer:
+
+    def __init__(self, min=0, max=255, cmap='bwr'):
+        self.cmap = cm.get_cmap(cmap)
+        self.norm = colors.Normalize(vmin=min, vmax=max, clip=True)
+
+    def __call__(self, value):
+        return colors.rgb2hex(colors.colorConverter.to_rgb(self.cmap(self.norm(value))))
+
+
+def saturate_color(color, saturation):
+    color = colors.to_rgb(color)
+    color = [min(c * saturation, 1) for c in color]
+    return colors.to_hex(color)
+
+
 mouse_colors = {
     "Tumor cells": '#a3d106',
     "T cells": '#f47d06',
@@ -302,3 +318,4 @@ def get_quiver_arrows(start_x, start_y, end_x, end_y, scaleratio=1):
     arrow_x = list(itertools.chain.from_iterable(zip(point1_x, end_x, point2_x, empty)))
     arrow_y = list(itertools.chain.from_iterable(zip(point1_y, end_y, point2_y, empty)))
     return arrow_x, arrow_y
+

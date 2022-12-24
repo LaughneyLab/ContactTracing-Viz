@@ -87,8 +87,10 @@ def transition_to_data_summary(file_path: str, file_name: str, custom=False):
     # FIXME: Hack to include results tsvs while they are not present in the h5ad
     if file_name == 'Mouse CIN':
         data['tsv'] = "data/mouse_ranked_interactions.tsv"
+        data['obs'] = "data/CIN_and_STING_degobs.txt"
     elif file_name == 'Human CIN':
         data['tsv'] = "data/cin_ranked_interactions.tsv"
+        data['obs'] = "data/NA.txt"
 
     assert os.path.exists(file_path), f"File {file_path} does not exist"
 

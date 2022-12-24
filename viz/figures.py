@@ -114,6 +114,7 @@ def bipartite_graph(df,
             if logfc > max_logfc:
                 max_logfc = logfc
 
+    # TODO: replace with ColorTransformer
     cmap = cm.get_cmap('bwr')
     color_step = 255
     norm = colors.Normalize(vmin=0, vmax=color_step)

@@ -204,7 +204,7 @@ def make_graph(set_progress, data, n_clicks, first_ct, second_ct, third_ct, min_
 )
 def initialize_options(data):
     from viz.data import read_ct_data, read_interactions
-    print(data)
+    # print(data)
     if data is None:
         return [], '', \
                [], '', \

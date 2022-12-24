@@ -51,7 +51,7 @@ if 'REDIS_URL' in os.environ:
     try:
         from dash import CeleryManager
         from celery import Celery
-        celery_app = Celery(__name__, broker=os.environ['REDIS_URL'], backend=os.environ['REDIS_URL'])
+        celery_app = Celery(__name__, broker=os.environ['REDIS_URL'] + "/0", backend=os.environ['REDIS_URL'] + "/1")
         callback_manager = CeleryManager(celery_app, expire=LONG_CALLBACK_EXPIRY)
     except:
         callback_manager = None
@@ -77,6 +77,8 @@ app = Dash(__name__,
            external_stylesheets=[dbc.themes.MINTY, dbc.icons.FONT_AWESOME],
            use_pages=True,
            background_callback_manager=callback_manager)
+server = app.server
+
 
 layout = html.Div([
     dbc.Navbar(

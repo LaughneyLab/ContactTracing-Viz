@@ -58,6 +58,27 @@ def read_interactions(path: str, condition_name='highCIN_vs_lowCIN') -> pd.DataF
     return df
 
 
+def read_obs(path: str) -> pd.DataFrame:
+    df = pd.read_table(path, index_col=0)
+    conditions = list(set([x.replace('numSigI1', '').replace('_fdr25', '').replace('_fdr05', '').replace('_fdr', '') for x in
+              df.columns if x.startswith('numSigI1')]))
+    fdrs = list(set([x.replace('numSigI_', '').split("_")[1] for x in df.columns if x.startswith('numSigI1')]))
+    if '_max' in conditions:
+        test_conditions = [x for x in conditions if x != '_max']
+        for fdr_name in fdrs:
+            if f'numSigI1_{fdr_name}_max' not in df.columns:
+                df[f'numSigI1_{fdr_name}_max'] = df[[f'numSigI1_{fdr_name}{condition}' for condition in test_conditions]].max(axis=1)
+            if f'numDEG_{fdr_name}_max' not in df.columns:
+                df[f'numDEG_{fdr_name}_max'] = df[[f'numDEG_{fdr_name}{condition}' for condition in test_conditions]].max(axis=1)
+        if 'MAST_fdr_max' not in df.columns:
+            df['MAST_log2FC_max'] = df[[f'MAST_log2FC{condition}' for condition in test_conditions]].max(axis=1)
+            fdr_mask = ~df[[f'MAST_log2FC{condition}' for condition in test_conditions]].eq(df['MAST_log2FC_max'], axis=0)
+            fdr_mask.columns = [f'MAST_fdr{condition}' for condition in test_conditions]
+            fdr_mask = fdr_mask.astype(float).replace(1, np.nan)
+            df['MAST_fdr_max'] = (df[[f'MAST_fdr{condition}' for condition in test_conditions]] + fdr_mask).max(axis=1)
+    return df
+
+
 def get_downstream_ligands(ct_res, receptor, receptor_celltype, min_log2fc=0.01, max_fdr=0.05) -> List[str]:
     """
     Get activated ligands downstream of a given receptor.

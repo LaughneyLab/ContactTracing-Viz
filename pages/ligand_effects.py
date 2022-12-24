@@ -11,7 +11,7 @@ import networkx as nx
 from dash.exceptions import PreventUpdate
 from matplotlib import colors, cm
 
-from viz.data import get_diff_abundance, get_interaction_fdr, get_effective_logfc, get_downstream_ligands, read_ct_data, \
+from viz.data import get_diff_abundance, get_interaction_fdr, get_downstream_ligands, read_ct_data, \
     read_interactions
 from viz.figures import pseudotime_interaction_propagation_graph
 from viz.util import enhance_plotly_export, celltype_to_colors, get_quiver_arrows
