@@ -21,20 +21,20 @@ dash.register_page(__name__,
 def build_interface() -> list:
     controls = control_panel(
         [
-            control_panel_element("FDR Cutoff", "abc",
+            control_panel_element("FDR Cutoff", "FDR-adjusted requirements for interaction effects.",
                                   dbc.Select(
                                       id='circos_fdr',
                                       options=[],  # Fill in later
                                       persistence=False
                                   )),
-            control_panel_element("Interaction Set", "abc",
+            control_panel_element("Interaction Set", "Biological condition to compare.",
                                   dbc.Select(
                                       id='circos_interaction_set',
                                       options=[],  # Fill in later
                                       persistence=False
                                   ))
         ], [
-            control_panel_element('Minimum numSigI1', 'abc',
+            control_panel_element('Minimum numSigI1', 'Minimum number of significant interactions for a receptor to be included.',
                                   dcc.Slider(
                                       id='circos_min_numsigi1',
                                       min=0,
@@ -45,7 +45,7 @@ def build_interface() -> list:
                                       persistence=False,
                                       className='form-range'
                                   )),
-            control_panel_element('Minimum numDEG', 'abc',
+            control_panel_element('Minimum numDEG', 'Minimum number of differentially expressed genes conditioned on a target gene.',
                                   dcc.Slider(
                                       id='circos_min_numdeg',
                                       min=0,
@@ -57,7 +57,7 @@ def build_interface() -> list:
                                       className='form-range'
                                   ))
         ], [
-            control_panel_element('Chord Minimum Ligand abs(logFC)', 'abc',
+            control_panel_element('Chord Minimum Ligand abs(log2FC)', 'The minimum ligand log2FC required for a chord to be drawn.',
                                   dcc.Slider(
                                       id='circos_min_ligand_logfc',
                                       min=0,
@@ -68,7 +68,7 @@ def build_interface() -> list:
                                       persistence=False,
                                       className='form-range'
                                   )),
-            control_panel_element('Chord Minimum Receptor numSigI1', 'abc',
+            control_panel_element('Chord Minimum Receptor numSigI1', 'The minimum number of significant interactions for a chord to be drawn.',
                                   dcc.Slider(
                                       id='circos_min_receptor_numsigi1',
                                       min=0,
@@ -80,7 +80,7 @@ def build_interface() -> list:
                                       className='form-range'
                                   ))
         ], [
-            control_panel_element("Plot", "abc",
+            control_panel_element("Plot", "",
                                   dbc.Button(
                                       "Submit",
                                       id="submit-button-circos",
@@ -94,7 +94,7 @@ def build_interface() -> list:
 
     results = figure_output(
         title="Interactive Circos Plot",
-        footer="This is a figure",
+        footer="Layers from outside ring to center: Cell Type, Diffusion Component Value, Differential Abundance, Number of significant interactions, Strongest ligand/receptor interactions",
         element=html.Div(
             id="circos-graph-holder",
             children=[]
@@ -214,6 +214,6 @@ def initialize_options(data):
 
 
 layout = [
-    interactive_panel(wrap_icon('fa-circle-dot', 'Cell Type to Cell Type Interactions'), *build_interface())
+    interactive_panel(wrap_icon('fa-circle-dot', 'Circos Plot of Interactions'), *build_interface())
 ]
 

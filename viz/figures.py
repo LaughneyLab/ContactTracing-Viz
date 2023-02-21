@@ -84,7 +84,7 @@ def bipartite_graph(df,
 
     ct_ordering = [cell1, cell2]
     if cell3:
-        ct_ordering.append(cell3)
+        ct_ordering.append(cell3)  # FIXME 3rd cell type breaks currently
     pos = multipartite_layout(G, subset_key='celltype', scale=1, space_mult_x=30 * scaleratio, space_mult_y=60,
                               ordering=ct_ordering)
 
@@ -165,6 +165,8 @@ def bipartite_graph(df,
     MAX_WIDTH = 6
     INTERPOLATION_POINTS = 20
     for edge in G.edges():
+        if edge[0] not in pos or edge[1] not in pos:
+            continue
         x0, y0 = pos[edge[0]]
         x1, y1 = pos[edge[1]]
         num_inter = G[edge[0]][edge[1]]['numInteractions']
@@ -241,6 +243,8 @@ def bipartite_graph(df,
     symbols = []
     layer_anchors = dict()
     for node in G.nodes():
+        if node not in pos:
+            continue
         layer_name = G.nodes[node]['celltype']
         ligand = G.nodes[node]['ligand']
         receptor = G.nodes[node]['receptor']
@@ -317,6 +321,8 @@ def bipartite_graph(df,
     middle_layer = cell2 if len(layer_anchors) > 2 else None
 
     for node in G.nodes():
+        if node not in pos:
+            continue
         layer_name = G.nodes[node]['celltype']
         layer_size = layer_anchors[layer_name][2]
         x, y = pos[node]
@@ -894,8 +900,8 @@ def pseudotime_interaction_propagation_graph(ct: ad.AnnData,
                         receptor_celltype = row['cell_type_receptor']
                         next_node = f"{receptor_celltype}_{receptor}_receptor"
 
-                        if get_interaction_fdr(ct, celltype, ligand, receptor) > interaction_fdr_cutoff:
-                            continue
+                        #if get_interaction_fdr(ct, celltype, ligand, receptor) > interaction_fdr_cutoff:
+                        #    continue
 
                         if not curr_G.has_node(next_node):
                             curr_G.add_node(next_node, t=t,
@@ -957,7 +963,12 @@ def pseudotime_interaction_propagation_graph(ct: ad.AnnData,
         if len(frontier) == 0:
             break
 
-    return make_plot_from_graph(Gs[-1], df, layout=layout)
+    last_graph = Gs[-1]
+
+    if last_graph.number_of_nodes() == 0 or last_graph.number_of_nodes() == 0:
+        return None  # FIXME?
+
+    return make_plot_from_graph(last_graph, df, layout=layout)
 
 
 def polar2cartesian(r, theta):

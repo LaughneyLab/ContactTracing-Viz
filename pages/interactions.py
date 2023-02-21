@@ -23,7 +23,7 @@ dash.register_page(__name__,
 def build_interface() -> list:
     controls = control_panel(
         [
-            control_panel_element("Minimum numSigI1", "abc",
+            control_panel_element("Minimum numSigI1", "The minimum number of significant target gene interactions.",
                                   dcc.Slider(
                                       id="min_numsigi1_bipartite",
                                       min=0,
@@ -35,7 +35,7 @@ def build_interface() -> list:
                                       persistence=False,
                                       className="form-range"
                                   )),
-            control_panel_element("Minimum Expression", "abc",
+            control_panel_element("Minimum Expression", "The minimum expression of each protein.",
                                   dcc.Slider(
                                       id="min_expression_bipartite",
                                       min=0,
@@ -48,7 +48,7 @@ def build_interface() -> list:
                                       className="form-range"
                                   ))
         ], [
-            control_panel_element("Minimum abs(log2FC)", "abc",
+            control_panel_element("Minimum abs(log2FC)", "The minimum log2FC for either ligands or receptors between conditions.",
                                   dcc.Slider(
                                       id="min_logfc_bipartite",
                                       min=0,
@@ -60,7 +60,7 @@ def build_interface() -> list:
                                       persistence=False,
                                       className="form-range"
                                   )),
-            control_panel_element("log2FC FDR Cutoff", "abc",
+            control_panel_element("log2FC FDR Cutoff", "The FDR-corrected p-value cutoff for whether the log2FC is not 0.",
                                   dcc.Slider(
                                       id="logfc_fdr_bipartite",
                                       min=0,
@@ -73,19 +73,19 @@ def build_interface() -> list:
                                       className="form-range"
                                   ))
         ], [
-            control_panel_element("First Cell Type", "abc",
+            control_panel_element("First Cell Type", "The first cell type to examine interactions between.",
                                   dbc.Select(
                                       id='first_celltype',
                                       options=[],  # Filled in by callback
                                       persistence=False
                                   )),
-            control_panel_element("Second Cell Type", "abc",
+            control_panel_element("Second Cell Type", "The second cell type to examine interactions between (need not be unique).",
                                   dbc.Select(
                                       id='second_celltype',
                                       options=[],  # Filled in by callback
                                       persistence=False
                                   )),
-            control_panel_element("Third Cell Type", "abc",
+            control_panel_element("Third Cell Type", "If specified, include interactions across a third cell type.",
                                   dbc.Select(
                                       id='third_celltype',
                                       options=['(None)'],  # Filled in by callback
@@ -93,7 +93,7 @@ def build_interface() -> list:
                                       persistence=False
                                   )),
         ], [
-            control_panel_element("Plot", "abc",
+            control_panel_element("Plot", "",
                                   dbc.Button(
                                       "Submit",
                                       id="submit-button-bipartite",
@@ -107,7 +107,7 @@ def build_interface() -> list:
 
     results = figure_output(
         title="Cell Type Interactions",
-        footer="This is a figure",
+        footer="Circle = Ligand, Square = Receptor, Diamond = Ligand and Receptor",
         element=dcc.Graph(id="celltype-interaction-graph",
                           animate=True,
                           #figure={},  # Filled in by callback

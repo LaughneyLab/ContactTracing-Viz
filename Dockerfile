@@ -1,5 +1,9 @@
 FROM continuumio/miniconda3 AS build
 
+# Use the faster libmamba solver for conda
+RUN conda install --yes -n base conda-libmamba-solver
+RUN conda config --system --set solver libmamba
+
 RUN conda create -n condaenv python=3.9 pip
 
 ADD requirements.txt .
@@ -15,7 +19,7 @@ RUN conda run -n condaenv pip install --no-cache-dir celery[redis]
 RUN conda install -n condaenv -c conda-forge --yes gunicorn
 
 # Lets us move the conda environment into a smaller image
-RUN conda install -c conda-forge conda-pack
+RUN conda install -c conda-forge --yes conda-pack
 RUN conda-pack -n condaenv -o /tmp/condaenv.tar && \
     mkdir /venv && cd /venv && tar xf /tmp/condaenv.tar && \
     rm /tmp/condaenv.tar
@@ -31,8 +35,6 @@ ENV REDIS_URL="redis://localhost:6379"
 EXPOSE 8000
 
 SHELL ["/bin/bash", "-c"]
-
-RUN echo "vm.overcommit_memory = 1" >> /etc/sysctl.conf
 
 ADD . .
 

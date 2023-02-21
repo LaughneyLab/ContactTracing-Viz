@@ -26,7 +26,7 @@ dash.register_page(__name__,
 def build_interface() -> list:
     controls = control_panel(
         [
-            control_panel_element("Network Layout", 'abc',
+            control_panel_element("Network Layout", 'Select how you would like to structure nodes.',
                                   dbc.Select(
                                       id='network-layout',
                                       options=[
@@ -37,13 +37,13 @@ def build_interface() -> list:
                                       ],
                                       persistence=True, persistence_type='session', value='timeline'
                                   )),
-            control_panel_element('Emitting Cell Type', 'abc',
+            control_panel_element('Emitting Cell Type', 'Select the initial cell type.',
                                   dbc.Select(
                                     id='cell-type',
                                     options=[],  # Filled in by callback
                                     persistence=False
                                   )),
-            control_panel_element("Emitted Ligands", 'abc',
+            control_panel_element("Emitted Ligands", 'List of ligands to emit from the selected cell type.',
                                   dbc.Input(
                                       id='ligands',
                                       autofocus=True,
@@ -51,7 +51,7 @@ def build_interface() -> list:
                                       persistence=False
                                   ))
         ], [
-            control_panel_element("Minimum Expression", "abc",
+            control_panel_element("Minimum Expression", "The minimum required expression for proteins",
                                   dcc.Slider(
                                       id='min_expression',
                                       min=0,
@@ -63,7 +63,7 @@ def build_interface() -> list:
                                       persistence=False,
                                       className='form-range'
                                   )),
-            control_panel_element("Interaction FDR Cutoff", "abc",
+            control_panel_element("Interaction FDR Cutoff", "The maximum interaction test FDR to consider.",
                                   dcc.Slider(
                                       id='interaction_fdr',
                                       max=1,
@@ -76,7 +76,7 @@ def build_interface() -> list:
                                       className='form-range'
                                   ))
         ], [
-            control_panel_element("Minimum abs(Log2FC)", "abc",
+            control_panel_element("Minimum abs(Log2FC)", "The minimum induced log2FC for targets.",
                                   dcc.Slider(
                                       id='min_logfc',
                                       max=1,
@@ -88,7 +88,7 @@ def build_interface() -> list:
                                       persistence=False,
                                       className='form-range'
                                   )),
-            control_panel_element("log2FC FDR Cutoff", "abc",
+            control_panel_element("log2FC FDR Cutoff", "The FDR-adjusted cutoff for determining if a log2FC value is non-zero.",
                                   dcc.Slider(
                                       id='logfc_fdr',
                                       max=1,
@@ -101,7 +101,7 @@ def build_interface() -> list:
                                       className='form-range'
                                   ))
         ], [
-            control_panel_element("Network Building Iterations", "abc",
+            control_panel_element("Network Building Iterations", "This controls how many downstream interactions may be detected.",
                                   dbc.Input(
                                       id='iterations',
                                       type='number',
@@ -112,7 +112,7 @@ def build_interface() -> list:
                                       value=10,
                                       persistence=True, persistence_type='session'
                                   )),
-            control_panel_element("Plot", "abc",
+            control_panel_element("Plot", "",
                                   dbc.Button(
                                       "Submit",
                                       id='submit-button',
@@ -126,7 +126,7 @@ def build_interface() -> list:
 
     results = figure_output(
         title='Ligand Network Figure',
-        footer="This is a figure",
+        footer="Circle = Ligand, Square = Receptor, Diamond = Ligand and Receptor",
         element=dcc.Graph(id='network-graph',
                           animate=True,
                           #figure={},  # Filled in by callback
@@ -184,6 +184,7 @@ def make_graph(set_progress, data, n_clicks, network_layout, cell_type, ligands,
     interaction_file = data['tsv']
     adata = read_ct_data(file)
     interactions = read_interactions(interaction_file)
+
     fig = pseudotime_interaction_propagation_graph(
         ct=adata,
         orig_df=interactions,
@@ -241,7 +242,7 @@ def initialize_options(data):
 
 
 layout = [
-    interactive_panel(wrap_icon('fa-maximize', 'Cell Type to Cell Type Interactions'),
+    interactive_panel(wrap_icon('fa-maximize', 'Downstream Ligand Effects'),
                       *build_interface()
                       )
 ]
