@@ -41,4 +41,4 @@ ADD . .
 ENTRYPOINT redis-server --daemonize yes && \
     source /venv/bin/activate && \
     celery -A app:celery_app worker --loglevel=info --concurrency=2 --detach  && \
-    gunicorn app:server --workers 4 --bind '127.0.0.1:8000'
+    gunicorn app:server --workers 4 --bind '0.0.0.0:8000'
