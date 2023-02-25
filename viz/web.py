@@ -1,6 +1,7 @@
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 import dash_bootstrap_components as dbc
+import numpy as np
 import pandas as pd
 from dash import html, Output, Input
 import dash_bio as dashbio
@@ -85,46 +86,63 @@ def make_data_redirect_buttons():
         dbc.Col(dbc.Button(wrap_icon('fa-arrows-left-right-to-line', 'View Cell Type Interactions'), id='ct-interaction-button', href='/interactions')),
         dbc.Col(dbc.Button(wrap_icon('fa-maximize', 'View Ligand Effects'), id='ligand-effect-button', href='/ligand-effects')),
         dbc.Col(dbc.Button(wrap_icon('fa-circle-dot', 'View Circos'), id='circos-button', href='/circos')),
-        dbc.Col(dbc.Button(wrap_icon('fa-link-slash', 'Unselect Data'), id='unselect-button', n_clicks=0))  # Callback in pages/home
     ])
 
 
-def get_obs_columns(fdr_name: str, condition_name: str) -> Tuple[str, ...]:
-    cell_type = "cell type"
-    target = "target"
-    receptor = "receptor"
-    ligand = "ligand"
-    numDEG = f"numDEG_{fdr_name}{condition_name}"
-    numSigI1 = f"numSigI1_{fdr_name}{condition_name}"
-    MAST_log2FC = f"MAST_log2FC{condition_name}"
-    MAST_fdr = f"MAST_fdr{condition_name}"
-    cell_type_dc1 = "cell_type_dc1"
-    DA_score = "DA_score"
-    return cell_type, target, receptor, ligand, numDEG, numSigI1, MAST_log2FC, MAST_fdr, cell_type_dc1, DA_score
-
-
-def make_circos_figure(set_progress, obs: pd.DataFrame, lr_pairs: List[Tuple[str, str]], condition_name: str,
-                       fdr_name: str, min_numsigi1: int, min_numdeg: int, chord_logfc_cutoff: float, chord_numsigi1_cutoff: int):
+def make_circos_figure(set_progress,
+                       lr_pairs: List[Tuple[str, str]],
+                       outer_data: pd.DataFrame,
+                       max_data: Optional[pd.DataFrame],
+                       is_max: bool,
+                       inter_fdr: str,
+                       logfc_fdr: str,
+                       min_numsigi1: int,
+                       min_numdeg: int,
+                       min_logfc: float):
     set_progress((1, 7))
 
-    cell_type, target, receptor, ligand, numDEG, numSigI1, MAST_log2FC, MAST_fdr, cell_type_dc1, DA_score = get_obs_columns(fdr_name, condition_name)
-
-    pvalue_cutoff = float("0." + fdr_name[3:])  # pval from name
+    #inter_pvalue_cutoff = float("0." + inter_fdr.replace('fdr', ''))  # pval from name
+    logfc_pvalue_cutoff = float("0." + logfc_fdr.replace('fdr', ''))  # pval from name
 
     # Build outer ring for cell types
-    celltypes = obs[cell_type].unique()
+    celltypes = outer_data['cell_type'].unique()
     celltype2color = celltype_to_colors(celltypes)
     celltype2id = dict()
     celltype2targets = dict()
+
+    from viz.data import _get_original_data
+    old = _get_original_data()
+    differing = pd.merge(old, outer_data, on=['cell_type', 'target'], how='left', suffixes=('', '_new'))
+
+    # Join inner data to max data if necessary
+    if is_max:
+        outer_data = pd.merge(outer_data, max_data, on=['cell_type', 'target', 'ligand', 'receptor'], how='left', suffixes=('', '_max'))
+    del max_data
+
     # Initial obs filters
-    obs = obs[(obs[MAST_fdr] < pvalue_cutoff) & (~obs[cell_type_dc1].isna())]
-    all_receptors = obs[(obs[receptor]) & (obs[numSigI1] >= min_numsigi1) & (obs[numDEG] >= min_numdeg)]
-    all_ligands = []
-    for (l, r) in lr_pairs:
-        if r in all_receptors[target].values:
-            all_ligands.append(l)
+    outer_data = outer_data[~outer_data['cell_type_dc1'].isna()]
+    #outer_data['cell_type_dc1'] = outer_data['cell_type_dc1'].fillna(0)
+    outer_data = outer_data[(outer_data['receptor'] & (outer_data['numSigI1_max' if is_max else 'numSigI1'] >= min_numsigi1) & (outer_data['numDEG_max' if is_max else 'numDEG'] >= min_numdeg))
+                            | ((outer_data['ligand'] & ~outer_data['receptor']) & (outer_data['MAST_log2FC_max' if is_max else 'MAST_log2FC'].abs() > min_logfc) & (outer_data['MAST_fdr_max' if is_max else 'MAST_fdr'] < logfc_pvalue_cutoff))]
+
+    outer_data['logfc_direction'] = np.sign(outer_data['MAST_log2FC'])
+
+    if is_max:
+        # Require same direction of change
+        outer_data['logfc_direction_cin'] = np.sign(outer_data['MAST_log2FC_cin'])
+        outer_data['logfc_direction_sting'] = np.sign(outer_data['MAST_log2FC_sting'])
+        outer_data = outer_data[(~outer_data['ligand']) | (outer_data['logfc_direction_cin'] == outer_data['logfc_direction_sting'])]
+
+    all_receptors = set(outer_data[outer_data['receptor']].target.unique())
+    all_ligands = set(outer_data[outer_data['ligand']].target.unique())
+    lr_pairs = [(l, r) for l, r in lr_pairs if (l in all_ligands and r in all_receptors)]
+    all_ligands = set(l for l, r in lr_pairs)
+    all_receptors = set(r for l, r in lr_pairs)
+
+    # Filter outer_data to just the selected ligands and receptors
+    outer_data = outer_data[(outer_data['target'].isin(all_ligands)) | (outer_data['target'].isin(all_receptors))]
+
     # Filter obs to just the selected ligands and receptors
-    obs = obs[(obs[target].isin(all_ligands)) | (obs[target].isin(all_receptors[target].values))]
     set_progress((2, 7))
     layout = []
     for celltype in celltypes:
@@ -132,7 +150,7 @@ def make_circos_figure(set_progress, obs: pd.DataFrame, lr_pairs: List[Tuple[str
         label = celltype
         id = celltype.replace(" ", "_").replace("-", "_").replace("/", "_")
         celltype2id[celltype] = id
-        celltype2targets[celltype] = sorted(obs[obs[cell_type] == celltype].target, key=lambda t: obs[(obs[cell_type] == celltype) & (obs[target] == t)][cell_type_dc1].values[0])
+        celltype2targets[celltype] = sorted(outer_data[outer_data['cell_type'] == celltype].target, key=lambda t: outer_data[(outer_data['cell_type'] == celltype) & (outer_data['target'] == t)]['cell_type_dc1'].values[0])
         layout.append({
             'id': id,
             'label': label,
@@ -143,15 +161,15 @@ def make_circos_figure(set_progress, obs: pd.DataFrame, lr_pairs: List[Tuple[str
     set_progress((3, 7))
 
     # Build next ring for DC1 heatmap
-    max_dc1 = obs[cell_type_dc1].max()
-    min_dc1 = obs[cell_type_dc1].min()
+    max_dc1 = outer_data['cell_type_dc1'].max()
+    min_dc1 = outer_data['cell_type_dc1'].min()
     colormap = ColorTransformer(min_dc1, max_dc1, 'cividis')
     diffusion_data = []
     for celltype in celltypes:
         id = celltype2id[celltype]
         targets = celltype2targets[celltype]
         for i, t in enumerate(targets):
-            dc1 = obs[(obs[cell_type] == celltype) & (obs[target] == t)][cell_type_dc1].values[0]
+            dc1 = outer_data[(outer_data['cell_type'] == celltype) & (outer_data['target'] == t)]['cell_type_dc1'].values[0]
             # Normalize to 0-1
             #dc1 = (dc1 - min_dc1) / (max_dc1 - min_dc1)
             diffusion_data.append({
@@ -166,15 +184,15 @@ def make_circos_figure(set_progress, obs: pd.DataFrame, lr_pairs: List[Tuple[str
     set_progress((4, 7))
 
     # Next ring for Differential abundance
-    max_da = obs[DA_score].max()
-    min_da = obs[DA_score].min()
+    max_da = outer_data['DA_score'].max()
+    min_da = outer_data['DA_score'].min()
     colormap = ColorTransformer(min_da, max_da, 'seismic')
     da_data = []
     for celltype in celltypes:
         id = celltype2id[celltype]
         targets = celltype2targets[celltype]
         for i, t in enumerate(targets):
-            da = obs[(obs[cell_type] == celltype) & (obs[target] == t)][DA_score].values[0]
+            da = outer_data[(outer_data['cell_type'] == celltype) & (outer_data['target'] == t)]['DA_score'].values[0]
             da_data.append({
                 'block_id': id,
                 'start': i,
@@ -187,8 +205,9 @@ def make_circos_figure(set_progress, obs: pd.DataFrame, lr_pairs: List[Tuple[str
     set_progress((5, 7))
 
     # Next ring for magnitude of CIN-dependent effect
-    max_receptor_numSigI1 = all_receptors[numSigI1].max()
-    min_receptor_numSigI1 = all_receptors[numSigI1].min()
+    receptor_info = outer_data[outer_data['receptor']]
+    max_receptor_numSigI1 = receptor_info['numSigI1'].max()
+    min_receptor_numSigI1 = receptor_info['numSigI1'].min()
     numSigI1_data = []
     for celltype in celltypes:
         id = celltype2id[celltype]
@@ -196,7 +215,7 @@ def make_circos_figure(set_progress, obs: pd.DataFrame, lr_pairs: List[Tuple[str
         targets = celltype2targets[celltype]
         for i, t in enumerate(targets):
             # Set to 0 if target is not a receptor
-            if t not in all_receptors[target].values:
+            if t not in receptor_info['target'].values:
                 numSigI1_data.append({
                     'block_id': id,
                     'start': i,
@@ -207,7 +226,7 @@ def make_circos_figure(set_progress, obs: pd.DataFrame, lr_pairs: List[Tuple[str
                     'target': t
                 })
             else:
-                lig_effect = all_receptors[all_receptors[target] == t][numSigI1].values[0]
+                lig_effect = receptor_info[receptor_info['target'] == t]['numSigI1'].values[0]
                 # Normalize to 0 minimum
                 lig_effect -= min_receptor_numSigI1
                 numSigI1_data.append({
@@ -222,26 +241,26 @@ def make_circos_figure(set_progress, obs: pd.DataFrame, lr_pairs: List[Tuple[str
     set_progress((6, 7))
 
     # Next ring for chords connecting ligands to receptors
-    chord_receptors = obs[(obs[receptor]) & (obs[numSigI1] >= chord_numsigi1_cutoff)]
-    chord_ligand = obs[(obs[ligand]) & (obs[MAST_log2FC].abs() >= chord_logfc_cutoff) & (obs[MAST_fdr] <= pvalue_cutoff)]
+    chord_receptors = outer_data[outer_data['receptor']]
+    chord_ligands = outer_data[outer_data['ligand']]
     colormap = ColorTransformer(-0.2, 0.2, 'bwr')
     chord_data = []
     text_data = dict()
     for (l, r) in lr_pairs:
-        if l not in chord_ligand[target].values or r not in chord_receptors[target].values:
+        if l not in chord_ligands['target'].values or r not in chord_receptors['target'].values:
             continue
-        for _, ligand_row in chord_ligand[chord_ligand[target] == l].iterrows():
-            for _, receptor_row in chord_receptors[chord_receptors[target] == r].iterrows():
-                source_celltype = ligand_row[cell_type]
-                target_celltype = receptor_row[cell_type]
+        for _, ligand_row in chord_ligands[chord_ligands['target'] == l].iterrows():
+            for _, receptor_row in chord_receptors[chord_receptors['target'] == r].iterrows():
+                source_celltype = ligand_row['cell_type']
+                target_celltype = receptor_row['cell_type']
                 source_position = celltype2targets[source_celltype].index(l)
                 target_position = celltype2targets[target_celltype].index(r)
 
                 # Max thickness of ribbons on either end of the target position
-                thickness = max(10 * (receptor_row[numSigI1]/obs[numSigI1].max()), 1)
+                thickness = max((receptor_row['numSigI1_max' if is_max else 'numSigI1']/max_receptor_numSigI1), 1)
 
-                lig = ligand_row[target]
-                rec = receptor_row[target]
+                lig = ligand_row['target']
+                rec = receptor_row['target']
                 text_data[(source_celltype, lig)] = {
                     'block_id': celltype2id[source_celltype],
                     'position': source_position+.5,
@@ -254,9 +273,9 @@ def make_circos_figure(set_progress, obs: pd.DataFrame, lr_pairs: List[Tuple[str
                 }
 
                 chord_data.append({
-                    'color': colormap(ligand_row[MAST_log2FC]),
-                    'value_text': f"{lig}/{rec} MAST_log2FC={ligand_row[MAST_log2FC]:.2f}",
-                    'logfc': ligand_row[MAST_log2FC],
+                    'color': colormap(ligand_row['MAST_log2FC_max' if is_max else 'MAST_log2FC']),
+                    'value_text': f"{lig}/{rec} MAST_log2FC={ligand_row['MAST_log2FC_max' if is_max else 'MAST_log2FC']:.2f}",
+                    'logfc': ligand_row['MAST_log2FC_max' if is_max else 'MAST_log2FC'],
                     'source': {
                         'id': celltype2id[source_celltype],
                         'start': source_position - thickness,

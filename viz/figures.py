@@ -14,8 +14,7 @@ import pandas as pd
 from PIL import Image
 import plotly.graph_objects as go
 
-from viz.data import get_interaction_fdr, get_diff_abundance, get_downstream_ligands, get_interaction_logfc, \
-    get_interaction_logfc_fdr
+from viz.data import read_ligand_receptor_file, read_ligand_effect_for, read_all_effects_for
 from viz.util import multipartite_layout, get_quiver_arrows, celltype_to_colors, timeline_layout
 
 
@@ -26,7 +25,6 @@ def bipartite_graph(df,
                     numInteractions=50,
                     min_logfc_bipartite=0,
                     logfc_fdr_bipartite_cutoff=0.05,
-                    min_expression_bipartite=0,
                     allow_overlap=True):
     scaleratio = .9
     height = 1000
@@ -42,14 +40,12 @@ def bipartite_graph(df,
                       (allow_overlap & (df.cell_type_ligand == cell1) & (df.cell_type_receptor == cell3)) |
                       (allow_overlap & (df.cell_type_ligand == cell3) & (df.cell_type_receptor == cell1))]
 
-    selected = selected[(selected.numSigI1_fdr_receptor >= numInteractions) &
+    selected = selected[(selected.numSigI1 >= numInteractions) &
                         (selected["MAST_fdr_ligand"] < logfc_fdr_bipartite_cutoff) &
                         (selected["MAST_fdr_receptor"] < logfc_fdr_bipartite_cutoff) &
                         (np.abs(selected["MAST_log2FC_ligand"]) > min_logfc_bipartite) &
-                        (np.abs(selected["MAST_log2FC_receptor"]) > min_logfc_bipartite) &
-                        (np.abs(selected["expression_receptor"]) > min_expression_bipartite) &
-                        (np.abs(selected["expression_ligand"]) > min_expression_bipartite)].sort_values(
-        by="numDEG_fdr_receptor", ascending=False)
+                        (np.abs(selected["MAST_log2FC_receptor"]) > min_logfc_bipartite)].sort_values(
+        by="numDEG", ascending=False)
 
     G = nx.DiGraph()
     for i, row in selected.iterrows():
@@ -64,23 +60,21 @@ def bipartite_graph(df,
         if not G.has_node(lig_node):
             G.add_node(lig_node, ligand=lig in df.ligand.values, receptor=lig in df.receptor.values, name=lig,
                        celltype=lig_ct,
-                       expression=row['expression_ligand'],
                        logfc_fdr_bipartite=row["MAST_fdr_ligand"],
                        logfc=row["MAST_log2FC_receptor"])
         if not G.has_node(rec_node):
             G.add_node(rec_node, ligand=rec in df.ligand.values, receptor=rec in df.receptor.values, name=rec,
                        celltype=rec_ct,
-                       expression=row['expression_receptor'],
                        logfc_fdr_bipartite=row["MAST_fdr_receptor"],
                        logfc=row["MAST_log2FC_receptor"])
 
         G.add_edge(lig_node, rec_node,
-                   numInteractions=row['numSigI1_fdr_receptor'],
+                   numInteractions=row['numSigI1'],
                    ligand_fdr=row["MAST_fdr_ligand"],
                    ligand_logfc=row["MAST_log2FC_ligand"],
                    receptor_fdr=row["MAST_fdr_receptor"],
                    receptor_logfc=row["MAST_log2FC_receptor"],
-                   numDEG=row['numDEG_fdr_receptor'])
+                   numDEG=row['numDEG'])
 
     ct_ordering = [cell1, cell2]
     if cell3:
@@ -132,7 +126,7 @@ def bipartite_graph(df,
         index = (value - min_color_threshold) // step_size
         return colorscale[min(max(int(index), 0), color_step - 1)]
 
-    # Can't hover over lines directly, so add ivisible points
+    # Can't hover over lines directly, so add invisible points
     # See https://stackoverflow.com/a/46039229/5179044
     interpolation_trace = go.Scatter(
         x=[],
@@ -370,28 +364,30 @@ def bipartite_graph(df,
         hoverinfo='text',
         marker=dict(
             showscale=True,
-            colorscale='gray',
+            #colorscale='gray',
             reversescale=True,
-            color=[],
+            #color=[],
+            color='grey',
             size=15,
             line=dict(width=1, color='black'),
-            colorbar=dict(
-                thickness=25,
-                title="Expression",
-                xanchor='left',
-                titleside='right'
-            )
+            #colorbar=dict(
+            #    thickness=25,
+            #    title="Expression",
+            #    xanchor='left',
+            #    titleside='right'
+            #)
         )
     )
 
-    node_expressions = []
+    #node_expressions = []  FIXME: Reimplement
     node_text = []
     for node in G.nodes:
-        expression = G.nodes[node]['expression']
+        #expression = G.nodes[node]['expression']
+
         name = G.nodes[node]['name']
         logfc_fdr_bipartite = G.nodes[node]['logfc_fdr_bipartite']
         logfc = G.nodes[node]['logfc']
-        node_expressions.append(expression)
+        #node_expressions.append(expression)
         ligand = G.nodes[node]['ligand']
         receptor = G.nodes[node]['receptor']
         if ligand and receptor:
@@ -402,12 +398,12 @@ def bipartite_graph(df,
             prot_type = "Receptor"
 
         node_text.append(
-            f'Name: {name}<br>Type: {prot_type}<br>Expression: {expression}<br>logFC: {logfc}<br>logFC FDR: {logfc_fdr_bipartite}')
+            f'Name: {name}<br>Type: {prot_type}<br>logFC: {logfc}<br>logFC FDR: {logfc_fdr_bipartite}')
 
-    node_trace.marker.color = node_expressions
+    #node_trace.marker.color = node_expressions
     node_trace.text = node_text
 
-    if len(node_expressions) == 0:
+    if len(node_text) == 0:
         annotations.append(dict(
             x=0,
             y=0,
@@ -443,7 +439,7 @@ def bipartite_graph(df,
     return fig
 
 
-def get_gene_type(df, gene):
+def get_gene_type(df: pd.DataFrame, gene):
     # Get gene type label
     is_ligand = (df.ligand == gene).sum() > 0
     is_receptor = (df.receptor == gene).sum() > 0
@@ -463,7 +459,7 @@ def get_all_edge_attr_for_node(G, node, attr):
     return successor_attrs + predecessor_attrs
 
 
-def make_plot_from_graph(G: nx.DiGraph, orig_df, layout="planar") -> go.Figure:
+def make_plot_from_graph(G: nx.DiGraph, celltypes, layout="planar") -> go.Figure:
     scaleratio = 1.5
     height = 800
 
@@ -478,8 +474,6 @@ def make_plot_from_graph(G: nx.DiGraph, orig_df, layout="planar") -> go.Figure:
         pos = timeline_layout(G, step_attr='t', scaleratio=scaleratio)
     else:
         raise AssertionError("Can't recognize layout " + layout)
-
-    celltypes = list(sorted(set(orig_df.cell_type_ligand) | set(orig_df.cell_type_receptor)))
 
     # possible_symbols = ['square', 'circle', 'diamond', 'pentagon', 'hexagon2', 'x', 'hexagram', 'star-triangle-up', 'circle-x', 'octagon']
     # possible_colors = [colors.to_hex(c) for c in cm.tab10.colors]
@@ -643,14 +637,21 @@ def make_plot_from_graph(G: nx.DiGraph, orig_df, layout="planar") -> go.Figure:
         gene = G.nodes[node]['gene']
         gene_type = G.nodes[node]['gene_type']
 
-        ligand_logfc = max(get_all_edge_attr_for_node(G, node, "ligand_logfc") + [0], key=abs)
-        receptor_logfc = max(get_all_edge_attr_for_node(G, node, "receptor_logfc") + [0], key=abs)
+        response_logfc = max(get_all_edge_attr_for_node(G, node, "response_logfc") + [0], key=abs)
+        #ligand_logfc = max(get_all_edge_attr_for_node(G, node, "ligand_logfc") + [0], key=abs)
+        #receptor_logfc = max(get_all_edge_attr_for_node(G, node, "receptor_logfc") + [0], key=abs)
 
         if step == 0:  # Initial gene
             gene_type += '-initial'
 
         if gene_type not in genetype2nodes:
-            genetype2nodes[gene_type] = ([], [], [], [], [], [])
+            genetype2nodes[gene_type] = ([],
+                                         [],
+                                         [],
+                                         [],
+                                         [],
+                                         #[]
+                                         )
         node_colors.append(celltype2colors[celltype])
         x, y = pos[node]
 
@@ -684,20 +685,20 @@ def make_plot_from_graph(G: nx.DiGraph, orig_df, layout="planar") -> go.Figure:
         genetype2nodes[gene_type][1].append(y)
         genetype2nodes[gene_type][2].append(f'Name: {gene}<br>Step: {step}')
         genetype2nodes[gene_type][3].append(celltype)
-        genetype2nodes[gene_type][4].append(ligand_logfc)
-        genetype2nodes[gene_type][5].append(receptor_logfc)
+        genetype2nodes[gene_type][4].append(response_logfc)
+        #genetype2nodes[gene_type][5].append(receptor_logfc)
 
     # Get the size range
     max_node_logfc = max(nx.get_edge_attributes(G, 'weight').values())
     min_node_logfc = min(nx.get_edge_attributes(G, 'weight').values())
 
     MIN_NODE_SIZE = 8
-    MAX_NODE_SIZE = 27
+    MAX_NODE_SIZE = 18
     NODE_SIZE_RANGE = MAX_NODE_SIZE - MIN_NODE_SIZE
 
     nodes = []
     for gene_type in genetype2nodes.keys():
-        gene_xs, gene_ys, texts, celltypes, ligand_logfc, receptor_logfc = genetype2nodes[gene_type]
+        gene_xs, gene_ys, texts, celltypes, response_logfc = genetype2nodes[gene_type]
 
         is_initial = gene_type.endswith('-initial')
         if is_initial:
@@ -709,7 +710,7 @@ def make_plot_from_graph(G: nx.DiGraph, orig_df, layout="planar") -> go.Figure:
         # Need to adjust y-values to center the triangle
         # gene_ys = [y*.95 for y in gene_ys]
 
-        node_sizes = [(MIN_NODE_SIZE + (NODE_SIZE_RANGE*(abs(logfc)/max_node_logfc))) * (1.25 if 'triangle-up' in symbol else 1) for logfc in receptor_logfc]  # Triangles visually appear smaller than expected
+        node_sizes = [(MIN_NODE_SIZE + (NODE_SIZE_RANGE*(abs(logfc)/max_node_logfc))) * (1.25 if 'triangle-up' in symbol else 1) for logfc in response_logfc]  # Triangles visually appear smaller than expected
 
         node_trace = go.Scatter(
             name=gene_type,
@@ -847,46 +848,66 @@ def make_plot_from_graph(G: nx.DiGraph, orig_df, layout="planar") -> go.Figure:
     return fig
 
 
-def pseudotime_interaction_propagation_graph(ct: ad.AnnData,
-                                             orig_df: pd.DataFrame,
+def pseudotime_interaction_propagation_graph(effect_set: str,
                                              seed_cell: str,
                                              seed_ligands: list,
                                              iterations: int = 4,
                                              interaction_fdr_cutoff=0.05,
                                              min_logfc=0.01,
                                              logfc_fdr_cutoff=0.05,
-                                             min_expression=0,
                                              layout="Planar Layout",
                                              set_progress_callback=None):
+
+    # Basic filters to build the network from
+    def _read_filtered_df(celltype, target):
+        if celltype is None:
+            df = read_all_effects_for(effect_set, target)
+        else:
+            df = read_ligand_effect_for(effect_set, celltype, target)
+        if df is None:
+            return pd.DataFrame()
+        return df[(df['fdr'] < logfc_fdr_cutoff) & (df['i1.fdr'] < interaction_fdr_cutoff) & (df['log2FC'].abs() >= min_logfc)]
+
     if isinstance(seed_ligands, str):
         ligands = []
         for ligand in seed_ligands.split(","):
             ligands.append(ligand.strip())
         seed_ligands = ligands
 
-    gene2ligand = ct.uns['gene_is_ligand']
-
-    # Basic filters to build the network from
-    df = orig_df[(orig_df.MAST_fdr_ligand <= logfc_fdr_cutoff) &
-                 (orig_df.MAST_fdr_receptor <= logfc_fdr_cutoff) &
-                 (np.abs(orig_df.MAST_log2FC_ligand) >= min_logfc) &
-                 (np.abs(orig_df.MAST_log2FC_receptor) >= min_logfc) &
-                 (np.abs(orig_df.expression_receptor) >= min_expression) &
-                 (np.abs(orig_df.expression_ligand) >= min_expression)]
+    ligand_receptor_pairs = read_ligand_receptor_file()
 
     Gs = []
     curr_G = nx.DiGraph()
     frontier = set()
+    celltypes = {seed_cell}
     for t in range(iterations):
+        # Create dynamic dataframe for the frontier
+        df = pd.DataFrame()
+        for node in frontier:
+            celltype = curr_G.nodes[node]['celltype']
+            gene = curr_G.nodes[node]['gene']
+            celltypes.add(celltype)
+            gene_type = curr_G.nodes[node]['gene_type']
+            # Get current node's info
+            df = pd.concat([df, _read_filtered_df(celltype, gene)])
+            if 'Ligand' in gene_type:
+                # If its a ligand, we need all possible receptor info
+                receptors = ligand_receptor_pairs[ligand_receptor_pairs['ligand'] == gene]['receptor'].unique()
+                for receptor in receptors:
+                    df = pd.concat([df, _read_filtered_df(None, receptor)])  # Get all possible receptors
+        df = df.drop_duplicates()
+
         if t == 0:
             for seed_ligand in seed_ligands:
-                gene_type = get_gene_type(orig_df, seed_ligand)
+                gene_type = get_gene_type(ligand_receptor_pairs, seed_ligand)
                 seed_node = f"{seed_cell}_{seed_ligand}_ligand"
                 curr_G.add_node(seed_node, t=t, gene=seed_ligand, celltype=seed_cell, gene_type=gene_type,
                                 #diff_abundance=get_diff_abundance(ct, seed_cell, seed_ligand)
                                 )
                 frontier.add(seed_node)
         else:
+            if df.shape[0] == 0:
+                break
             new_frontier = set()
             for node in frontier:
                 celltype = curr_G.nodes[node]['celltype']
@@ -894,10 +915,11 @@ def pseudotime_interaction_propagation_graph(ct: ad.AnnData,
 
                 if 'Ligand' in gene_type:
                     ligand = curr_G.nodes[node]['gene']
-                    receivers = df[(df.ligand == ligand) & (df.cell_type_ligand == celltype)]
-                    for i, row in receivers.iterrows():
-                        receptor = row['receptor']
-                        receptor_celltype = row['cell_type_receptor']
+                    receivers = ligand_receptor_pairs[ligand_receptor_pairs['ligand'] == ligand]['receptor'].unique()
+                    receiver_inters = df[df['target'].isin(receivers) & (df['gene_is_receptor'])]
+                    for i, row in receiver_inters.iterrows():
+                        receptor = row['target']
+                        receptor_celltype = row['cell_type']
                         next_node = f"{receptor_celltype}_{receptor}_receptor"
 
                         #if get_interaction_fdr(ct, celltype, ligand, receptor) > interaction_fdr_cutoff:
@@ -907,53 +929,44 @@ def pseudotime_interaction_propagation_graph(ct: ad.AnnData,
                             curr_G.add_node(next_node, t=t,
                                             gene=receptor,
                                             celltype=receptor_celltype,
-                                            gene_type=get_gene_type(orig_df, receptor),
+                                            gene_type=get_gene_type(ligand_receptor_pairs, receptor),
                                             #diff_abundance=get_diff_abundance(ct, seed_cell, seed_ligand)
                                             )
                         if not curr_G.has_edge(node, next_node):
                             curr_G.add_edge(node, next_node,
                                             t=t, ligand=node,
                                             receptor=next_node,
-                                            response_logfc=row['MAST_log2FC_receptor'],
-                                            ligand_logfc=row['MAST_log2FC_ligand'],
-                                            receptor_logfc=row['MAST_log2FC_receptor'],
-                                            weight=max(abs(row['MAST_log2FC_ligand']), abs(row['MAST_log2FC_receptor'])),
-                                            numDEG=row['numDEG_fdr_receptor'],
-                                            numInteractions=row['numSigI1_fdr_receptor'])
+                                            response_logfc=row['log2FC'],
+                                            weight=row['log2FC']
+                                            )
                             new_frontier.add(next_node)
 
                 if 'Receptor' in gene_type:
                     receptor = curr_G.nodes[node]['gene']
-                    down_ligands = get_downstream_ligands(ct, receptor, celltype, min_logfc,
-                                                          logfc_fdr_cutoff)
-                    senders = df[(df.receptor == receptor) & (df.cell_type_receptor == celltype)]
-                    for i, row in senders.iterrows():
-                        ligand = row['ligand']
-                        if ligand not in down_ligands:
-                            continue
-                        ligand_celltype = row['cell_type_ligand']
-                        next_node = f"{ligand_celltype}_{ligand}_ligand"
+                    # Get the downstream ligands
+                    down_ligands = df[(df['target'] == receptor) &
+                                      (df['cell_type'] == celltype) &
+                                      (df['gene_is_ligand'])].drop_duplicates()
 
-                        if get_interaction_fdr(ct, celltype, receptor, ligand) > interaction_fdr_cutoff:
-                            continue
+                    for i, row in down_ligands.iterrows():
+                        ligand = row['gene']
+                        ligand_celltype = celltype
+                        next_node = f"{ligand_celltype}_{ligand}_ligand"
 
                         if not curr_G.has_node(next_node):
                             curr_G.add_node(next_node, t=t,
                                             gene=ligand,
                                             celltype=ligand_celltype,
-                                            gene_type=get_gene_type(orig_df, ligand),
+                                            gene_type=get_gene_type(ligand_receptor_pairs, ligand),
                                             #diff_abundance=get_diff_abundance(ct, seed_cell, seed_ligand)
                                             )
                         if not curr_G.has_edge(node, next_node):
                             curr_G.add_edge(node, next_node,
                                             t=t, ligand=node,
                                             receptor=next_node,
-                                            response_logfc=row['MAST_log2FC_ligand'],
-                                            ligand_logfc=row['MAST_log2FC_ligand'],
-                                            receptor_logfc=row['MAST_log2FC_receptor'],
-                                            weight=max(abs(row['MAST_log2FC_ligand']), abs(row['MAST_log2FC_receptor'])),
-                                            numDEG=row['numDEG_fdr_receptor'],
-                                            numInteractions=row['numSigI1_fdr_receptor'])
+                                            response_logfc=row['log2FC'],
+                                            weight=row['log2FC']
+                                            )
                             new_frontier.add(next_node)
 
             frontier = new_frontier
@@ -963,12 +976,15 @@ def pseudotime_interaction_propagation_graph(ct: ad.AnnData,
         if len(frontier) == 0:
             break
 
+    if len(Gs) == 0:
+        return None
+
     last_graph = Gs[-1]
 
-    if last_graph.number_of_nodes() == 0 or last_graph.number_of_nodes() == 0:
+    if last_graph.number_of_nodes() == 0 or last_graph.number_of_edges() == 0:
         return None  # FIXME?
 
-    return make_plot_from_graph(last_graph, df, layout=layout)
+    return make_plot_from_graph(last_graph, list(celltypes), layout=layout)
 
 
 def polar2cartesian(r, theta):

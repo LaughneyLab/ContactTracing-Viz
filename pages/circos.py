@@ -1,44 +1,54 @@
-from typing import Tuple, List
-
 import dash
-import numpy as np
-import pandas as pd
 from dash import html, callback, Output, Input, State, dcc
-import dash_bio as dashbio
 import dash_bootstrap_components as dbc
-from dash.exceptions import PreventUpdate
 
-from viz.data import read_interactions
-from viz.util import celltype_to_colors, ColorTransformer
-from viz.web import interactive_panel, wrap_icon, control_panel, figure_output, control_panel_element, get_obs_columns
+from viz.web import interactive_panel, wrap_icon, control_panel, figure_output, control_panel_element
 
 dash.register_page(__name__,
                    path='/circos',
                    name='Circos',
-                   order=2)
+                   order=1)
 
 
 def build_interface() -> list:
     controls = control_panel(
         [
-            control_panel_element("FDR Cutoff", "FDR-adjusted requirements for interaction effects.",
+            control_panel_element("Interaction Effect FDR Cutoff", "FDR-adjusted requirements for interaction effects.",
                                   dbc.Select(
-                                      id='circos_fdr',
-                                      options=[],  # Fill in later
-                                      persistence=False
+                                      id='inter_circos_fdr',
+                                      options=[{'label': '0.05', 'value': 'fdr05'},
+                                               {'label': '0.25', 'value': 'fdr25'}],
+                                      value='fdr25'  # Default from fig 4
                                   )),
-            control_panel_element("Interaction Set", "Biological condition to compare.",
+            control_panel_element("log2FC FDR Cutoff", "FDR-adjusted requirements for interaction effects.",
                                   dbc.Select(
-                                      id='circos_interaction_set',
-                                      options=[],  # Fill in later
-                                      persistence=False
+                                      id='logfc_circos_fdr',
+                                      options=[{'label': '0.05', 'value': 'fdr05'},
+                                               {'label': '0.25', 'value': 'fdr25'}],
+                                      value='fdr05'  # Default from fig 4
+                                  ))
+        ], [
+            control_panel_element("Outer Interaction Set", "Biological condition to compare.",
+                                  dbc.Select(
+                                      id='circos_outer_set',
+                                      options=[{'label': 'CIN-Dependent Effect', 'value': 'cin'},
+                                               {'label': 'STING-Dependent Effect', 'value': 'sting'}],
+                                      value='cin'  # Default from fig 4
+                                  )),
+            control_panel_element("Inner Interaction Set", "Biological condition to compare.",
+                                  dbc.Select(
+                                      id='circos_inner_set',
+                                      options=[{'label': 'CIN-Dependent Effect', 'value': 'cin'},
+                                               {'label': 'STING-Dependent Effect', 'value': 'sting'}],
+                                      value='sting'  # Default from fig 4
                                   ))
         ], [
             control_panel_element('Minimum numSigI1', 'Minimum number of significant interactions for a receptor to be included.',
                                   dcc.Slider(
                                       id='circos_min_numsigi1',
                                       min=0,
-                                      max=10,  # Fill in
+                                      max=10,  # Fill in later
+                                      value=1,  # Default from fig 4
                                       step=1,
                                       marks=None,
                                       tooltip={'placement': 'bottom'},
@@ -49,7 +59,8 @@ def build_interface() -> list:
                                   dcc.Slider(
                                       id='circos_min_numdeg',
                                       min=0,
-                                      max=10,  # Fill in
+                                      max=10,  # Fill in later
+                                      value=0,    # Default from fig 4
                                       step=1,
                                       marks=None,
                                       tooltip={'placement': 'bottom'},
@@ -57,23 +68,13 @@ def build_interface() -> list:
                                       className='form-range'
                                   ))
         ], [
-            control_panel_element('Chord Minimum Ligand abs(log2FC)', 'The minimum ligand log2FC required for a chord to be drawn.',
+            control_panel_element('Chord Ligand abs(log2FC) Cutoff', 'The minimum ligand log2FC required for a chord to be drawn.',
                                   dcc.Slider(
                                       id='circos_min_ligand_logfc',
                                       min=0,
                                       max=1,  # Fill in
-                                      step=0.1,
-                                      marks=None,
-                                      tooltip={'placement': 'bottom'},
-                                      persistence=False,
-                                      className='form-range'
-                                  )),
-            control_panel_element('Chord Minimum Receptor numSigI1', 'The minimum number of significant interactions for a chord to be drawn.',
-                                  dcc.Slider(
-                                      id='circos_min_receptor_numsigi1',
-                                      min=0,
-                                      max=10,  # Fill in
-                                      step=1,
+                                      value=0.12,  # Default from fig 4
+                                      step=0.01,
                                       marks=None,
                                       tooltip={'placement': 'bottom'},
                                       persistence=False,
@@ -109,16 +110,15 @@ def build_interface() -> list:
 
 @callback(
     Output('circos-graph-holder', 'children'),
-    Input('data-session', 'data'),
     Input('submit-button-circos', 'n_clicks'),
-    State('circos_fdr', 'value'),
-    State('circos_interaction_set', 'value'),
+    State('inter_circos_fdr', 'value'),
+    State('logfc_circos_fdr', 'value'),
+    State('circos_outer_set', 'value'),
+    State('circos_inner_set', 'value'),
     State('circos_min_numsigi1', 'value'),
     State('circos_min_numdeg', 'value'),
     State('circos_min_ligand_logfc', 'value'),
-    State('circos_min_receptor_numsigi1', 'value'),
     background=True,
-    prevent_initial_call=True,
     running=[
         (Output('submit-button-circos', 'disabled'), True, False),
         (Output('progress-bar', 'style'), {'visibility': 'visible'}, {'visibility': 'hidden'}),
@@ -128,41 +128,45 @@ def build_interface() -> list:
         Output('progress-bar', 'max'),
     ]
 )
-def make_circos_plot(set_progress, data, n_clicks,
-                     fdr_cutoff, interaction_set, min_numsigi1, min_numdeg, min_chord_ligand_logfc, min_chord_numsigi1):
-    if data is None or n_clicks == 0:
-        raise PreventUpdate
+def make_circos_plot(set_progress, n_clicks,
+                     inter_circos_fdr, logfc_circos_fdr, outer_set, inner_set,
+                     min_numsigi1, min_numdeg, min_chord_ligand_logfc):
     set_progress((0, 7))
-    from viz.data import read_interactions, read_obs
+    from viz.data import read_circos_file, read_ligand_receptor_file
     from viz.web import make_circos_figure
-    file = data['path']
-    interaction_file = data['tsv']
-    obs_file = data['obs']
 
-    obs = read_obs(obs_file)
-    interactions = read_interactions(interaction_file)
+    outer_data = read_circos_file(outer_set, inter_circos_fdr)
+    if inner_set == outer_set:
+        max_data = None
+        is_max = False
+    else:
+        max_data = read_circos_file('max', inter_circos_fdr)
+        is_max = True
+
+
     # Get distinct pairs of ligands and receptors
-    lr_pairs = interactions[['ligand', 'receptor']].drop_duplicates()
+    lr_pairs = read_ligand_receptor_file()
     # Convert to list of tuples
     lr_pairs = [tuple(x) for x in lr_pairs.values]
 
-    return [make_circos_figure(set_progress, obs, lr_pairs, interaction_set, fdr_cutoff, min_numsigi1, min_numdeg, min_chord_ligand_logfc, min_chord_numsigi1)]
+    return [make_circos_figure(set_progress,
+                               lr_pairs,
+                               outer_data,
+                               max_data,
+                               is_max,
+                               inter_circos_fdr,
+                               logfc_circos_fdr,
+                               min_numsigi1,
+                               min_numdeg,
+                               min_chord_ligand_logfc)]
 
 
 @callback(
-    Output('circos_fdr', 'options'),
-    Output('circos_fdr', 'value'),
-    Output('circos_interaction_set', 'options'),
-    Output('circos_interaction_set', 'value'),
     Output('circos_min_numsigi1', 'max'),
-    Output('circos_min_numsigi1', 'value'),
     Output('circos_min_numdeg', 'max'),
-    Output('circos_min_numdeg', 'value'),
     Output('circos_min_ligand_logfc', 'max'),
-    Output('circos_min_ligand_logfc', 'value'),
-    Output('circos_min_receptor_numsigi1', 'max'),
-    Output('circos_min_receptor_numsigi1', 'value'),
-    Input('data-session', 'data'),
+    Input('inter_circos_fdr', 'value'),
+    Input('logfc_circos_fdr', 'value'),
     background=True,
     running=[
         (Output('submit-button-circos', 'disabled'), True, False),
@@ -171,46 +175,19 @@ def make_circos_plot(set_progress, data, n_clicks,
         ], [])
     ]
 )
-def initialize_options(data):
-    if data is None:
-        return [{'label': '0.05', 'value': 'fdr05'}], 'fdr05', \
-               [{'label': '', 'value': ''}], '', \
-                10, 0, \
-                10, 0, \
-                10, 0, \
-                10, 0
+def initialize_options(inter_circos_fdr, logfc_circos_fdr):
+    from viz.data import read_circos_file
 
-    import pandas as pd
-    from viz.data import read_obs
-    from viz.web import get_obs_columns
-    file = data['path']
-    interaction_file = data['tsv']
-    obs_file = data['obs']
-    obs = read_obs(obs_file)
+    fdr = inter_circos_fdr
 
-    fdr_values = [
-        {'label': '0.05', 'value': 'fdr05'}
-    ]
-    if len(obs.columns[obs.columns.str.contains('fdr25')]) > 0:
-        fdr_values = [{
-            'label': '0.25',
-            'value': 'fdr25'
-        }] + fdr_values
-    default_fdr = fdr_values[0]['value']
+    # Read the maximum values from the circos file to determine range of sliders
+    max_obs = read_circos_file('max', fdr)
 
-    conditions = list(set([x.replace('numSigI1', '').replace('_fdr25', '').replace('_fdr05', '').replace('_fdr', '') for x in obs.columns if x.startswith('numSigI1')]))
-    condition_names = [c.replace('_', ' ').strip().replace("max", "Intersection Max") for c in conditions]
-    condition = conditions[0] if '_max' not in conditions else '_max'
+    max_deg = max_obs['numDEG'].max()
+    max_numsigi1 = max_obs['numSigI1'].max()
+    max_logfc = max_obs['MAST_log2FC'].abs().max()
 
-    # columns
-    cell_type, target, receptor, ligand, numDEG, numSigI1, MAST_log2FC, MAST_fdr, cell_type_dc1, DA_score = get_obs_columns(default_fdr, condition)
-
-    return fdr_values, default_fdr, \
-        [{'label': name, 'value': cond} for name, cond in zip(condition_names, conditions)], condition, \
-        obs[obs[receptor]][numSigI1].max(), 0, \
-        obs[numDEG].max(), 0, \
-        obs[obs[ligand]][MAST_log2FC].abs().max(), obs[obs[ligand]][MAST_log2FC].abs().max()*.1, \
-        obs[obs[receptor]][numSigI1].max(), obs[obs[receptor]][numSigI1].max()*.1
+    return max_numsigi1, max_deg, max_logfc
 
 
 layout = [

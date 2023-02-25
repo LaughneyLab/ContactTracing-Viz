@@ -1,0 +1,8 @@
+Interaction definitions:
+/workdir/mt269/ContactTracing/CIN_TME/allgenes/all_interactions.tsv
+
+CIN/STING comparisons:
+/workdir/mt269/ContactTracing/CIN_TME/highCIN_vs_noSTING/saves/degboth.h5ad
+
+CIN comparisons:
+/workdir/mt269/ContactTracing/CIN_TME/highCIN_vs_lowCIN/saves/degboth.h5ad

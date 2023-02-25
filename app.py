@@ -5,9 +5,10 @@ import sys
 import dash
 from dash import Dash, html, dcc, Output, Input
 import dash_bootstrap_components as dbc
+from dash.exceptions import PreventUpdate
 
 from data.config import LONG_CALLBACK_EXPIRY
-from viz.data import prune_ct_data
+from viz.data import compile_data
 from viz.web import wrap_icon
 
 
@@ -35,15 +36,8 @@ except:
     pass
 
 
-def prepare_builtin_data():
-    print("Optimizing builtin data (this may take awhile)...")
-    for file in os.listdir('data'):
-        if file.endswith('.h5ad') and not file.endswith('_pruned.h5ad'):
-            prune_ct_data(os.path.join('data', file))
-
-
-if __name__ == '__main__':
-    prepare_builtin_data()
+# Compile our data for optimized queries
+compile_data()
 
 
 callback_manager = None
@@ -92,7 +86,6 @@ layout = html.Div([
                     style={'textDecoration': 'none'}  # Hide hyperlink underline
                 ),
                 dbc.Nav(
-                    [dbc.NavItem(dbc.NavLink('', id='data-selection', active=True))] +
                     [dbc.NavItem(dbc.NavLink(page['name'], href=page['relative_path'])) for page in dash.page_registry.values()],
                     navbar=True,
                     pills=True
@@ -105,25 +98,12 @@ layout = html.Div([
         className='mb-5'
     ),
     dcc.Store(id='data-session', storage_type='session'),  # Temporary session storage
-    dcc.Store(id='reset-data-indicator', storage_type='memory', data=0),
     html.Div(id='page-content', children=dbc.Container(dash.page_container, fluid=True, class_name='mt-5 pt-5'))
 ])
 
+
 app.layout = dbc.Container(fluid=True,
                            children=layout)
-
-
-@app.callback(
-    Output('data-selection', 'children'),
-    Input('data-session', 'data'),
-    Input('reset-data-indicator', 'data')
-)
-def update_data_selection(data, reset):
-    prefix = 'Selected Data: '
-    if data is None:
-        return prefix + "Nothing"
-    else:
-        return prefix + data['filename']
 
 
 if __name__ == '__main__':

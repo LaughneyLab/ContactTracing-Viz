@@ -1,31 +1,26 @@
-import math
-
-import anndata as ad
 import dash
 import dash_bootstrap_components as dbc
 from dash import html, callback, Output, Input, dcc, State
-import numpy as np
-import pandas as pd
-import plotly.graph_objects as go
-import networkx as nx
-from dash.exceptions import PreventUpdate
-from matplotlib import colors, cm
 
-from viz.data import get_diff_abundance, get_interaction_fdr, get_downstream_ligands, read_ct_data, \
-    read_interactions
-from viz.figures import pseudotime_interaction_propagation_graph
-from viz.util import enhance_plotly_export, celltype_to_colors, get_quiver_arrows
 from viz.web import interactive_panel, wrap_icon, control_panel, control_panel_element, figure_output
 
 dash.register_page(__name__,
                    path='/ligand-effects',
                    name='Ligand Effects',
-                   order=1)
+                   order=3)
 
 
 def build_interface() -> list:
     controls = control_panel(
         [
+            control_panel_element("Interaction Set", "Biological condition to compare.",
+                                  dbc.Select(
+                                      id='effect_set',
+                                      options=[{'label': 'CIN-Dependent Effect', 'value': 'cin'},
+                                               {'label': 'STING-Dependent Effect', 'value': 'sting'},
+                                               {'label': 'CIN & STING Max Effect', 'value': 'max'}],
+                                      value='cin'
+                                  )),
             control_panel_element("Network Layout", 'Select how you would like to structure nodes.',
                                   dbc.Select(
                                       id='network-layout',
@@ -40,29 +35,29 @@ def build_interface() -> list:
             control_panel_element('Emitting Cell Type', 'Select the initial cell type.',
                                   dbc.Select(
                                     id='cell-type',
-                                    options=[],  # Filled in by callback
-                                    persistence=False
+                                    options=[{'label': ct, 'value': ct} for ct in
+                                             ['Tumor cells',
+                                             'Macrophages/mMDSC',
+                                             'PMN/gMDSC',
+                                             'T cells',
+                                             'B cells',
+                                             'NK cells',
+                                             'cDC',
+                                             'pDC',
+                                             'Fibroblast cells',
+                                             'Endothelial cells',
+                                             'Osteoclasts',
+                                             'Mast cells']],
+                                    value='Tumor cells'
                                   )),
             control_panel_element("Emitted Ligands", 'List of ligands to emit from the selected cell type.',
                                   dbc.Input(
                                       id='ligands',
                                       autofocus=True,
-                                      placeholder='Example: Ccl2,Apoe',
-                                      persistence=False
+                                      value='Ccl2,Apoe',
+                                      placeholder='Example: Ccl2,Apoe'
                                   ))
         ], [
-            control_panel_element("Minimum Expression", "The minimum required expression for proteins",
-                                  dcc.Slider(
-                                      id='min_expression',
-                                      min=0,
-                                      max=1,
-                                      step=0.01,
-                                      value=0,
-                                      marks=None,
-                                      tooltip={'placement': 'bottom'},
-                                      persistence=False,
-                                      className='form-range'
-                                  )),
             control_panel_element("Interaction FDR Cutoff", "The maximum interaction test FDR to consider.",
                                   dcc.Slider(
                                       id='interaction_fdr',
@@ -72,7 +67,8 @@ def build_interface() -> list:
                                       value=0.05,
                                       marks=None,
                                       tooltip={'placement': 'bottom'},
-                                      persistence=True, persistence_type='session',
+                                      persistence=True,
+                                      persistence_type='session',
                                       className='form-range'
                                   ))
         ], [
@@ -82,7 +78,7 @@ def build_interface() -> list:
                                       max=1,
                                       min=0,
                                       step=0.01,
-                                      value=0,
+                                      value=0.1,
                                       marks=None,
                                       tooltip={'placement': 'bottom'},
                                       persistence=False,
@@ -106,10 +102,10 @@ def build_interface() -> list:
                                       id='iterations',
                                       type='number',
                                       debounce=True,
-                                      max=100,
+                                      max=5,
                                       min=1,
                                       step=1,
-                                      value=10,
+                                      value=3,
                                       persistence=True, persistence_type='session'
                                   )),
             control_panel_element("Plot", "",
@@ -152,18 +148,16 @@ def build_interface() -> list:
 
 @callback(
     Output('network-graph', 'figure'),
-    Input('data-session', 'data'),
     Input('submit-button', 'n_clicks'),
+    State('effect_set', 'value'),
     State('network-layout', 'value'),
     State('cell-type', 'value'),
     State('ligands', 'value'),
-    State('min_expression', 'value'),
     State('interaction_fdr', 'value'),
     State('min_logfc', 'value'),
     State('logfc_fdr', 'value'),
     State('iterations', 'value'),
     background=True,  # Run in background
-    prevent_initial_call=True,
     running=[  # Disable the button while the callback is running
         (Output('submit-button', 'disabled'), True, False),
         (Output('progress-bar', 'style'), {'visibility': 'visible'}, {'visibility': 'hidden'})
@@ -173,28 +167,23 @@ def build_interface() -> list:
         Output('progress-bar', "max")
     ]
 )
-def make_graph(set_progress, data, n_clicks, network_layout, cell_type, ligands, min_expression, interaction_fdr, min_logfc, logfc_fdr, iterations):
-    if data is None or n_clicks == 0 or ligands is None:
-        raise PreventUpdate
+def make_graph(set_progress, n_clicks,
+               effect_set, network_layout,
+               cell_type, ligands,
+               interaction_fdr, min_logfc,
+               logfc_fdr, iterations):
+    from viz.figures import pseudotime_interaction_propagation_graph
+
     set_progress((0, 100))
 
-    # Do some work
-
-    file = data['path']
-    interaction_file = data['tsv']
-    adata = read_ct_data(file)
-    interactions = read_interactions(interaction_file)
-
     fig = pseudotime_interaction_propagation_graph(
-        ct=adata,
-        orig_df=interactions,
+        effect_set=effect_set,
         seed_cell=cell_type,
         seed_ligands=ligands,
         iterations=int(iterations),
         interaction_fdr_cutoff=float(interaction_fdr),
         min_logfc=float(min_logfc),
         logfc_fdr_cutoff=float(logfc_fdr),
-        min_expression=int(min_expression),
         layout=network_layout,
         set_progress_callback=set_progress
     )
@@ -203,13 +192,8 @@ def make_graph(set_progress, data, n_clicks, network_layout, cell_type, ligands,
 
 
 @callback(
-    Output('cell-type', 'options'),
-    Output('cell-type', 'value'),
-    Output('min_expression', 'max'),
-    Output('min_expression', 'value'),
     Output('min_logfc', 'max'),
-    Output('min_logfc', 'value'),
-    Input('data-session', 'data'),
+    Input('effect_set', 'value'),
     background=True,  # Run in background,
     running=[  # Disable the button while the callback is running
         (Output('submit-button', 'disabled'), True, False),
@@ -221,24 +205,10 @@ def make_graph(set_progress, data, n_clicks, network_layout, cell_type, ligands,
          []),
     ]
 )
-def initialize_options(data):
-    from viz.data import read_ct_data, read_interactions
-    print(data)
-    if data is None:
-        return [], '', \
-               1, 0, \
-               1, 0
-    file = data['path']
-    interaction_file = data['tsv']
- #   adata = read_ct_data(file)
-    interactions = read_interactions(interaction_file)
-    max_exp = max(max(interactions.expression_ligand), max(interactions.expression_receptor))
-    max_logfc = max(max(interactions.MAST_log2FC_ligand.abs()), max(interactions.MAST_log2FC_receptor.abs()))
-    celltypes = list(sorted(set(interactions.cell_type_ligand) | set(interactions.cell_type_receptor)))
-  #  celltypes = list(adata.obs['cell type'].unique())
-    return [{'label': ct, 'value': ct} for ct in celltypes], celltypes[0], \
-           max_exp, 0, \
-           max_logfc, 0
+def initialize_options(effect_set):
+    # TODO Should we scan to find true max logfc?
+    max_logfc = 2
+    return max_logfc
 
 
 layout = [

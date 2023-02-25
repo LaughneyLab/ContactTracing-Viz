@@ -1,1 +1,3 @@
-ct_viz_cache
+ct_viz_cache/
+old_data/
+*/__pycache__

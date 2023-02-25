@@ -239,6 +239,7 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
-data/*.*sv
-data/*.h5ad
+data/*/*.*sv
+data/*/*.h5ad
 ct_viz_cache/
+old_data/
