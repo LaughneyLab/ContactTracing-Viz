@@ -14,7 +14,7 @@ import pandas as pd
 from PIL import Image
 import plotly.graph_objects as go
 
-from viz.data import read_ligand_receptor_file, read_ligand_effect_for, read_all_effects_for
+from viz.data import read_ligand_receptor_file, read_ligand_effect_for
 from viz.util import multipartite_layout, get_quiver_arrows, celltype_to_colors, timeline_layout
 
 
@@ -860,10 +860,9 @@ def pseudotime_interaction_propagation_graph(effect_set: str,
 
     # Basic filters to build the network from
     def _read_filtered_df(celltype, target):
-        if celltype is None:
-            df = read_all_effects_for(effect_set, target)
-        else:
-            df = read_ligand_effect_for(effect_set, celltype, target)
+        df = read_ligand_effect_for(effect_set, target)
+        if celltype is not None:
+            df = df[df['celltype'] == celltype]
         if df is None:
             return pd.DataFrame()
         return df[(df['fdr'] < logfc_fdr_cutoff) & (df['i1.fdr'] < interaction_fdr_cutoff) & (df['log2FC'].abs() >= min_logfc)]
@@ -895,7 +894,7 @@ def pseudotime_interaction_propagation_graph(effect_set: str,
                 receptors = ligand_receptor_pairs[ligand_receptor_pairs['ligand'] == gene]['receptor'].unique()
                 for receptor in receptors:
                     df = pd.concat([df, _read_filtered_df(None, receptor)])  # Get all possible receptors
-        df = df.drop_duplicates()
+        df = df.drop_duplicates(ignore_index=True)
 
         if t == 0:
             for seed_ligand in seed_ligands:
@@ -1036,286 +1035,286 @@ class PlotRing:
             yield from child.iter_hierarchy()
 
 
-def plot_polar_data(rings: PlotRing, legend_info: Dict[str, str], with_text: bool = True) -> go.Figure:
-    # Normalize the data
-    # First ring is always the full circle
-    rings.circumference = 360
-    rings.theta = 180
-    # Reset center node height
-    number_of_levels = rings.get_number_of_levels()
-    rings.height = 1
-    for i, ring in enumerate(rings.iter_rings()):
-        max_ring_height = max([r.height for r in ring], default=1)
-        for r in ring:
-            r.height = (r.height / max_ring_height) * 1/number_of_levels
-    rings.height *= .5
-    # Calculate circumference of each ring group
-    for parent, children in rings.iter_hierarchy():
-        total_child_circumference = sum([c.circumference for c in children])
-        total_group_circumference = parent.circumference
-        curr_theta = parent.theta - total_group_circumference/2
-       #rings_max_height = max([c.height for c in children], default=1)
-        for child in children:
-            child.circumference = total_group_circumference * (child.circumference / total_child_circumference)
-            child.theta = curr_theta + child.circumference/2
-            child.start_height = parent.start_height + parent.height
-            #child.height += child.start_height
-            curr_theta += child.circumference
+# def plot_polar_data(rings: PlotRing, legend_info: Dict[str, str], with_text: bool = True) -> go.Figure:
+#     # Normalize the data
+#     # First ring is always the full circle
+#     rings.circumference = 360
+#     rings.theta = 180
+#     # Reset center node height
+#     number_of_levels = rings.get_number_of_levels()
+#     rings.height = 1
+#     for i, ring in enumerate(rings.iter_rings()):
+#         max_ring_height = max([r.height for r in ring], default=1)
+#         for r in ring:
+#             r.height = (r.height / max_ring_height) * 1/number_of_levels
+#     rings.height *= .5
+#     # Calculate circumference of each ring group
+#     for parent, children in rings.iter_hierarchy():
+#         total_child_circumference = sum([c.circumference for c in children])
+#         total_group_circumference = parent.circumference
+#         curr_theta = parent.theta - total_group_circumference/2
+#        #rings_max_height = max([c.height for c in children], default=1)
+#         for child in children:
+#             child.circumference = total_group_circumference * (child.circumference / total_child_circumference)
+#             child.theta = curr_theta + child.circumference/2
+#             child.start_height = parent.start_height + parent.height
+#             #child.height += child.start_height
+#             curr_theta += child.circumference
+#
+#     max_radius = rings.get_max_height()
+#
+#     # Build the figure
+#     annotations = []
+#     traces = []
+#     for name, color in legend_info.items():
+#         traces.append(go.Scatter(
+#             name=name,
+#             x=[None],
+#             y=[None],
+#             marker_symbol='circle',
+#             mode='markers',
+#             showlegend=True,
+#             legendgroup='colors',
+#             legendgrouptitle=dict(
+#                 text='Ring Color',
+#             ),
+#             marker=dict(
+#                 color=color,
+#                 size=15,
+#                 line=dict(width=1, color='black')
+#             )
+#         ))
+#
+#     font_size = 75 // number_of_levels
+#     for level, ring_list in enumerate(rings.iter_rings()):
+#         if level == 0:  # Handle first circle
+#             assert len(ring_list) == 1
+#             node = ring_list[0]
+#             if with_text:
+#                 annotations.append(dict(
+#                     x=0, y=0,
+#                     xref='x', yref='y',
+#                     clicktoshow='onoff',
+#                     text=node.name,
+#                     visible=True,
+#                     showarrow=False,
+#                     font=dict(
+#                         size=font_size,
+#                         color="black"
+#                     ),
+#                     align='center'
+#                 ))
+#             traces.append(go.Barpolar(
+#                 r=[node.height],
+#                 theta=[0],
+#                 width=[360],
+#                 thetaunit='degrees',
+#                 opacity=1,
+#                 base=0,
+#                 text=node.name,
+#                 showlegend=False,
+#                 marker=dict(
+#                     color=[node.color],
+#                     line=dict(
+#                         color='black',
+#                         width=2
+#                     )
+#                 )
+#             ))
+#         else:
+#             thetas = []
+#             circumferences = []
+#             bases = []
+#             colors = []
+#             heights = []
+#             names = []
+#             for node in ring_list:
+#                 base = node.start_height
+#                 theta = node.theta
+#                 height = node.height
+#                 circumference = node.circumference
+#                 color = node.color
+#                 name = node.name
+#
+#                 # Label
+#                 if with_text:
+#                     annotation_x, annotation_y = polar2cartesian((3/4)*(height) + base, theta+90)
+#                     annotations.append(dict(
+#                         x=annotation_x, y=annotation_y,
+#                         clicktoshow='onoff',
+#                         text=name,
+#                         visible=True,
+#                         showarrow=False,
+#                         font=dict(
+#                             size=font_size,
+#                             color="black"
+#                         ),
+#                         align='center'
+#                     ))
+#
+#                 # Ring info
+#                 thetas.append(theta)
+#                 circumferences.append(circumference)
+#                 bases.append(base)
+#                 colors.append(color)
+#                 heights.append(height)
+#                 names.append(name)
+#
+#             traces.append(go.Barpolar(
+#                 r0=0,
+#                 r=heights,
+#                 theta0=0,
+#                 theta=thetas,
+#                 width=circumferences,
+#                 thetaunit='degrees',
+#                 opacity=1,
+#                 base=bases,
+#                 text=names,
+#                 showlegend=False,
+#                 marker=dict(
+#                     color=colors,
+#                     line=dict(
+#                         color='black',
+#                         width=2
+#                     )
+#                 )
+#             ))
+#
+#     fig = go.Figure(data=traces, layout=go.Layout(
+#         template=None,
+#         showlegend=True,
+#         hovermode='closest',
+#         margin=dict(l=0, r=0, t=0, b=0),
+#         autosize=False,
+#         barmode='overlay',
+#         plot_bgcolor='rgba(0,0,0,0)',
+#         paper_bgcolor='rgba(0,0,0,0)',
+#         width=1000,
+#         height=1000,
+#         annotations=annotations,
+#         legend=dict(
+#             yanchor="top",
+#             y=1,
+#             xanchor="left",
+#             x=1.15
+#         ),
+#         polar=dict(
+#             bgcolor='rgba(0,0,0,0)',
+#             radialaxis=dict(
+#                 showticklabels=False,
+#                 ticks='',
+#                 range=[0, max_radius + 0.1],
+#                 showgrid=False,
+#                 showline=False,
+#                 angle=0,
+#                 tick0=0,
+#                 tickangle=90
+#             ),
+#             angularaxis=dict(
+#                 showticklabels=False,
+#                 ticks='',
+#                 showgrid=False,
+#                 rotation=0,
+#                 tick0=0,
+#                 tickangle=90,
+#                 direction='clockwise'
+#         )),
+#         xaxis=dict(
+#             showgrid=False,
+#             zeroline=False,
+#             showticklabels=False,
+#             range=[-1*max_radius - 0.1, max_radius + 0.1]
+#         ),
+#         yaxis=dict(
+#             showgrid=False,
+#             zeroline=False,
+#             showticklabels=False,
+#             range=[-1*max_radius - 0.1, max_radius + 0.1],
+#             scaleanchor="x"
+#         )
+#     ))
+#     return fig
 
-    max_radius = rings.get_max_height()
 
-    # Build the figure
-    annotations = []
-    traces = []
-    for name, color in legend_info.items():
-        traces.append(go.Scatter(
-            name=name,
-            x=[None],
-            y=[None],
-            marker_symbol='circle',
-            mode='markers',
-            showlegend=True,
-            legendgroup='colors',
-            legendgrouptitle=dict(
-                text='Ring Color',
-            ),
-            marker=dict(
-                color=color,
-                size=15,
-                line=dict(width=1, color='black')
-            )
-        ))
-
-    font_size = 75 // number_of_levels
-    for level, ring_list in enumerate(rings.iter_rings()):
-        if level == 0:  # Handle first circle
-            assert len(ring_list) == 1
-            node = ring_list[0]
-            if with_text:
-                annotations.append(dict(
-                    x=0, y=0,
-                    xref='x', yref='y',
-                    clicktoshow='onoff',
-                    text=node.name,
-                    visible=True,
-                    showarrow=False,
-                    font=dict(
-                        size=font_size,
-                        color="black"
-                    ),
-                    align='center'
-                ))
-            traces.append(go.Barpolar(
-                r=[node.height],
-                theta=[0],
-                width=[360],
-                thetaunit='degrees',
-                opacity=1,
-                base=0,
-                text=node.name,
-                showlegend=False,
-                marker=dict(
-                    color=[node.color],
-                    line=dict(
-                        color='black',
-                        width=2
-                    )
-                )
-            ))
-        else:
-            thetas = []
-            circumferences = []
-            bases = []
-            colors = []
-            heights = []
-            names = []
-            for node in ring_list:
-                base = node.start_height
-                theta = node.theta
-                height = node.height
-                circumference = node.circumference
-                color = node.color
-                name = node.name
-
-                # Label
-                if with_text:
-                    annotation_x, annotation_y = polar2cartesian((3/4)*(height) + base, theta+90)
-                    annotations.append(dict(
-                        x=annotation_x, y=annotation_y,
-                        clicktoshow='onoff',
-                        text=name,
-                        visible=True,
-                        showarrow=False,
-                        font=dict(
-                            size=font_size,
-                            color="black"
-                        ),
-                        align='center'
-                    ))
-
-                # Ring info
-                thetas.append(theta)
-                circumferences.append(circumference)
-                bases.append(base)
-                colors.append(color)
-                heights.append(height)
-                names.append(name)
-
-            traces.append(go.Barpolar(
-                r0=0,
-                r=heights,
-                theta0=0,
-                theta=thetas,
-                width=circumferences,
-                thetaunit='degrees',
-                opacity=1,
-                base=bases,
-                text=names,
-                showlegend=False,
-                marker=dict(
-                    color=colors,
-                    line=dict(
-                        color='black',
-                        width=2
-                    )
-                )
-            ))
-        
-    fig = go.Figure(data=traces, layout=go.Layout(
-        template=None,
-        showlegend=True,
-        hovermode='closest',
-        margin=dict(l=0, r=0, t=0, b=0),
-        autosize=False,
-        barmode='overlay',
-        plot_bgcolor='rgba(0,0,0,0)',
-        paper_bgcolor='rgba(0,0,0,0)',
-        width=1000,
-        height=1000,
-        annotations=annotations,
-        legend=dict(
-            yanchor="top",
-            y=1,
-            xanchor="left",
-            x=1.15
-        ),
-        polar=dict(
-            bgcolor='rgba(0,0,0,0)',
-            radialaxis=dict(
-                showticklabels=False,
-                ticks='',
-                range=[0, max_radius + 0.1],
-                showgrid=False,
-                showline=False,
-                angle=0,
-                tick0=0,
-                tickangle=90
-            ),
-            angularaxis=dict(
-                showticklabels=False,
-                ticks='',
-                showgrid=False,
-                rotation=0,
-                tick0=0,
-                tickangle=90,
-                direction='clockwise'
-        )),
-        xaxis=dict(
-            showgrid=False,
-            zeroline=False,
-            showticklabels=False,
-            range=[-1*max_radius - 0.1, max_radius + 0.1]
-        ),
-        yaxis=dict(
-            showgrid=False,
-            zeroline=False,
-            showticklabels=False,
-            range=[-1*max_radius - 0.1, max_radius + 0.1],
-            scaleanchor="x"
-        )
-    ))
-    return fig
-
-
-def radial_ligand_effect_figure(
-        ct: ad.AnnData, interactions: pd.DataFrame,
-        ligand: str, celltype: str,
-        min_logfc: float = 0, max_fdr: float = 0.05,
-        min_numSigI1: int = 1,
-        max_levels: int = 3, with_text: bool = True, initial_celltype_filter: Set[str] = None
-) -> go.Figure:
-    all_celltypes = set(ct.obs['cell type'].unique())
-    if initial_celltype_filter is None:
-        initial_celltype_filter = all_celltypes
-    celltype2color = celltype_to_colors(all_celltypes)
-
-    #interactions = interactions[(interactions.MAST_log2FC_ligand >= min_logfc) &
-    #                            (interactions.MAST_fdr_ligand <= max_fdr)]
-
-    rings = PlotRing(ligand, celltype2color[celltype], False, 0, 360)
-    legend_data = dict()
-
-    def build_downstream_rings(i: int,
-                               curr_ring: PlotRing,
-                               start: str,
-                               start_celltype: str,
-                               is_ligand: bool):
-        if i >= max_levels:
-            return
-
-        legend_data[start_celltype] = celltype2color[start_celltype]
-
-        filtered_interactions = interactions
-        if i < 2:  # Initial filtering
-            filtered_interactions = filtered_interactions[
-                (filtered_interactions.cell_type_receptor.isin(initial_celltype_filter)) &
-                (filtered_interactions.cell_type_ligand.isin(initial_celltype_filter))]
-
-        if is_ligand:
-            # Get and map receptors
-            filtered_interactions = filtered_interactions[(filtered_interactions.ligand == start)].drop_duplicates(subset=['receptor', 'cell_type_receptor'])
-            for _, row in filtered_interactions.iterrows():
-                receptor = row['receptor']
-                receptor_celltype = row['cell_type_receptor']
-                numDEG = row['numDEG_fdr25_receptor']
-                numSigI1 = row['numSigI1_fdr25_receptor']
-                if numSigI1 < min_numSigI1:
-                    continue
-                next_ring = PlotRing(
-                    f"{receptor}+", celltype2color[receptor_celltype], True,
-                    1, 1
-                )
-                curr_ring.add_child(next_ring)
-                build_downstream_rings(i+1, next_ring, receptor, receptor_celltype, False)
-        else:
-            # Get and map ligands
-            downstream_ligands = get_downstream_ligands(ct, start, start_celltype, min_logfc, max_fdr)
-            for lig in downstream_ligands:
-                interaction_logfc = get_interaction_logfc(ct, start_celltype, start, lig)
-                interaction_fdr = get_interaction_fdr(ct, start_celltype, start, lig)
-                interaction_logfc_fdr = get_interaction_logfc_fdr(ct, start_celltype, start, lig)
-                if np.isnan(interaction_fdr) or interaction_fdr > max_fdr or interaction_logfc < min_logfc:
-                    continue
-                next_ring = PlotRing(
-                    lig, 'grey', False, # celltype2color[start_celltype],
-                    interaction_logfc, max(-1 * np.log(interaction_fdr + 1e-10), 1e-5)
-                )
-                curr_ring.add_child(next_ring)
-                build_downstream_rings(i+1, next_ring, lig, start_celltype, True)
-
-    build_downstream_rings(0, rings, ligand, celltype, True)
-
-    # Scale receptor rings by number of downstream effects
-    for level in rings.iter_rings():
-        if len(level) < 2:
-            continue
-        if not level[0].is_receptor:
-            continue
-        number_of_downstream = [len(r.get_all_children())+1 for r in level]
-        total_downstream = sum(number_of_downstream)
-        for r, levels in zip(level, number_of_downstream):
-            r.circumference = levels / total_downstream
-
-    legend_data['Ligand'] = 'grey'
-
-    return plot_polar_data(rings, legend_data, with_text)
+# def radial_ligand_effect_figure(
+#         ct: ad.AnnData, interactions: pd.DataFrame,
+#         ligand: str, celltype: str,
+#         min_logfc: float = 0, max_fdr: float = 0.05,
+#         min_numSigI1: int = 1,
+#         max_levels: int = 3, with_text: bool = True, initial_celltype_filter: Set[str] = None
+# ) -> go.Figure:
+#     all_celltypes = set(ct.obs['cell type'].unique())
+#     if initial_celltype_filter is None:
+#         initial_celltype_filter = all_celltypes
+#     celltype2color = celltype_to_colors(all_celltypes)
+#
+#     #interactions = interactions[(interactions.MAST_log2FC_ligand >= min_logfc) &
+#     #                            (interactions.MAST_fdr_ligand <= max_fdr)]
+#
+#     rings = PlotRing(ligand, celltype2color[celltype], False, 0, 360)
+#     legend_data = dict()
+#
+#     def build_downstream_rings(i: int,
+#                                curr_ring: PlotRing,
+#                                start: str,
+#                                start_celltype: str,
+#                                is_ligand: bool):
+#         if i >= max_levels:
+#             return
+#
+#         legend_data[start_celltype] = celltype2color[start_celltype]
+#
+#         filtered_interactions = interactions
+#         if i < 2:  # Initial filtering
+#             filtered_interactions = filtered_interactions[
+#                 (filtered_interactions.cell_type_receptor.isin(initial_celltype_filter)) &
+#                 (filtered_interactions.cell_type_ligand.isin(initial_celltype_filter))]
+#
+#         if is_ligand:
+#             # Get and map receptors
+#             filtered_interactions = filtered_interactions[(filtered_interactions.ligand == start)].drop_duplicates(subset=['receptor', 'cell_type_receptor'])
+#             for _, row in filtered_interactions.iterrows():
+#                 receptor = row['receptor']
+#                 receptor_celltype = row['cell_type_receptor']
+#                 numDEG = row['numDEG_fdr25_receptor']
+#                 numSigI1 = row['numSigI1_fdr25_receptor']
+#                 if numSigI1 < min_numSigI1:
+#                     continue
+#                 next_ring = PlotRing(
+#                     f"{receptor}+", celltype2color[receptor_celltype], True,
+#                     1, 1
+#                 )
+#                 curr_ring.add_child(next_ring)
+#                 build_downstream_rings(i+1, next_ring, receptor, receptor_celltype, False)
+#         else:
+#             # Get and map ligands
+#             downstream_ligands = get_downstream_ligands(ct, start, start_celltype, min_logfc, max_fdr)
+#             for lig in downstream_ligands:
+#                 interaction_logfc = get_interaction_logfc(ct, start_celltype, start, lig)
+#                 interaction_fdr = get_interaction_fdr(ct, start_celltype, start, lig)
+#                 interaction_logfc_fdr = get_interaction_logfc_fdr(ct, start_celltype, start, lig)
+#                 if np.isnan(interaction_fdr) or interaction_fdr > max_fdr or interaction_logfc < min_logfc:
+#                     continue
+#                 next_ring = PlotRing(
+#                     lig, 'grey', False, # celltype2color[start_celltype],
+#                     interaction_logfc, max(-1 * np.log(interaction_fdr + 1e-10), 1e-5)
+#                 )
+#                 curr_ring.add_child(next_ring)
+#                 build_downstream_rings(i+1, next_ring, lig, start_celltype, True)
+#
+#     build_downstream_rings(0, rings, ligand, celltype, True)
+#
+#     # Scale receptor rings by number of downstream effects
+#     for level in rings.iter_rings():
+#         if len(level) < 2:
+#             continue
+#         if not level[0].is_receptor:
+#             continue
+#         number_of_downstream = [len(r.get_all_children())+1 for r in level]
+#         total_downstream = sum(number_of_downstream)
+#         for r, levels in zip(level, number_of_downstream):
+#             r.circumference = levels / total_downstream
+#
+#     legend_data['Ligand'] = 'grey'
+#
+#     return plot_polar_data(rings, legend_data, with_text)

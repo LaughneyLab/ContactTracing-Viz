@@ -46,25 +46,13 @@ def read_circos_file(condition: str, fdr: str) -> pd.DataFrame:
     return df
 
 
-def read_ligand_effect_for(condition: str, celltype: str, target: str) -> pd.DataFrame:
+def read_ligand_effect_for(condition: str, target: str) -> pd.DataFrame:
     prefix = 'data/compiled/ligand_effects/'
     condition = _normalize_condition_name(condition)
-    prefix += condition + '_' + celltype.replace('/', '') + '_' + target + '.csv'
+    prefix += condition + '_' + target + '.csv'
     if not os.path.exists(prefix):
         return None
     df = pd.read_csv(prefix)
-    return df
-
-
-def read_all_effects_for(condition: str, target: str) -> pd.DataFrame:
-    prefix = 'data/compiled/ligand_effects/'
-    condition = _normalize_condition_name(condition)
-    prefix += condition + '_'
-    df = pd.DataFrame()
-    for filename in glob(prefix + '*' + target + '.csv'):
-        df = pd.concat([df, pd.read_csv(filename)])
-    if df.shape[0] == 0:
-        return None
     return df
 
 
@@ -211,16 +199,17 @@ def _compile_ligand_effects(interactions: pd.DataFrame,
 
     all_celltypes = set(adata.obs['cell type'])
     genes = [g for g in adata.var.index]
-    for celltype in all_celltypes:
-        for receptor in set(interactions.receptor):
-            filename = prefix + celltype.replace('/', '') + "_" + receptor + ".csv"
-            if os.path.exists(filename):
-                continue
+    for receptor in set(interactions.receptor):
+        filename = prefix + receptor + ".csv"
+        if os.path.exists(filename):
+            continue
+        df = pd.DataFrame()
+        for celltype in all_celltypes:
             rec_adata = adata[(adata.obs['cell type'] == celltype) &
                               (adata.obs['target'] == receptor)]
             if rec_adata.n_obs == 0:
                 continue
-            df = pd.DataFrame({
+            cell_df = pd.DataFrame({
                 'gene': genes,
                 'gene_is_ligand': rec_adata.var.index.isin(interactions.ligand),
                 'gene_is_receptor': rec_adata.var.index.isin(interactions.receptor),
@@ -228,20 +217,26 @@ def _compile_ligand_effects(interactions: pd.DataFrame,
                 'fdr': rec_adata.layers['fdr'].flatten(),
                 'i1.fdr': rec_adata.layers['fdr.i1'].flatten()
             })
-            df['cell_type'] = celltype
-            df['target'] = receptor
-            df['receptor'] = True
-            df['ligand'] = False
+            cell_df['cell_type'] = celltype
+            cell_df['target'] = receptor
+            cell_df['receptor'] = True
+            cell_df['ligand'] = receptor in interactions.ligand
+            df = pd.concat([df, cell_df])
+        if df.shape[0] == 0:
+            continue
+        else:
             df.to_csv(filename, index=False)
-        for ligand in set(interactions.ligand):
-            filename = prefix + celltype.replace('/', '') + "_" + ligand + ".csv"
-            if os.path.exists(filename):
-                continue
+    for ligand in set(interactions.ligand):
+        filename = prefix + ligand + ".csv"
+        if os.path.exists(filename):
+            continue
+        df = pd.DataFrame()
+        for celltype in all_celltypes:
             lig_adata = adata[(adata.obs['cell type'] == celltype) &
                               (adata.obs['target'] == ligand)]
             if lig_adata.n_obs == 0:
                 continue
-            df = pd.DataFrame({
+            cell_df = pd.DataFrame({
                 'gene': genes,
                 'gene_is_ligand': lig_adata.var.index.isin(interactions.ligand),
                 'gene_is_receptor': lig_adata.var.index.isin(interactions.receptor),
@@ -249,10 +244,14 @@ def _compile_ligand_effects(interactions: pd.DataFrame,
                 'fdr': lig_adata.layers['fdr'].flatten(),
                 'i1.fdr': lig_adata.layers['fdr.i1'].flatten()
             })
-            df['cell_type'] = celltype
-            df['target'] = ligand
-            df['receptor'] = False
-            df['ligand'] = True
+            cell_df['cell_type'] = celltype
+            cell_df['target'] = ligand
+            cell_df['receptor'] = ligand in interactions.receptor
+            cell_df['ligand'] = True
+            df = pd.concat([df, cell_df])
+        if df.shape[0] == 0:
+            continue
+        else:
             df.to_csv(filename, index=False)
 
 
@@ -270,6 +269,7 @@ def _merge_max_ligand_effects(cin_condition: str,
         if not os.path.exists(sting_file) or os.path.exists(file):
             continue
 
+        #print(cin_file, sting_file)
         cin_interactions = pd.read_csv(cin_file)
         sting_interactions = pd.read_csv(sting_file)
         both_ligand_effects = pd.merge(cin_interactions, sting_interactions,
@@ -371,6 +371,7 @@ def compile_data(
     sting_condition = 'highCIN_vs_noSTING'
 
     for fdr in ['05', '25']:
+        print("Compiling FDR", fdr)
         cin_interactions = _compile_interactions(interactions, cin_adata, sting_adata, cin_condition, fdr)
         sting_interactions = _compile_interactions(interactions, cin_adata, sting_adata, sting_condition, fdr)
         _merge_max_interactions(cin_interactions, sting_interactions, fdr)
@@ -516,3 +517,6 @@ def read_obs(path: str) -> pd.DataFrame:
 #     subset_ct = ct_res[(ct_res.obs['cell type'] == celltype) & (ct_res.obs['target'] == target)].layers['fdr']
 #     return subset_ct[0, ct_res.var.index == gene][0]
 
+
+if __name__ == '__main__':
+    compile_data()

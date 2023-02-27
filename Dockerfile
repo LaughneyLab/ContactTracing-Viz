@@ -38,6 +38,10 @@ SHELL ["/bin/bash", "-c"]
 
 ADD . .
 
+# Pre-compile the data
+RUN source /venv/bin/activate && \
+    python viz/data.py
+
 ENTRYPOINT redis-server --daemonize yes && \
     source /venv/bin/activate && \
     celery -A app:celery_app worker --loglevel=info --concurrency=2 --detach  && \
