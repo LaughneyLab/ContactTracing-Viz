@@ -1,8 +1,13 @@
 Interaction definitions:
 /workdir/mt269/ContactTracing/CIN_TME/allgenes/all_interactions.tsv
 
-CIN/STING comparisons:
-/workdir/mt269/ContactTracing/CIN_TME/highCIN_vs_noSTING/saves/degboth.h5ad
-
 CIN comparisons:
-/workdir/mt269/ContactTracing/CIN_TME/highCIN_vs_lowCIN/saves/degboth.h5ad
+/workdir/mt269/ContactTracing/CIN_TME/allgenes/saves/deg_newfdr.h5ad
+
+CIN/STING comparisons:
+/workdir/mt269/ContactTracing/CIN_TME/CIN_and_STING/CIN_and_STING_deg.h5ad
+
+Expression data:
+/workdir/mt269/ContactTracing/CIN_TME/highCIN_vs_lowCIN/saves/adata.h5ad
+
+

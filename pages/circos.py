@@ -43,17 +43,10 @@ def build_interface() -> list:
         ], [
             control_panel_element("Outer Interaction Set", "Biological condition to compare.",
                                   dbc.Select(
-                                      id='circos_outer_set',
+                                      id='circos_set',
                                       options=[{'label': 'CIN-Dependent Effect', 'value': 'cin'},
                                                {'label': 'STING-Dependent Effect', 'value': 'sting'}],
-                                      value=DEFAULT_CIRCOS_ARGS['circos_outer_set']
-                                  )),
-            control_panel_element("Inner Interaction Set", "Biological condition to compare.",
-                                  dbc.Select(
-                                      id='circos_inner_set',
-                                      options=[{'label': 'CIN-Dependent Effect', 'value': 'cin'},
-                                               {'label': 'STING-Dependent Effect', 'value': 'sting'}],
-                                      value=DEFAULT_CIRCOS_ARGS['circos_inner_set']
+                                      value=DEFAULT_CIRCOS_ARGS['circos_set']
                                   ))
         ], [
             control_panel_element('Minimum numSigI1', 'Minimum number of significant interactions for a receptor to be included.',
@@ -126,8 +119,7 @@ def build_interface() -> list:
     Input('submit-button-circos', 'n_clicks'),
     State('inter_circos_fdr', 'value'),
     State('logfc_circos_fdr', 'value'),
-    State('circos_outer_set', 'value'),
-    State('circos_inner_set', 'value'),
+    State('circos_set', 'value'),
     State('circos_min_numsigi1', 'value'),
     State('circos_min_numdeg', 'value'),
     State('circos_min_ligand_logfc', 'value'),
@@ -143,7 +135,7 @@ def build_interface() -> list:
     ]
 )
 def make_circos_plot(set_progress, n_clicks,
-                     inter_circos_fdr, logfc_circos_fdr, outer_set, inner_set,
+                     inter_circos_fdr, logfc_circos_fdr, circos_set,
                      min_numsigi1, min_numdeg, min_chord_ligand_logfc):
     if n_clicks == 0:
         from dash.exceptions import PreventUpdate
@@ -157,8 +149,7 @@ def make_circos_plot(set_progress, n_clicks,
     # Check if arguments match default, if so return the pre-computed default
     if (inter_circos_fdr == DEFAULT_CIRCOS_ARGS['inter_circos_fdr'] and
         logfc_circos_fdr == DEFAULT_CIRCOS_ARGS['logfc_circos_fdr'] and
-        outer_set == DEFAULT_CIRCOS_ARGS['circos_outer_set'] and
-        inner_set == DEFAULT_CIRCOS_ARGS['circos_inner_set'] and
+        circos_set == DEFAULT_CIRCOS_ARGS['circos_set'] and
         min_numsigi1 == DEFAULT_CIRCOS_ARGS['circos_min_numsigi1'] and
         min_numdeg == DEFAULT_CIRCOS_ARGS['circos_min_numdeg'] and
         min_chord_ligand_logfc == DEFAULT_CIRCOS_ARGS['circos_min_ligand_logfc']):
@@ -169,14 +160,7 @@ def make_circos_plot(set_progress, n_clicks,
         except:
             pass
 
-    outer_data = read_circos_file(outer_set, inter_circos_fdr)
-    if inner_set == outer_set:
-        max_data = None
-        is_max = False
-    else:
-        max_data = read_circos_file('max', inter_circos_fdr)
-        is_max = True
-
+    data = read_circos_file(circos_set, inter_circos_fdr)
 
     # Get distinct pairs of ligands and receptors
     lr_pairs = read_ligand_receptor_file()
@@ -185,9 +169,7 @@ def make_circos_plot(set_progress, n_clicks,
 
     return [make_circos_figure(set_progress,
                                lr_pairs,
-                               outer_data,
-                               max_data,
-                               is_max,
+                               data,
                                inter_circos_fdr,
                                logfc_circos_fdr,
                                min_numsigi1,
@@ -215,7 +197,7 @@ def initialize_options(inter_circos_fdr, logfc_circos_fdr):
     fdr = inter_circos_fdr
 
     # Read the maximum values from the circos file to determine range of sliders
-    max_obs = read_circos_file('max', fdr)
+    max_obs = read_circos_file('highCIN_vs_noSTING', fdr)
 
     max_deg = max_obs['numDEG'].max()
     max_numsigi1 = max_obs['numSigI1'].max()
@@ -238,13 +220,7 @@ if __name__ == '__main__':
         from viz.web import make_circos_figure
         import pickle
 
-        outer_data = read_circos_file(DEFAULT_CIRCOS_ARGS['circos_outer_set'], DEFAULT_CIRCOS_ARGS['inter_circos_fdr'])
-        if DEFAULT_CIRCOS_ARGS['circos_inner_set'] == DEFAULT_CIRCOS_ARGS['circos_outer_set']:
-            max_data = None
-            is_max = False
-        else:
-            max_data = read_circos_file('max', DEFAULT_CIRCOS_ARGS['inter_circos_fdr'])
-            is_max = True
+        data = read_circos_file(DEFAULT_CIRCOS_ARGS['circos_set'], DEFAULT_CIRCOS_ARGS['inter_circos_fdr'])
 
         # Get distinct pairs of ligands and receptors
         lr_pairs = read_ligand_receptor_file()
@@ -253,9 +229,7 @@ if __name__ == '__main__':
 
         fig = make_circos_figure(None,
                                  lr_pairs,
-                                 outer_data,
-                                 max_data,
-                                 is_max,
+                                 data,
                                  DEFAULT_CIRCOS_ARGS['inter_circos_fdr'],
                                  DEFAULT_CIRCOS_ARGS['logfc_circos_fdr'],
                                  DEFAULT_CIRCOS_ARGS['circos_min_numsigi1'],

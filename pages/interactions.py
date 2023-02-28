@@ -17,7 +17,7 @@ def build_interface() -> list:
     from viz.figures import DEFAULT_INTERACTIONS_ARGS, INTERACTIONS_SAVE_LOCATION
 
     import pickle
-    default_plot = None
+    default_plot = {}
     try:
         with open(INTERACTIONS_SAVE_LOCATION, 'rb') as f:
             default_plot = pickle.load(f)
@@ -30,7 +30,6 @@ def build_interface() -> list:
                                   dbc.Select(
                                       id='inter_set',
                                       options=[{'label': 'CIN-Dependent Effect', 'value': 'cin'},
-                                               {'label': 'STING-Dependent Effect', 'value': 'sting'},
                                                {'label': 'CIN & STING Max Effect', 'value': 'max'}],
                                       value=DEFAULT_INTERACTIONS_ARGS['inter_set']
                                   )),
@@ -258,7 +257,7 @@ def initialize_options(inter_fdr, logfc_fdr):
     fdr = inter_fdr
 
     # Use the max set
-    interactions = read_interactions_file('max', fdr)
+    interactions = read_interactions_file('highCIN_vs_noSTING', fdr)
 
     max_logfc = max(max(interactions.MAST_log2FC_ligand.abs()), max(interactions.MAST_log2FC_receptor.abs()))
     max_inter = max(interactions.numSigI1)

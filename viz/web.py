@@ -92,8 +92,6 @@ def make_data_redirect_buttons():
 def make_circos_figure(set_progress,
                        lr_pairs: List[Tuple[str, str]],
                        outer_data: pd.DataFrame,
-                       max_data: Optional[pd.DataFrame],
-                       is_max: bool,
                        inter_fdr: str,
                        logfc_fdr: str,
                        min_numsigi1: int,
@@ -111,28 +109,11 @@ def make_circos_figure(set_progress,
     celltype2id = dict()
     celltype2targets = dict()
 
-    from viz.data import _get_original_data
-    old = _get_original_data()
-    differing = pd.merge(old, outer_data, on=['cell_type', 'target'], how='left', suffixes=('', '_new'))
-
-    # Join inner data to max data if necessary
-    if is_max:
-        outer_data = pd.merge(outer_data, max_data, on=['cell_type', 'target', 'ligand', 'receptor'], how='left', suffixes=('', '_max'))
-    del max_data
-
     # Initial obs filters
     outer_data = outer_data[~outer_data['cell_type_dc1'].isna()]
     #outer_data['cell_type_dc1'] = outer_data['cell_type_dc1'].fillna(0)
-    outer_data = outer_data[(outer_data['receptor'] & (outer_data['numSigI1_max' if is_max else 'numSigI1'] >= min_numsigi1) & (outer_data['numDEG_max' if is_max else 'numDEG'] >= min_numdeg))
-                            | ((outer_data['ligand'] & ~outer_data['receptor']) & (outer_data['MAST_log2FC_max' if is_max else 'MAST_log2FC'].abs() > min_logfc) & (outer_data['MAST_fdr_max' if is_max else 'MAST_fdr'] < logfc_pvalue_cutoff))]
-
-    outer_data['logfc_direction'] = np.sign(outer_data['MAST_log2FC'])
-
-    if is_max:
-        # Require same direction of change
-        outer_data['logfc_direction_cin'] = np.sign(outer_data['MAST_log2FC_cin'])
-        outer_data['logfc_direction_sting'] = np.sign(outer_data['MAST_log2FC_sting'])
-        outer_data = outer_data[(~outer_data['ligand']) | (outer_data['logfc_direction_cin'] == outer_data['logfc_direction_sting'])]
+    outer_data = outer_data[(outer_data['receptor'] & (outer_data['numSigI1'] >= min_numsigi1) & (outer_data['numDEG'] >= min_numdeg))
+                            | ((outer_data['ligand'] & ~outer_data['receptor']) & (outer_data['MAST_log2FC'].abs() > min_logfc) & (outer_data['MAST_fdr'] < logfc_pvalue_cutoff))]
 
     all_receptors = set(outer_data[outer_data['receptor']].target.unique())
     all_ligands = set(outer_data[outer_data['ligand']].target.unique())
@@ -146,6 +127,7 @@ def make_circos_figure(set_progress,
     # Filter obs to just the selected ligands and receptors
     if set_progress is not None:
         set_progress((2, 7))
+
     layout = []
     for celltype in celltypes:
         color = celltype2color[celltype]
@@ -263,7 +245,7 @@ def make_circos_figure(set_progress,
                 target_position = celltype2targets[target_celltype].index(r)
 
                 # Max thickness of ribbons on either end of the target position
-                thickness = max((receptor_row['numSigI1_max' if is_max else 'numSigI1']/max_receptor_numSigI1), 1)
+                thickness = max((receptor_row['numSigI1']/max_receptor_numSigI1), 1)
 
                 lig = ligand_row['target']
                 rec = receptor_row['target']
@@ -279,9 +261,9 @@ def make_circos_figure(set_progress,
                 }
 
                 chord_data.append({
-                    'color': colormap(ligand_row['MAST_log2FC_max' if is_max else 'MAST_log2FC']),
-                    'value_text': f"{lig}/{rec} MAST_log2FC={ligand_row['MAST_log2FC_max' if is_max else 'MAST_log2FC']:.2f}",
-                    'logfc': ligand_row['MAST_log2FC_max' if is_max else 'MAST_log2FC'],
+                    'color': colormap(ligand_row['MAST_log2FC']),
+                    'value_text': f"{lig}/{rec} MAST_log2FC={ligand_row['MAST_log2FC']:.2f}",
+                    'logfc': ligand_row['MAST_log2FC'],
                     'source': {
                         'id': celltype2id[source_celltype],
                         'start': source_position - thickness,

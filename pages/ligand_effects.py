@@ -17,7 +17,7 @@ def build_interface() -> list:
     from viz.figures import DEFAULT_LIGAND_EFFECT_ARGS, LIGAND_EFFECT_SAVE_LOCATION
 
     import pickle
-    default_plot = None
+    default_plot = {}
     try:
         with open(LIGAND_EFFECT_SAVE_LOCATION, 'rb') as f:
             default_plot = pickle.load(f)
@@ -30,9 +30,10 @@ def build_interface() -> list:
                                   dbc.Select(
                                       id='effect_set',
                                       options=[{'label': 'CIN-Dependent Effect', 'value': 'cin'},
-                                               {'label': 'STING-Dependent Effect', 'value': 'sting'},
-                                               {'label': 'CIN & STING Max Effect', 'value': 'max'}],
-                                      value=DEFAULT_LIGAND_EFFECT_ARGS['effect_set']
+                                               {'label': 'CIN & STING Max Effect', 'value': 'max', 'disabled': True}
+                                               ],
+                                      value=DEFAULT_LIGAND_EFFECT_ARGS['effect_set'],
+
                                   )),
             control_panel_element("Network Layout", 'Select how you would like to structure nodes.',
                                   dbc.Select(
