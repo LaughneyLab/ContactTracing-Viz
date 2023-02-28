@@ -1,18 +1,29 @@
-import dash
-from dash import html, dcc, callback, Output, Input, State
-import dash_bootstrap_components as dbc
-from dash.exceptions import PreventUpdate
+import os.path
 
-from viz.figures import bipartite_graph
+import dash
+from dash import dcc, callback, Output, Input, State
+import dash_bootstrap_components as dbc
+
 from viz.web import interactive_panel, wrap_icon, control_panel, control_panel_element, figure_output
 
-dash.register_page(__name__,
-                   path='/interactions',
-                   name='Interactions',
-                   order=2)
+if __name__ != '__main__':
+    dash.register_page(__name__,
+                       path='/interactions',
+                       name='Interactions',
+                       order=2)
 
 
 def build_interface() -> list:
+    from viz.figures import DEFAULT_INTERACTIONS_ARGS, INTERACTIONS_SAVE_LOCATION
+
+    import pickle
+    default_plot = None
+    try:
+        with open(INTERACTIONS_SAVE_LOCATION, 'rb') as f:
+            default_plot = pickle.load(f)
+    except:
+        pass
+
     controls = control_panel(
         [
             control_panel_element("Interaction Set", "Biological condition to compare.",
@@ -21,7 +32,7 @@ def build_interface() -> list:
                                       options=[{'label': 'CIN-Dependent Effect', 'value': 'cin'},
                                                {'label': 'STING-Dependent Effect', 'value': 'sting'},
                                                {'label': 'CIN & STING Max Effect', 'value': 'max'}],
-                                      value='cin'
+                                      value=DEFAULT_INTERACTIONS_ARGS['inter_set']
                                   )),
             control_panel_element("Minimum numSigI1", "The minimum number of significant target gene interactions.",
                                   dcc.Slider(
@@ -29,7 +40,7 @@ def build_interface() -> list:
                                       min=0,
                                       max=10,  # Fill in
                                       step=1,
-                                      value=0,
+                                      value=DEFAULT_INTERACTIONS_ARGS['min_numsigi1_bipartite'],
                                       marks=None,
                                       tooltip={'placement': 'bottom'},
                                       persistence=False,
@@ -42,7 +53,7 @@ def build_interface() -> list:
                                       min=0,
                                       max=1,  # Fill in
                                       step=0.01,
-                                      value=0,
+                                      value=DEFAULT_INTERACTIONS_ARGS['min_logfc_bipartite'],
                                       marks=None,
                                       tooltip={'placement': 'bottom'},
                                       persistence=False,
@@ -53,14 +64,14 @@ def build_interface() -> list:
                                       id='bipartite_inter_fdr',
                                       options=[{'label': '0.05', 'value': 'fdr05'},
                                                {'label': '0.25', 'value': 'fdr25'}],
-                                      value='fdr05'
+                                      value=DEFAULT_INTERACTIONS_ARGS['bipartite_inter_fdr']
                                   )),
             control_panel_element("log2FC FDR Cutoff", "FDR-adjusted requirements for interaction effects.",
                                   dbc.Select(
                                       id='bipartite_logfc_fdr',
                                       options=[{'label': '0.05', 'value': 'fdr05'},
                                                {'label': '0.25', 'value': 'fdr25'}],
-                                      value='fdr05'
+                                      value=DEFAULT_INTERACTIONS_ARGS['bipartite_logfc_fdr']
                                   ))
         ], [
             control_panel_element("First Cell Type", "The first cell type to examine interactions between.",
@@ -79,7 +90,7 @@ def build_interface() -> list:
                                                  'Endothelial cells',
                                                  'Osteoclasts',
                                                  'Mast cells']],
-                                      value='Tumor cells'
+                                      value=DEFAULT_INTERACTIONS_ARGS['first_celltype']
                                   )),
             control_panel_element("Second Cell Type", "The second cell type to examine interactions between (need not be unique).",
                                   dbc.Select(
@@ -97,7 +108,7 @@ def build_interface() -> list:
                                              'Endothelial cells',
                                              'Osteoclasts',
                                              'Mast cells']],
-                                    value='Macrophages/mMDSC'
+                                    value=DEFAULT_INTERACTIONS_ARGS['second_celltype']
                                   )),
             control_panel_element("Third Cell Type", "If specified, include interactions across a third cell type.",
                                   dbc.Select(
@@ -116,7 +127,7 @@ def build_interface() -> list:
                                                 'Endothelial cells',
                                                 'Osteoclasts',
                                                 'Mast cells']],
-                                      value='(None)',
+                                      value=DEFAULT_INTERACTIONS_ARGS['third_celltype']
                                   )),
         ], [
             control_panel_element("Plot", "",
@@ -136,7 +147,7 @@ def build_interface() -> list:
         footer="Circle = Ligand, Square = Receptor, Diamond = Ligand and Receptor",
         element=dcc.Graph(id="celltype-interaction-graph",
                           animate=True,
-                          #figure={},  # Filled in by callback
+                          figure=default_plot,
                           config={
                               'displaylogo': False,
                               'showTips': True,
@@ -184,9 +195,30 @@ def make_graph(set_progress, n_clicks,
                first_ct, second_ct, third_ct,
                min_logfc, min_numSigI1,
                inter_fdr, logfc_fdr):
-    from viz.data import read_interactions_file
+    if n_clicks == 0:
+        from dash.exceptions import PreventUpdate
+        raise PreventUpdate
 
-    set_progress((0, 100))
+    from viz.data import read_interactions_file
+    from viz.figures import bipartite_graph, DEFAULT_INTERACTIONS_ARGS, INTERACTIONS_SAVE_LOCATION
+
+    set_progress((50, 100))
+
+    # Check if arguments match default, if so return the pre-computed default
+    if (inter_set == DEFAULT_INTERACTIONS_ARGS['inter_set'] and
+            first_ct == DEFAULT_INTERACTIONS_ARGS['first_celltype'] and
+            second_ct == DEFAULT_INTERACTIONS_ARGS['second_celltype'] and
+            third_ct == DEFAULT_INTERACTIONS_ARGS['third_celltype'] and
+            min_logfc == DEFAULT_INTERACTIONS_ARGS['min_logfc_bipartite'] and
+            min_numSigI1 == DEFAULT_INTERACTIONS_ARGS['min_numsigi1_bipartite'] and
+            inter_fdr == DEFAULT_INTERACTIONS_ARGS['bipartite_inter_fdr'] and
+            logfc_fdr == DEFAULT_INTERACTIONS_ARGS['bipartite_logfc_fdr']):
+        import pickle
+        try:
+            with open(INTERACTIONS_SAVE_LOCATION, 'rb') as f:
+                return pickle.load(f)
+        except:
+            pass
 
     # Do some work
     interactions = read_interactions_file(inter_set, inter_fdr)
@@ -239,3 +271,25 @@ layout = [
                       *build_interface()
                       )
 ]
+
+
+# If run as a script, compile the default plot
+if __name__ == '__main__':
+    from viz.figures import bipartite_graph, DEFAULT_INTERACTIONS_ARGS, INTERACTIONS_SAVE_LOCATION
+    if not os.path.exists(INTERACTIONS_SAVE_LOCATION):
+        from viz.data import read_interactions_file
+        import pickle
+        interactions = read_interactions_file(DEFAULT_INTERACTIONS_ARGS['inter_set'], DEFAULT_INTERACTIONS_ARGS['bipartite_inter_fdr'])
+
+        fig = bipartite_graph(
+            df=interactions,
+            cell1=DEFAULT_INTERACTIONS_ARGS['first_celltype'],
+            cell2=DEFAULT_INTERACTIONS_ARGS['second_celltype'],
+            cell3=DEFAULT_INTERACTIONS_ARGS['third_celltype'],
+            numInteractions=DEFAULT_INTERACTIONS_ARGS['min_numsigi1_bipartite'],
+            min_logfc_bipartite=DEFAULT_INTERACTIONS_ARGS['min_logfc_bipartite'],
+            logfc_fdr_bipartite_cutoff=float(DEFAULT_INTERACTIONS_ARGS['bipartite_logfc_fdr'].replace('fdr', '.'))
+        )
+
+        with open(INTERACTIONS_SAVE_LOCATION, 'wb') as f:
+            pickle.dump(fig, f)

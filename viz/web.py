@@ -99,7 +99,8 @@ def make_circos_figure(set_progress,
                        min_numsigi1: int,
                        min_numdeg: int,
                        min_logfc: float):
-    set_progress((1, 7))
+    if set_progress is not None:
+        set_progress((1, 7))
 
     #inter_pvalue_cutoff = float("0." + inter_fdr.replace('fdr', ''))  # pval from name
     logfc_pvalue_cutoff = float("0." + logfc_fdr.replace('fdr', ''))  # pval from name
@@ -143,7 +144,8 @@ def make_circos_figure(set_progress,
     outer_data = outer_data[(outer_data['target'].isin(all_ligands)) | (outer_data['target'].isin(all_receptors))]
 
     # Filter obs to just the selected ligands and receptors
-    set_progress((2, 7))
+    if set_progress is not None:
+        set_progress((2, 7))
     layout = []
     for celltype in celltypes:
         color = celltype2color[celltype]
@@ -158,7 +160,8 @@ def make_circos_figure(set_progress,
             'len': len(celltype2targets[celltype]),
         })
     layout = list(sorted(layout, key=lambda x: x['len'], reverse=True))
-    set_progress((3, 7))
+    if set_progress is not None:
+        set_progress((3, 7))
 
     # Build next ring for DC1 heatmap
     max_dc1 = outer_data['cell_type_dc1'].max()
@@ -181,7 +184,8 @@ def make_circos_figure(set_progress,
                 'color': colormap(dc1),
                 'target': t
             })
-    set_progress((4, 7))
+    if set_progress is not None:
+        set_progress((4, 7))
 
     # Next ring for Differential abundance
     max_da = outer_data['DA_score'].max()
@@ -202,7 +206,8 @@ def make_circos_figure(set_progress,
                 'color': colormap(da),
                 'target': t
             })
-    set_progress((5, 7))
+    if set_progress is not None:
+        set_progress((5, 7))
 
     # Next ring for magnitude of CIN-dependent effect
     receptor_info = outer_data[outer_data['receptor']]
@@ -238,7 +243,8 @@ def make_circos_figure(set_progress,
                     'color': color,
                     'target': t
                 })
-    set_progress((6, 7))
+    if set_progress is not None:
+        set_progress((6, 7))
 
     # Next ring for chords connecting ligands to receptors
     chord_receptors = outer_data[outer_data['receptor']]
@@ -289,8 +295,8 @@ def make_circos_figure(set_progress,
                 })
     # Sort to place red chords on top
     chord_data = sorted(chord_data, key=lambda c: c['logfc'], reverse=False)
-
-    set_progress((7, 7))
+    if set_progress is not None:
+        set_progress((7, 7))
     ring_width = 50
     return dashbio.Circos(
         enableDownloadSVG=True,

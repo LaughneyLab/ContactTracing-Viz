@@ -109,7 +109,7 @@ app.layout = dbc.Container(fluid=True,
 if __name__ == '__main__':
     debug = sys.argv[1] == 'debug'
    # debug = False
-    app.run(port=8050,
+    app.run(port=8000,
             debug=debug,
             dev_tools_ui=debug,
             dev_tools_props_check=debug,

@@ -42,6 +42,12 @@ ADD . .
 RUN source /venv/bin/activate && \
     python viz/data.py
 
+# Pre-compile default figures
+RUN source /venv/bin/activate && \
+    python pages/circos.py && \
+    python pages/interactions.py && \
+    python pages/ligand_effects.py
+
 ENTRYPOINT redis-server --daemonize yes && \
     source /venv/bin/activate && \
     celery -A app:celery_app worker --loglevel=info --concurrency=2 --detach  && \

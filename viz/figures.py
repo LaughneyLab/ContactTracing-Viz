@@ -18,6 +18,42 @@ from viz.data import read_ligand_receptor_file, read_ligand_effect_for
 from viz.util import multipartite_layout, get_quiver_arrows, celltype_to_colors, timeline_layout
 
 
+DEFAULT_LIGAND_EFFECT_ARGS = {
+    'effect_set': 'cin',
+    'network_layout': 'timeline',
+    'cell_type': 'Tumor cells',
+    'ligands': 'Ccl2,Apoe',
+    'interaction_fdr': 0.05,
+    'min_logfc': 0.1,
+    'logfc_fdr': 0.05,
+    'iterations': 3
+}
+LIGAND_EFFECT_SAVE_LOCATION = "data/compiled/default_ligand_effects.pkl"
+
+DEFAULT_INTERACTIONS_ARGS = {
+    'inter_set': 'cin',
+    'min_numsigi1_bipartite': 0,
+    'min_logfc_bipartite': 0,
+    'bipartite_inter_fdr': 'fdr05',
+    'bipartite_logfc_fdr': 'fdr05',
+    'first_celltype': 'Tumor cells',
+    'second_celltype': 'Macrophages/mMDSC',
+    'third_celltype': '(None)'
+}
+INTERACTIONS_SAVE_LOCATION = 'data/compiled/default_interactions.pkl'
+
+DEFAULT_CIRCOS_ARGS = {
+    'inter_circos_fdr': 'fdr25',  # Default from fig 4
+    'logfc_circos_fdr': 'fdr05',  # Default from fig 4
+    'circos_outer_set': 'cin',  # Default from fig 4
+    'circos_inner_set': 'sting',  # Default from fig 4
+    'circos_min_numsigi1': 1,  # Default from fig 4
+    'circos_min_numdeg': 0,  # Default from fig 4
+    'circos_min_ligand_logfc': 0.12  # Default from fig 4
+}
+CIRCOS_SAVE_LOCATION = 'data/compiled/default_circos.pkl'
+
+
 def bipartite_graph(df,
                     cell1,
                     cell2,
