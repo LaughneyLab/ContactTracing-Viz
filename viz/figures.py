@@ -862,7 +862,7 @@ def pseudotime_interaction_propagation_graph(effect_set: str,
     def _read_filtered_df(celltype, target):
         df = read_ligand_effect_for(effect_set, target)
         if celltype is not None:
-            df = df[df['celltype'] == celltype]
+            df = df[df['cell_type'] == celltype]
         if df is None:
             return pd.DataFrame()
         return df[(df['fdr'] < logfc_fdr_cutoff) & (df['i1.fdr'] < interaction_fdr_cutoff) & (df['log2FC'].abs() >= min_logfc)]
