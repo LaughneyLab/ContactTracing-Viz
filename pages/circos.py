@@ -142,7 +142,7 @@ def make_circos_plot(set_progress, n_clicks,
         raise PreventUpdate
 
     set_progress((0, 7))
-    from viz.data import read_circos_file, read_ligand_receptor_file
+    from viz.data import read_circos_file, read_ligand_receptor_file, read_interactions_file
     from viz.web import make_circos_figure
     from viz.figures import DEFAULT_CIRCOS_ARGS, CIRCOS_SAVE_LOCATION
 
@@ -161,6 +161,7 @@ def make_circos_plot(set_progress, n_clicks,
             pass
 
     data = read_circos_file(circos_set, inter_circos_fdr)
+    inter_data = read_interactions_file(circos_set, inter_circos_fdr)
 
     # Get distinct pairs of ligands and receptors
     lr_pairs = read_ligand_receptor_file()
@@ -170,7 +171,7 @@ def make_circos_plot(set_progress, n_clicks,
     return [make_circos_figure(set_progress,
                                lr_pairs,
                                data,
-                               inter_circos_fdr,
+                               inter_data,
                                logfc_circos_fdr,
                                min_numsigi1,
                                min_numdeg,
@@ -216,11 +217,12 @@ if __name__ == '__main__':
     from viz.figures import DEFAULT_CIRCOS_ARGS, CIRCOS_SAVE_LOCATION
 
     if not os.path.exists(CIRCOS_SAVE_LOCATION):
-        from viz.data import read_circos_file, read_ligand_receptor_file
+        from viz.data import read_circos_file, read_ligand_receptor_file, read_interactions_file
         from viz.web import make_circos_figure
         import pickle
 
         data = read_circos_file(DEFAULT_CIRCOS_ARGS['circos_set'], DEFAULT_CIRCOS_ARGS['inter_circos_fdr'])
+        inter_data = read_interactions_file(DEFAULT_CIRCOS_ARGS['circos_set'], DEFAULT_CIRCOS_ARGS['inter_circos_fdr'])
 
         # Get distinct pairs of ligands and receptors
         lr_pairs = read_ligand_receptor_file()
@@ -230,7 +232,7 @@ if __name__ == '__main__':
         fig = make_circos_figure(None,
                                  lr_pairs,
                                  data,
-                                 DEFAULT_CIRCOS_ARGS['inter_circos_fdr'],
+                                 inter_data,
                                  DEFAULT_CIRCOS_ARGS['logfc_circos_fdr'],
                                  DEFAULT_CIRCOS_ARGS['circos_min_numsigi1'],
                                  DEFAULT_CIRCOS_ARGS['circos_min_numdeg'],

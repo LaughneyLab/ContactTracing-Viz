@@ -89,10 +89,19 @@ def make_data_redirect_buttons():
     ])
 
 
+def _get_original_data():
+    df = pd.read_csv('old_data/circle_plot_tabular.tsv', sep='\t')
+    df['cell_type'] = df['cell type']
+    df['MAST_fdr_max'] = df['MAST_fdr']
+    df['numSigI1_max'] = df['numSigI1_fdr25_max']
+    df['cell_type_dc1_max'] = df['cell_type_dc1']
+    return df
+
+
 def make_circos_figure(set_progress,
                        lr_pairs: List[Tuple[str, str]],
                        outer_data: pd.DataFrame,
-                       inter_fdr: str,
+                       inter_data: pd.DataFrame,
                        logfc_fdr: str,
                        min_numsigi1: int,
                        min_numdeg: int,
@@ -112,17 +121,28 @@ def make_circos_figure(set_progress,
     # Initial obs filters
     outer_data = outer_data[~outer_data['cell_type_dc1'].isna()]
     #outer_data['cell_type_dc1'] = outer_data['cell_type_dc1'].fillna(0)
+    # Ligand / Receptor filter
     outer_data = outer_data[(outer_data['receptor'] & (outer_data['numSigI1'] >= min_numsigi1) & (outer_data['numDEG'] >= min_numdeg))
-                            | ((outer_data['ligand'] & ~outer_data['receptor']) & (outer_data['MAST_log2FC'].abs() > min_logfc) & (outer_data['MAST_fdr'] < logfc_pvalue_cutoff))]
+                            | (outer_data['ligand'] & (outer_data['MAST_fdr'] < logfc_pvalue_cutoff) & (outer_data['MAST_log2FC'] != 0.0))]
+    inter_data = inter_data[(inter_data['numSigI1'] >= min_numsigi1) & (inter_data['numDEG'] >= min_numdeg)
+                            & (inter_data['MAST_fdr_ligand'] < logfc_pvalue_cutoff) & (inter_data['MAST_log2FC_ligand'].abs() > min_logfc)]
 
     all_receptors = set(outer_data[outer_data['receptor']].target.unique())
     all_ligands = set(outer_data[outer_data['ligand']].target.unique())
     lr_pairs = [(l, r) for l, r in lr_pairs if (l in all_ligands and r in all_receptors)]
-    all_ligands = set(l for l, r in lr_pairs)
-    all_receptors = set(r for l, r in lr_pairs)
 
     # Filter outer_data to just the selected ligands and receptors
     outer_data = outer_data[(outer_data['target'].isin(all_ligands)) | (outer_data['target'].isin(all_receptors))]
+    inter_data = inter_data[(inter_data['ligand'].isin(outer_data['target'])) & (inter_data['receptor'].isin(outer_data['target']))]
+
+    # Remove any cell types without connections
+    for celltype in celltypes:
+        ct_inter = inter_data[(inter_data['cell_type_ligand'] == celltype) | (inter_data['cell_type_receptor'] == celltype)]
+
+        if ct_inter.shape[0] == 0:
+            outer_data = outer_data[outer_data['cell_type'] != celltype]
+
+    celltypes = outer_data['cell_type'].unique()
 
     # Filter obs to just the selected ligands and receptors
     if set_progress is not None:
@@ -193,8 +213,8 @@ def make_circos_figure(set_progress,
 
     # Next ring for magnitude of CIN-dependent effect
     receptor_info = outer_data[outer_data['receptor']]
-    max_receptor_numSigI1 = receptor_info['numSigI1'].max()
-    min_receptor_numSigI1 = receptor_info['numSigI1'].min()
+    max_receptor_numSigI1 = inter_data['numSigI1'].max()
+    min_receptor_numSigI1 = inter_data['numSigI1'].min()
     numSigI1_data = []
     for celltype in celltypes:
         id = celltype2id[celltype]
@@ -229,52 +249,46 @@ def make_circos_figure(set_progress,
         set_progress((6, 7))
 
     # Next ring for chords connecting ligands to receptors
-    chord_receptors = outer_data[outer_data['receptor']]
-    chord_ligands = outer_data[outer_data['ligand']]
     colormap = ColorTransformer(-0.2, 0.2, 'bwr')
     chord_data = []
     text_data = dict()
-    for (l, r) in lr_pairs:
-        if l not in chord_ligands['target'].values or r not in chord_receptors['target'].values:
-            continue
-        for _, ligand_row in chord_ligands[chord_ligands['target'] == l].iterrows():
-            for _, receptor_row in chord_receptors[chord_receptors['target'] == r].iterrows():
-                source_celltype = ligand_row['cell_type']
-                target_celltype = receptor_row['cell_type']
-                source_position = celltype2targets[source_celltype].index(l)
-                target_position = celltype2targets[target_celltype].index(r)
+    for i, inter_row in inter_data.iterrows():
+        lig = inter_row['ligand']
+        rec = inter_row['receptor']
+        source_celltype = inter_row['cell_type_ligand']
+        target_celltype = inter_row['cell_type_receptor']
+        source_position = celltype2targets[source_celltype].index(lig)
+        target_position = celltype2targets[target_celltype].index(rec)
 
-                # Max thickness of ribbons on either end of the target position
-                thickness = max((receptor_row['numSigI1']/max_receptor_numSigI1), 1)
+        # Max thickness of ribbons on either end of the target position
+        thickness = max((inter_row['numSigI1']/max_receptor_numSigI1), 1)
 
-                lig = ligand_row['target']
-                rec = receptor_row['target']
-                text_data[(source_celltype, lig)] = {
-                    'block_id': celltype2id[source_celltype],
-                    'position': source_position+.5,
-                    'value': lig
-                }
-                text_data[(target_celltype, rec)] = {
-                    'block_id': celltype2id[target_celltype],
-                    'position': target_position+.5,
-                    'value': rec
-                }
+        text_data[(source_celltype, lig)] = {
+            'block_id': celltype2id[source_celltype],
+            'position': source_position+.5,
+            'value': lig
+        }
+        text_data[(target_celltype, rec)] = {
+            'block_id': celltype2id[target_celltype],
+            'position': target_position+.5,
+            'value': rec
+        }
 
-                chord_data.append({
-                    'color': colormap(ligand_row['MAST_log2FC']),
-                    'value_text': f"{lig}/{rec} MAST_log2FC={ligand_row['MAST_log2FC']:.2f}",
-                    'logfc': ligand_row['MAST_log2FC'],
-                    'source': {
-                        'id': celltype2id[source_celltype],
-                        'start': source_position - thickness,
-                        'end': source_position + thickness,
-                    },
-                    'target': {
-                        'id': celltype2id[target_celltype],
-                        'start': target_position - thickness,
-                        'end': target_position + thickness,
-                    },
-                })
+        chord_data.append({
+            'color': colormap(inter_row['MAST_log2FC_ligand']),
+            'value_text': f"{lig}/{rec} MAST_log2FC={inter_row['MAST_log2FC_ligand']:.2f}",
+            'logfc': inter_row['MAST_log2FC_ligand'],
+            'source': {
+                'id': celltype2id[source_celltype],
+                'start': source_position - thickness,
+                'end': source_position + thickness,
+            },
+            'target': {
+                'id': celltype2id[target_celltype],
+                'start': target_position - thickness,
+                'end': target_position + thickness,
+            },
+        })
     # Sort to place red chords on top
     chord_data = sorted(chord_data, key=lambda c: c['logfc'], reverse=False)
     if set_progress is not None:
