@@ -46,7 +46,7 @@ DEFAULT_CIRCOS_ARGS = {
     'inter_circos_fdr': 'fdr25',  # Default from fig 4
     'logfc_circos_fdr': 'fdr05',  # Default from fig 4
     'circos_set': 'sting',  # Default from fig 4
-    'circos_min_numsigi1': 1,  # Default from fig 4
+    'circos_min_numsigi1': 10,  # Default from fig 4
     'circos_min_numdeg': 0,  # Default from fig 4
     'circos_min_ligand_logfc': 0.12  # Default from fig 4
 }

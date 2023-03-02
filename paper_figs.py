@@ -7,7 +7,7 @@ from viz.util import mouse_colors
 
 
 def make_pairwise_fig():
-    interactions = read_interactions("old_data/mouse_ranked_interactions.tsv")
+    interactions = read_interactions("data/mouse_ranked_interactions.tsv")
     relevant_interactions = pd.read_excel("links_tabular_minInt10_fdr25_logFC0p12_EE.xlsx", sheet_name="tumor-ligands-shaping-TME")
     relevant_interactions['cell_type_receptor'] = relevant_interactions['cell type_receptor']
     relevant_interactions['cell_type_ligand'] = relevant_interactions['cell type_ligand']
@@ -35,8 +35,8 @@ def make_pairwise_fig():
 def make_ligand_spread_fig():
     # TODO: Radial plots for each receptor/cell type, with ligands as spokes
     # Then draw arrows connecting each plot to the next (positive log2FC)
-    adata = read_ct_data("old_data/mouse_deg_fixed_pruned.h5ad")
-    interactions = read_interactions("old_data/mouse_ranked_interactions.tsv")
+    adata = read_ct_data("data/mouse_deg_fixed_pruned.h5ad")
+    interactions = read_interactions("data/mouse_ranked_interactions.tsv")
     relevant_interactions = pd.read_excel("links_tabular_minInt10_fdr25_logFC0p12_EE.xlsx",
                                           sheet_name="tumor-ligands-shaping-TME")  # sheet_name="links_tabular")
     relevant_interactions['cell_type_receptor'] = relevant_interactions['cell type_receptor']
@@ -66,8 +66,8 @@ def make_ligand_spread_fig():
 
 
 def test_radial_plot():
-    adata = read_ct_data("old_data/mouse_deg_fixed_pruned.h5ad")
-    interactions = read_interactions("old_data/mouse_ranked_interactions.tsv")
+    adata = read_ct_data("data/mouse_deg_fixed_pruned.h5ad")
+    interactions = read_interactions("data/mouse_ranked_interactions.tsv")
     relevant_interactions = pd.read_excel("links_tabular_minInt10_fdr25_logFC0p12_EE.xlsx",
                                           sheet_name="links_tabular")
     relevant_interactions['cell_type_receptor'] = relevant_interactions['cell type_receptor']
@@ -82,8 +82,8 @@ def test_radial_plot():
 
 
 def radial_networks():
-    adata = read_ct_data("old_data/mouse_deg_fixed_pruned.h5ad")
-    interactions = read_interactions("old_data/mouse_ranked_interactions.tsv")
+    adata = read_ct_data("data/mouse_deg_fixed_pruned.h5ad")
+    interactions = read_interactions("data/mouse_ranked_interactions.tsv")
     relevant_interactions = pd.read_excel("links_tabular_minInt10_fdr25_logFC0p12_EE.xlsx",
                                           sheet_name="links_tabular")
     relevant_interactions['cell_type_receptor'] = relevant_interactions['cell type_receptor']

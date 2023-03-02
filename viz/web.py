@@ -89,14 +89,6 @@ def make_data_redirect_buttons():
     ])
 
 
-def _get_original_data():
-    df = pd.read_csv('old_data/minInt10_fdr25_logFC0.12/links_tabular.tsv', sep='\t')
-    df['cell_type_receptor'] = df['cell type_receptor']
-    df['cell_type_ligand'] = df['cell type_ligand']
-    df['numSigI1'] = df['numSigI1_fdr25_max_receptor']
-    return df
-
-
 def make_circos_figure(set_progress,
                        outer_data: pd.DataFrame,
                        inter_data: pd.DataFrame,
@@ -120,7 +112,7 @@ def make_circos_figure(set_progress,
     outer_data = outer_data[~outer_data['cell_type_dc1'].isna()]
     #outer_data['cell_type_dc1'] = outer_data['cell_type_dc1'].fillna(0)
     # Ligand / Receptor filter
-    outer_data = outer_data[(outer_data['receptor'] & (outer_data['numSigI1'] >= min_numsigi1) & (outer_data['numDEG'] >= min_numdeg))
+    outer_data = outer_data[(outer_data['receptor'] & (outer_data['numSigI1'] > 0))
                             | (outer_data['ligand'] & (outer_data['MAST_fdr'] < logfc_pvalue_cutoff) & (outer_data['MAST_log2FC'] != 0.0))]
     inter_data = inter_data[(inter_data['numSigI1'] >= min_numsigi1) & (inter_data['numDEG'] >= min_numdeg)
                             & (inter_data['MAST_fdr_ligand'] < logfc_pvalue_cutoff) & (inter_data['MAST_log2FC_ligand'].abs() > min_logfc)]
@@ -130,7 +122,15 @@ def make_circos_figure(set_progress,
 
     # Filter outer_data to just the selected ligands and receptors
     outer_data = outer_data[(outer_data['target'].isin(all_ligands)) | (outer_data['target'].isin(all_receptors))]
-    inter_data = inter_data[(inter_data['ligand'].isin(outer_data['target'])) & (inter_data['receptor'].isin(outer_data['target']))]
+    # Only select interactions present in outer_data
+    inter_receptor_index = pd.MultiIndex.from_frame(inter_data[['receptor', 'cell_type_receptor']])
+    outer_receptor_index = pd.MultiIndex.from_frame(outer_data[['target', 'cell_type']])
+    inter_data = inter_data.loc[inter_receptor_index.isin(outer_receptor_index)]
+    del inter_receptor_index, outer_receptor_index
+    inter_ligand_index = pd.MultiIndex.from_frame(inter_data[['ligand', 'cell_type_ligand']])
+    outer_ligand_index = pd.MultiIndex.from_frame(outer_data[['target', 'cell_type']])
+    inter_data = inter_data.loc[inter_ligand_index.isin(outer_ligand_index)]
+    del inter_ligand_index, outer_ligand_index
 
     # Remove any cell types without connections
     for celltype in celltypes:
@@ -140,11 +140,6 @@ def make_circos_figure(set_progress,
             outer_data = outer_data[outer_data['cell_type'] != celltype]
 
     celltypes = outer_data['cell_type'].unique()
-
-    comb = pd.merge(_get_original_data(), inter_data, on=['ligand', 'receptor', 'cell_type_ligand', 'cell_type_receptor'], how='outer', suffixes=('_orig', '_new'))
-    comb['is_diff'] = pd.isna(comb['MAST_fdr_receptor_orig']) | pd.isna(comb['MAST_fdr_receptor_new'])
-    comb = comb[comb['is_diff']]
-    #TODO Remove once additional links are removed
 
     # Filter obs to just the selected ligands and receptors
     if set_progress is not None:
