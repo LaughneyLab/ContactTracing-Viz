@@ -1,7 +1,5 @@
 import itertools
 import os
-from glob import glob
-from typing import Optional
 
 import anndata as ad
 import scanpy as sc
@@ -80,13 +78,12 @@ def _combine_obs_for_interactions(interactions: pd.DataFrame,
 
     all_celltypes = set(adata.obs['cell type'])
     full_df = pd.DataFrame()
-    for donor_celltype, target_celltype in itertools.combinations(all_celltypes, 2):
+    for donor_celltype, target_celltype in itertools.product(all_celltypes, repeat=2):
         lig_adata = adata[(adata.obs['cell type'] == donor_celltype) &
                               (adata.obs['target'].isin(interactions.ligand))]
         rec_adata = adata[(adata.obs['cell type'] == target_celltype) &
                           (adata.obs['target'].isin(interactions.receptor))]
 
-        # TODO: Expression value?
         ligand_df = pd.DataFrame({
             'ligand': lig_adata.obs.target,
             'MAST_log2FC_ligand': lig_adata.obs[f'MAST_log2FC_{condition_name}'],

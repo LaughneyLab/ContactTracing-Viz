@@ -90,16 +90,14 @@ def make_data_redirect_buttons():
 
 
 def _get_original_data():
-    df = pd.read_csv('old_data/circle_plot_tabular.tsv', sep='\t')
-    df['cell_type'] = df['cell type']
-    df['MAST_fdr_max'] = df['MAST_fdr']
-    df['numSigI1_max'] = df['numSigI1_fdr25_max']
-    df['cell_type_dc1_max'] = df['cell_type_dc1']
+    df = pd.read_csv('old_data/minInt10_fdr25_logFC0.12/links_tabular.tsv', sep='\t')
+    df['cell_type_receptor'] = df['cell type_receptor']
+    df['cell_type_ligand'] = df['cell type_ligand']
+    df['numSigI1'] = df['numSigI1_fdr25_max_receptor']
     return df
 
 
 def make_circos_figure(set_progress,
-                       lr_pairs: List[Tuple[str, str]],
                        outer_data: pd.DataFrame,
                        inter_data: pd.DataFrame,
                        logfc_fdr: str,
@@ -129,7 +127,6 @@ def make_circos_figure(set_progress,
 
     all_receptors = set(outer_data[outer_data['receptor']].target.unique())
     all_ligands = set(outer_data[outer_data['ligand']].target.unique())
-    lr_pairs = [(l, r) for l, r in lr_pairs if (l in all_ligands and r in all_receptors)]
 
     # Filter outer_data to just the selected ligands and receptors
     outer_data = outer_data[(outer_data['target'].isin(all_ligands)) | (outer_data['target'].isin(all_receptors))]
@@ -143,6 +140,11 @@ def make_circos_figure(set_progress,
             outer_data = outer_data[outer_data['cell_type'] != celltype]
 
     celltypes = outer_data['cell_type'].unique()
+
+    comb = pd.merge(_get_original_data(), inter_data, on=['ligand', 'receptor', 'cell_type_ligand', 'cell_type_receptor'], how='outer', suffixes=('_orig', '_new'))
+    comb['is_diff'] = pd.isna(comb['MAST_fdr_receptor_orig']) | pd.isna(comb['MAST_fdr_receptor_new'])
+    comb = comb[comb['is_diff']]
+    #TODO Remove once additional links are removed
 
     # Filter obs to just the selected ligands and receptors
     if set_progress is not None:

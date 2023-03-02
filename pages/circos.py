@@ -163,13 +163,7 @@ def make_circos_plot(set_progress, n_clicks,
     data = read_circos_file(circos_set, inter_circos_fdr)
     inter_data = read_interactions_file(circos_set, inter_circos_fdr)
 
-    # Get distinct pairs of ligands and receptors
-    lr_pairs = read_ligand_receptor_file()
-    # Convert to list of tuples
-    lr_pairs = [tuple(x) for x in lr_pairs.values]
-
     return [make_circos_figure(set_progress,
-                               lr_pairs,
                                data,
                                inter_data,
                                logfc_circos_fdr,
@@ -224,13 +218,7 @@ if __name__ == '__main__':
         data = read_circos_file(DEFAULT_CIRCOS_ARGS['circos_set'], DEFAULT_CIRCOS_ARGS['inter_circos_fdr'])
         inter_data = read_interactions_file(DEFAULT_CIRCOS_ARGS['circos_set'], DEFAULT_CIRCOS_ARGS['inter_circos_fdr'])
 
-        # Get distinct pairs of ligands and receptors
-        lr_pairs = read_ligand_receptor_file()
-        # Convert to list of tuples
-        lr_pairs = [tuple(x) for x in lr_pairs.values]
-
         fig = make_circos_figure(None,
-                                 lr_pairs,
                                  data,
                                  inter_data,
                                  DEFAULT_CIRCOS_ARGS['logfc_circos_fdr'],
