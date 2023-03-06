@@ -6,7 +6,7 @@ import pandas as pd
 from dash import html, Output, Input
 import dash_bio as dashbio
 
-from viz.util import ColorTransformer, celltype_to_colors, saturate_color
+from viz.util import ColorTransformer, celltype_to_colors, saturate_color, scaled_logistic
 
 
 def jumbotron(title, main_content, sub_content, *additional_content, dark=False):
@@ -157,14 +157,29 @@ def make_circos_figure(set_progress,
         label = celltype
         id = celltype.replace(" ", "_").replace("-", "_").replace("/", "_")
         celltype2id[celltype] = id
-        celltype2targets[celltype] = sorted(outer_data[outer_data['cell_type'] == celltype].target, key=lambda t: outer_data[(outer_data['cell_type'] == celltype) & (outer_data['target'] == t)]['cell_type_dc1'].values[0])
+        celltype2targets[celltype] = sorted(outer_data[outer_data['cell_type'] == celltype].target,
+                                            key=lambda t: outer_data[(outer_data['cell_type'] == celltype) & (outer_data['target'] == t)]['cell_type_dc1'].values[0])
+        target_count = len(celltype2targets[celltype])
         layout.append({
             'id': id,
-            'label': label,
+            'label': label if target_count > len(label)*2 else "",
             'color': color,
-            'len': len(celltype2targets[celltype]),
+            'len': target_count,
+            'celltype': celltype
         })
-    layout = list(sorted(layout, key=lambda x: x['len'], reverse=True))
+    # Hard coded ordering according to the paper
+    ct2order = {
+        'Macrophages/mMDSC': 8,
+        'Tumor cells': 7,
+        'Endothelial cells': 6,
+        'T cells': 5,
+        'PMN/gMDSC': 4,
+        'B cells': 3,
+        'pDC': 2,
+        'NK cells': 1,
+        'cDC': 0
+    }
+    layout = list(sorted(layout, key=lambda x: (ct2order.get(x['celltype'], -1), x['len']), reverse=True))
     if set_progress is not None:
         set_progress((3, 7))
 
@@ -264,7 +279,7 @@ def make_circos_figure(set_progress,
         target_position = celltype2targets[target_celltype].index(rec)
 
         # Max thickness of ribbons on either end of the target position
-        thickness = max((inter_row['numSigI1']/max_receptor_numSigI1), 1)
+        thickness = scaled_logistic(inter_row['numSigI1']/max_receptor_numSigI1, 0, 2)
 
         text_data[(source_celltype, lig)] = {
             'block_id': celltype2id[source_celltype],
@@ -296,24 +311,24 @@ def make_circos_figure(set_progress,
     chord_data = sorted(chord_data, key=lambda c: c['logfc'], reverse=False)
     if set_progress is not None:
         set_progress((7, 7))
-    ring_width = 50
+    ring_width = 15
     return dashbio.Circos(
         enableDownloadSVG=True,
         enableZoomPan=True,
         layout=layout,
         selectEvent={
             "0": "hover",
-            #"1": "hover",
-            #"2": "hover",
-            #"3": "hover",
+            "1": "hover",
+            "2": "hover",
+            "3": "hover",
             "4": "hover"
         },
         tracks=[{
             'type': 'TEXT',
             'data': list(text_data.values()),
             'config': {
-                'innerRadius': 2.8*ring_width,
-                'outerRadius': 3.2*ring_width,
+                'innerRadius': 17.5*ring_width,
+                'outerRadius': 21*ring_width,
                 'style': {
                     'font-size': 6
                 }
@@ -326,7 +341,7 @@ def make_circos_figure(set_progress,
                     'name': 'color',
                 },
                 'opacity': 0.9,
-                'radius': 2.75*ring_width,
+                'radius': 17*ring_width,
                 'tooltipContent': {
                     'source': 'source',
                     'sourceID': 'id',
@@ -342,8 +357,8 @@ def make_circos_figure(set_progress,
                 'color': {
                     'name': 'color',
                 },
-                'innerRadius': 3*ring_width,
-                'outerRadius': 4*ring_width,
+                'innerRadius': 21*ring_width,
+                'outerRadius': 22*ring_width,
                 'direction': 'in',
                 'min': 0,
                 'max': max_receptor_numSigI1 - min_receptor_numSigI1,
@@ -358,8 +373,8 @@ def make_circos_figure(set_progress,
                 'color': {
                     'name': 'color',
                 },
-                'innerRadius': 4*ring_width,
-                'outerRadius': 5*ring_width,
+                'innerRadius': 22*ring_width,
+                'outerRadius': 23*ring_width,
                 'tooltipContent': {
                     'name': 'value_text'
                 }
@@ -371,8 +386,8 @@ def make_circos_figure(set_progress,
                 'color': {
                     'name': 'color',  # Redirect to color property
                 },
-                'innerRadius': 5*ring_width,
-                'outerRadius': 6*ring_width,
+                'innerRadius': 23*ring_width,
+                'outerRadius': 24*ring_width,
                 'tooltipContent': {
                     'name': 'value_text'
                }
@@ -385,9 +400,9 @@ def make_circos_figure(set_progress,
             "ticks": {
                 "display": False
             },
-            "innerRadius": 6*ring_width,
-            "outerRadius": 7*ring_width,
-            'size': 800
+            "innerRadius": 24*ring_width,
+            "outerRadius": 25*ring_width,
+            'size': 900
             #"cornerRadius": 4,
         }
     )

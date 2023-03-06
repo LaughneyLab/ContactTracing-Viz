@@ -80,7 +80,8 @@ layout = html.Div([
             [
                 html.A(
                     dbc.Row([
-                        dbc.Col(dbc.NavbarBrand(wrap_icon('fa-circle-nodes', html.Strong('ContactTracing')),)),
+                        dbc.Col(html.Img(src=app.get_asset_url('ct_logo.png'), height="30px"), width='auto'),
+                        dbc.Col(dbc.NavbarBrand(html.Strong('ContactTracing'))),
                     ], align='center', className="g-0"),
                     href="/",
                     style={'textDecoration': 'none'}  # Hide hyperlink underline

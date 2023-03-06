@@ -319,3 +319,9 @@ def get_quiver_arrows(start_x, start_y, end_x, end_y, scaleratio=1):
     arrow_y = list(itertools.chain.from_iterable(zip(point1_y, end_y, point2_y, empty)))
     return arrow_x, arrow_y
 
+
+def scaled_logistic(x, min, max):
+    # Based on: https://stackoverflow.com/a/29863846
+    sig = np.exp(-np.logaddexp(0, -x))
+    scaled = min + (max - min) * sig
+    return float(scaled)
