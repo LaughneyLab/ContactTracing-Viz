@@ -6,7 +6,7 @@ import pandas as pd
 from dash import html, Output, Input
 import dash_bio as dashbio
 
-from viz.util import ColorTransformer, celltype_to_colors, saturate_color, scaled_logistic
+from viz.util import ColorTransformer, celltype_to_colors, saturate_color, smooth_step
 
 
 def jumbotron(title, main_content, sub_content, *additional_content, dark=False):
@@ -54,7 +54,8 @@ def figure_output(title, footer, element) -> html.Div:
                                  animated=True,
                                  value=0,
                                  style={'visibility': 'hidden'}),
-                    element
+                    element,
+                    html.Br()
                 ], className='card-text')
             ]),
             dbc.CardFooter(footer)
@@ -267,7 +268,7 @@ def make_circos_figure(set_progress,
         set_progress((6, 7))
 
     # Next ring for chords connecting ligands to receptors
-    colormap = ColorTransformer(-0.2, 0.2, 'bwr')
+    colormap = ColorTransformer(-0.2, 0.2, 'bwr', alpha=0.8)
     chord_data = []
     text_data = dict()
     for i, inter_row in inter_data.iterrows():
@@ -279,7 +280,7 @@ def make_circos_figure(set_progress,
         target_position = celltype2targets[target_celltype].index(rec)
 
         # Max thickness of ribbons on either end of the target position
-        thickness = scaled_logistic(inter_row['numSigI1']/max_receptor_numSigI1, 0, 2)
+        thickness = smooth_step(inter_row['numSigI1'] / max_receptor_numSigI1, 0.33, 3)
 
         text_data[(source_celltype, lig)] = {
             'block_id': celltype2id[source_celltype],
@@ -313,15 +314,14 @@ def make_circos_figure(set_progress,
         set_progress((7, 7))
     ring_width = 15
     return dashbio.Circos(
-        enableDownloadSVG=True,
+        #enableDownloadSVG=True,
         enableZoomPan=True,
         layout=layout,
         selectEvent={
             "0": "hover",
             "1": "hover",
             "2": "hover",
-            "3": "hover",
-            "4": "hover"
+            "3": "hover"
         },
         tracks=[{
             'type': 'TEXT',
@@ -402,7 +402,7 @@ def make_circos_figure(set_progress,
             },
             "innerRadius": 24*ring_width,
             "outerRadius": 25*ring_width,
-            'size': 900
+            'size': 800
             #"cornerRadius": 4,
         }
     )

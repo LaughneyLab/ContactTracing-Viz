@@ -1,3 +1,4 @@
+import functools
 from typing import Set, Sized, Callable, Iterable
 
 import networkx as nx
@@ -6,17 +7,23 @@ from matplotlib import cm, colors
 import math
 import itertools
 
+from scipy.special import betainc
+
 
 class ColorTransformer(Sized, Callable, Iterable):
 
-    def __init__(self, min=0, max=255, cmap='bwr'):
+    def __init__(self, min=0, max=255, cmap='bwr', alpha=None):
         self.min = min
         self.max = max
         self.cmap = cm.get_cmap(cmap)
         self.norm = colors.Normalize(vmin=min, vmax=max, clip=True)
+        self.alpha = alpha
 
     def __call__(self, value):
-        return colors.rgb2hex(colors.colorConverter.to_rgb(self.cmap(self.norm(value))))
+        rgb = colors.colorConverter.to_rgb(self.cmap(self.norm(value)))
+        if self.alpha:
+            rgb = rgb + (self.alpha,)
+        return colors.rgb2hex(rgb, keep_alpha=self.alpha is not None)
 
     def __len__(self) -> int:
         color_range = self.max - self.min
@@ -330,8 +337,10 @@ def get_quiver_arrows(start_x, start_y, end_x, end_y, scaleratio=1):
     return arrow_x, arrow_y
 
 
-def scaled_logistic(x, min, max):
-    # Based on: https://stackoverflow.com/a/29863846
-    sig = np.exp(-np.logaddexp(0, -x))
-    scaled = min + (max - min) * sig
+@functools.lru_cache()
+def smooth_step(x, min, max):
+    assert 0 <= x <= 1
+    # Based on: https://math.stackexchange.com/a/2271336
+    curve = betainc(3, 3, x)
+    scaled = min + (max - min) * curve
     return float(scaled)

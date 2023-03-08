@@ -41,11 +41,11 @@ def build_interface() -> list:
                                       value=DEFAULT_CIRCOS_ARGS['logfc_circos_fdr']
                                   ))
         ], [
-            control_panel_element("Outer Interaction Set", "Biological condition to compare.",
+            control_panel_element("Interaction Set", "Biological condition to compare.",
                                   dbc.Select(
                                       id='circos_set',
                                       options=[{'label': 'CIN-Dependent Effect', 'value': 'cin'},
-                                               {'label': 'STING-Dependent Effect', 'value': 'sting'}],
+                                               {'label': 'CIN & STING-Dependent Effect', 'value': 'sting'}],
                                       value=DEFAULT_CIRCOS_ARGS['circos_set']
                                   ))
         ], [
@@ -144,7 +144,7 @@ def make_circos_plot(set_progress, n_clicks,
         raise PreventUpdate
 
     set_progress((0, 7))
-    from viz.data import read_circos_file, read_ligand_receptor_file, read_interactions_file
+    from viz.data import read_circos_file, read_interactions_file
     from viz.web import make_circos_figure
     from viz.figures import DEFAULT_CIRCOS_ARGS, CIRCOS_SAVE_LOCATION
 
