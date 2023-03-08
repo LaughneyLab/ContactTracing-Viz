@@ -55,14 +55,18 @@ def read_ligand_receptor_file(filename: str = 'data/allgenes/all_interactions.ts
     return df
 
 
+def calculate_expression(celltype, target, exp_adata: ad.AnnData):
+    filter = (exp_adata.obs['Cell Type'] == celltype)
+    expressing_cells = (exp_adata[filter, target].layers['X'].flatten() > 0).sum()
+    return expressing_cells / filter.sum()
+
+
 def calculate_expressions(adata: ad.AnnData, exp_adata: ad.AnnData):
     expressions = []
     for i, row in adata.obs.iterrows():
         celltype = row['cell type']
         target = row['target']
-        filter = (exp_adata.obs['Cell Type'] == celltype)
-        expressing_cells = (exp_adata[filter, target].layers['X'].flatten() > 0).sum()
-        expressions.append(expressing_cells / filter.sum())
+        expressions.append(calculate_expression(celltype, target, exp_adata))
     return expressions
 
 
@@ -159,6 +163,7 @@ def _compile_ligand_effects(interactions: pd.DataFrame,
                               (adata.obs['target'] == receptor)]
             if rec_adata.n_obs == 0:
                 continue
+            rec_expression = calculate_expression(celltype, receptor, exp_adata)
             cell_df = pd.DataFrame({
                 'gene': genes,
                 'gene_is_ligand': rec_adata.var.index.isin(interactions.ligand),
@@ -169,6 +174,7 @@ def _compile_ligand_effects(interactions: pd.DataFrame,
             })
             cell_df['cell_type'] = celltype
             cell_df['target'] = receptor
+            cell_df['target_expression'] = rec_expression
             cell_df['receptor'] = True
             cell_df['ligand'] = receptor in interactions.ligand
             cell_df['MAST_log2FC'] = rec_adata.obs[f'MAST_log2FC_{condition_name}'].values[0]
@@ -178,6 +184,7 @@ def _compile_ligand_effects(interactions: pd.DataFrame,
             continue
         else:
             df.to_csv(filename, index=False)
+
     for ligand in set(interactions.ligand):
         filename = prefix + ligand + ".csv"
         if os.path.exists(filename):
@@ -188,6 +195,7 @@ def _compile_ligand_effects(interactions: pd.DataFrame,
                               (adata.obs['target'] == ligand)]
             if lig_adata.n_obs == 0:
                 continue
+            lig_expression = calculate_expression(celltype, ligand, exp_adata)
             cell_df = pd.DataFrame({
                 'gene': genes,
                 'gene_is_ligand': lig_adata.var.index.isin(interactions.ligand),
@@ -198,6 +206,7 @@ def _compile_ligand_effects(interactions: pd.DataFrame,
             })
             cell_df['cell_type'] = celltype
             cell_df['target'] = ligand
+            cell_df['target_expression'] = lig_expression
             cell_df['receptor'] = ligand in interactions.receptor
             cell_df['ligand'] = True
             cell_df['MAST_log2FC'] = lig_adata.obs[f'MAST_log2FC_{condition_name}'].values[0]
@@ -276,11 +285,11 @@ def compile_data(
         _compile_interactions(interactions, exp_adata, cin_sting_adata, cin_sting_condition, fdr)
 
         _compile_circos(interactions, exp_adata, cin_adata, cin_condition, fdr)
-        # DO we need to filter for same direction?
         _compile_circos(interactions, exp_adata, cin_sting_adata, cin_sting_condition, fdr)
 
         _compile_ligand_effects(interactions, exp_adata, cin_adata, cin_condition, fdr)
         #_compile_ligand_effects(interactions, exp_adata, cin_sting_adata, cin_sting_condition, fdr)
+
     # touch file to indicate that we've compiled the data
     with open('data/compiled/is_compiled', 'w') as f:
         f.write('compiled')

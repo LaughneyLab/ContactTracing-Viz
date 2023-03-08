@@ -55,7 +55,17 @@ def build_interface() -> list:
                                       value=DEFAULT_INTERACTIONS_ARGS['min_logfc_bipartite'],
                                       marks=None,
                                       tooltip={'placement': 'bottom'},
-                                      persistence=False,
+                                      className="form-range"
+                                  )),
+            control_panel_element("Minimum Expression", "The minimum fraction of cells expressing genes to be considered.",
+                                  dcc.Slider(
+                                      id="min_expression_bipartite",
+                                      min=0,
+                                      max=1,
+                                      step=0.01,
+                                      value=DEFAULT_INTERACTIONS_ARGS['min_expression_bipartite'],
+                                      marks=None,
+                                      tooltip={'placement': 'bottom'},
                                       className="form-range"
                                   )),
             control_panel_element("Interaction Effect FDR Cutoff", "FDR-adjusted requirements for interaction effects.",
@@ -145,7 +155,6 @@ def build_interface() -> list:
         title="Cell Type Interactions",
         footer="Circle = Ligand, Square = Receptor, Diamond = Ligand and Receptor",
         element=dcc.Graph(id="celltype-interaction-graph",
-                          animate=True,
                           figure=default_plot,
                           config={
                               'displaylogo': False,
@@ -175,6 +184,7 @@ def build_interface() -> list:
     State('second_celltype', 'value'),
     State('third_celltype', 'value'),
     State('min_logfc_bipartite', 'value'),
+    State('min_expression_bipartite', 'value'),
     State('min_numsigi1_bipartite', 'value'),
     State('bipartite_inter_fdr', 'value'),
     State('bipartite_logfc_fdr', 'value'),
@@ -192,7 +202,7 @@ def build_interface() -> list:
 def make_graph(set_progress, n_clicks,
                inter_set,
                first_ct, second_ct, third_ct,
-               min_logfc, min_numSigI1,
+               min_logfc, min_expression, min_numSigI1,
                inter_fdr, logfc_fdr):
     if n_clicks == 0:
         from dash.exceptions import PreventUpdate
@@ -209,6 +219,7 @@ def make_graph(set_progress, n_clicks,
             second_ct == DEFAULT_INTERACTIONS_ARGS['second_celltype'] and
             third_ct == DEFAULT_INTERACTIONS_ARGS['third_celltype'] and
             min_logfc == DEFAULT_INTERACTIONS_ARGS['min_logfc_bipartite'] and
+            min_expression == DEFAULT_INTERACTIONS_ARGS['min_expression_bipartite'] and
             min_numSigI1 == DEFAULT_INTERACTIONS_ARGS['min_numsigi1_bipartite'] and
             inter_fdr == DEFAULT_INTERACTIONS_ARGS['bipartite_inter_fdr'] and
             logfc_fdr == DEFAULT_INTERACTIONS_ARGS['bipartite_logfc_fdr']):
@@ -229,6 +240,7 @@ def make_graph(set_progress, n_clicks,
         cell3=third_ct,
         numInteractions=min_numSigI1,
         min_logfc_bipartite=min_logfc,
+        min_expression_bipartite=min_expression,
         logfc_fdr_bipartite_cutoff=float(logfc_fdr.replace('fdr', '.'))
     )
 
@@ -287,6 +299,7 @@ if __name__ == '__main__':
             cell3=DEFAULT_INTERACTIONS_ARGS['third_celltype'],
             numInteractions=DEFAULT_INTERACTIONS_ARGS['min_numsigi1_bipartite'],
             min_logfc_bipartite=DEFAULT_INTERACTIONS_ARGS['min_logfc_bipartite'],
+            min_expression_bipartite=DEFAULT_INTERACTIONS_ARGS['min_expression_bipartite'],
             logfc_fdr_bipartite_cutoff=float(DEFAULT_INTERACTIONS_ARGS['bipartite_logfc_fdr'].replace('fdr', '.'))
         )
 

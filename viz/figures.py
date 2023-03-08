@@ -15,8 +15,7 @@ from PIL import Image
 import plotly.graph_objects as go
 
 from viz.data import read_ligand_receptor_file, read_ligand_effect_for
-from viz.util import multipartite_layout, get_quiver_arrows, celltype_to_colors, timeline_layout
-
+from viz.util import multipartite_layout, get_quiver_arrows, celltype_to_colors, timeline_layout, ColorTransformer
 
 DEFAULT_LIGAND_EFFECT_ARGS = {
     'effect_set': 'cin',
@@ -25,6 +24,7 @@ DEFAULT_LIGAND_EFFECT_ARGS = {
     'ligands': 'Ccl2,Apoe',
     'interaction_fdr': 0.05,
     'min_logfc': 0.1,
+    'min_expression': 0.1,
     'logfc_fdr': 0.05,
     'iterations': 3
 }
@@ -32,8 +32,9 @@ LIGAND_EFFECT_SAVE_LOCATION = "data/compiled/default_ligand_effects.pkl"
 
 DEFAULT_INTERACTIONS_ARGS = {
     'inter_set': 'cin',
-    'min_numsigi1_bipartite': 0,
-    'min_logfc_bipartite': 0,
+    'min_numsigi1_bipartite': 10,
+    'min_logfc_bipartite': 0.1,
+    'min_expression_bipartite': 0.1,
     'bipartite_inter_fdr': 'fdr05',
     'bipartite_logfc_fdr': 'fdr05',
     'first_celltype': 'Tumor cells',
@@ -59,6 +60,7 @@ def bipartite_graph(df,
                     cell3=None,
                     numInteractions=50,
                     min_logfc_bipartite=0,
+                    min_expression_bipartite=0,
                     logfc_fdr_bipartite_cutoff=0.05,
                     allow_overlap=True):
     scaleratio = .9
@@ -76,6 +78,8 @@ def bipartite_graph(df,
                       (allow_overlap & (df.cell_type_ligand == cell3) & (df.cell_type_receptor == cell1))]
 
     selected = selected[(selected.numSigI1 >= numInteractions) &
+                        (selected.expression_ligand >= min_expression_bipartite) &
+                        (selected.expression_receptor >= min_expression_bipartite) &
                         (selected["MAST_fdr_ligand"] < logfc_fdr_bipartite_cutoff) &
                         (selected["MAST_fdr_receptor"] < logfc_fdr_bipartite_cutoff) &
                         (np.abs(selected["MAST_log2FC_ligand"]) > min_logfc_bipartite) &
@@ -96,12 +100,14 @@ def bipartite_graph(df,
             G.add_node(lig_node, ligand=lig in df.ligand.values, receptor=lig in df.receptor.values, name=lig,
                        celltype=lig_ct,
                        logfc_fdr_bipartite=row["MAST_fdr_ligand"],
-                       logfc=row["MAST_log2FC_receptor"])
+                       logfc=row["MAST_log2FC_receptor"],
+                       expression=row['expression_ligand'])
         if not G.has_node(rec_node):
             G.add_node(rec_node, ligand=rec in df.ligand.values, receptor=rec in df.receptor.values, name=rec,
                        celltype=rec_ct,
                        logfc_fdr_bipartite=row["MAST_fdr_receptor"],
-                       logfc=row["MAST_log2FC_receptor"])
+                       logfc=row["MAST_log2FC_receptor"],
+                       expression=row['expression_receptor'])
 
         G.add_edge(lig_node, rec_node,
                    numInteractions=row['numSigI1'],
@@ -113,7 +119,7 @@ def bipartite_graph(df,
 
     ct_ordering = [cell1, cell2]
     if cell3:
-        ct_ordering.append(cell3)  # FIXME 3rd cell type breaks currently
+        ct_ordering.append(cell3)
     pos = multipartite_layout(G, subset_key='celltype', scale=1, space_mult_x=30 * scaleratio, space_mult_y=60,
                               ordering=ct_ordering)
 
@@ -143,13 +149,8 @@ def bipartite_graph(df,
             if logfc > max_logfc:
                 max_logfc = logfc
 
-    # TODO: replace with ColorTransformer
-    cmap = cm.get_cmap('bwr')
     color_step = 255
-    norm = colors.Normalize(vmin=0, vmax=color_step)
-    colorscale = []
-    for i in range(0, color_step):
-        colorscale.append(colors.rgb2hex(colors.colorConverter.to_rgb(cmap(norm(i)))))
+    colorscale = ColorTransformer(0, color_step, cmap='bwr')
 
     # colorscale = [x.hex for x in list(Color(start_color).range_to(Color(end_color), color_step))]
 
@@ -159,7 +160,7 @@ def bipartite_graph(df,
     def get_color(value, minimum, maximum):
         step_size = (max_color_threshold - min_color_threshold) / (color_step - 1)
         index = (value - min_color_threshold) // step_size
-        return colorscale[min(max(int(index), 0), color_step - 1)]
+        return colorscale(min(max(int(index), 0), color_step - 1))
 
     # Can't hover over lines directly, so add invisible points
     # See https://stackoverflow.com/a/46039229/5179044
@@ -399,25 +400,25 @@ def bipartite_graph(df,
         hoverinfo='text',
         marker=dict(
             showscale=True,
-            #colorscale='gray',
+            colorscale='gray',
             reversescale=True,
-            #color=[],
-            color='grey',
+            color=[],
+            #color='grey',
             size=15,
             line=dict(width=1, color='black'),
-            #colorbar=dict(
-            #    thickness=25,
-            #    title="Expression",
-            #    xanchor='left',
-            #    titleside='right'
-            #)
+            colorbar=dict(
+                thickness=25,
+                title="Expression",
+                xanchor='left',
+                titleside='right'
+            )
         )
     )
 
-    #node_expressions = []  FIXME: Reimplement
+    node_expressions = []
     node_text = []
     for node in G.nodes:
-        #expression = G.nodes[node]['expression']
+        expression = G.nodes[node]['expression']
 
         name = G.nodes[node]['name']
         logfc_fdr_bipartite = G.nodes[node]['logfc_fdr_bipartite']
@@ -433,9 +434,10 @@ def bipartite_graph(df,
             prot_type = "Receptor"
 
         node_text.append(
-            f'Name: {name}<br>Type: {prot_type}<br>logFC: {logfc}<br>logFC FDR: {logfc_fdr_bipartite}')
+            f'Name: {name}<br>Type: {prot_type}<br>Expression: {expression}<br>logFC: {logfc}<br>logFC FDR: {logfc_fdr_bipartite}')
+        node_expressions.append(expression)
 
-    #node_trace.marker.color = node_expressions
+    node_trace.marker.color = node_expressions
     node_trace.text = node_text
 
     if len(node_text) == 0:
@@ -524,12 +526,8 @@ def make_plot_from_graph(G: nx.DiGraph, celltypes, layout="planar") -> go.Figure
         'Gene': 'circle'
     }
 
-    cmap = cm.get_cmap('bwr')
     color_step = 255
-    norm = colors.Normalize(vmin=0, vmax=color_step)
-    colorscale = []
-    for i in range(0, color_step):
-        colorscale.append(colors.rgb2hex(colors.colorConverter.to_rgb(cmap(norm(i)))))
+    colorscale = ColorTransformer(0, color_step, cmap='bwr')
 
     # colorscale = [x.hex for x in list(Color(start_color).range_to(Color(end_color), color_step))]
 
@@ -558,7 +556,7 @@ def make_plot_from_graph(G: nx.DiGraph, celltypes, layout="planar") -> go.Figure
     def get_color(value, minimum, maximum):
         step_size = (max_color_threshold - min_color_threshold) / (color_step - 1)
         index = (value - min_color_threshold) // step_size
-        return colorscale[min(max(int(index), 0), color_step - 1)]
+        return colorscale(min(max(int(index), 0), color_step - 1))
 
     # Can't hover over lines directly, so add invisible points
     # See https://stackoverflow.com/a/46039229/5179044
@@ -889,6 +887,7 @@ def pseudotime_interaction_propagation_graph(effect_set: str,
                                              iterations: int = 4,
                                              interaction_fdr_cutoff=0.05,
                                              min_logfc=0.01,
+                                             min_expression=0.1,
                                              logfc_fdr_cutoff=0.05,
                                              layout="Planar Layout",
                                              set_progress_callback=None):
@@ -900,7 +899,10 @@ def pseudotime_interaction_propagation_graph(effect_set: str,
             df = df[df['cell_type'] == celltype]
         if df is None:
             return pd.DataFrame()
-        return df[(df['fdr'] < logfc_fdr_cutoff) & (df['i1.fdr'] < interaction_fdr_cutoff) & (df['log2FC'].abs() >= min_logfc)]
+        return df[(df['fdr'] < logfc_fdr_cutoff) &
+                  (df['i1.fdr'] < interaction_fdr_cutoff) &
+                  (df['log2FC'].abs() >= min_logfc) &
+                  (df['target_expression'] >= min_expression)]
 
     if isinstance(seed_ligands, str):
         ligands = []
@@ -1016,7 +1018,7 @@ def pseudotime_interaction_propagation_graph(effect_set: str,
     last_graph = Gs[-1]
 
     if last_graph.number_of_nodes() == 0 or last_graph.number_of_edges() == 0:
-        return None  # FIXME?
+        return None
 
     return make_plot_from_graph(last_graph, list(celltypes), layout=layout)
 

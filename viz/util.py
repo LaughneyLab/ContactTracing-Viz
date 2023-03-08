@@ -1,4 +1,4 @@
-from typing import Set
+from typing import Set, Sized, Callable, Iterable
 
 import networkx as nx
 import numpy as np
@@ -7,14 +7,24 @@ import math
 import itertools
 
 
-class ColorTransformer:
+class ColorTransformer(Sized, Callable, Iterable):
 
     def __init__(self, min=0, max=255, cmap='bwr'):
+        self.min = min
+        self.max = max
         self.cmap = cm.get_cmap(cmap)
         self.norm = colors.Normalize(vmin=min, vmax=max, clip=True)
 
     def __call__(self, value):
         return colors.rgb2hex(colors.colorConverter.to_rgb(self.cmap(self.norm(value))))
+
+    def __len__(self) -> int:
+        color_range = self.max - self.min
+        return 255 if color_range <= 1 else int(color_range)
+
+    def __iter__(self):
+        for i in range(len(self)):
+            yield self(i)
 
 
 def saturate_color(color, saturation):

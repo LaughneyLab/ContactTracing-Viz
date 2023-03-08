@@ -67,8 +67,8 @@ font-family: 'Source Code Pro', monospace;
 
 
 # Custom style made with https://bootstrap.build/ based on FLATLY
-STYLESHEET = "bootstrap.min.css"  # dbc.themes.MINTY
-# FIXME BASE ON Pre-made themes http://dash-bootstrap-components.opensource.faculty.ai/docs/themes/explorer/
+STYLESHEET = "bootstrap.min.css"
+
 app = Dash(__name__,
            suppress_callback_exceptions=True,
            compress=True,

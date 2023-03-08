@@ -99,6 +99,17 @@ def build_interface() -> list:
                                       persistence=False,
                                       className='form-range'
                                   )),
+            control_panel_element("Minimum Expression", "The minimum expression of target genes to be considered.",
+                                  dcc.Slider(
+                                      id='min_expression',
+                                      max=1,
+                                      min=0,
+                                      step=0.01,
+                                      value=DEFAULT_LIGAND_EFFECT_ARGS['min_expression'],
+                                      marks=None,
+                                      tooltip={'placement': 'bottom'},
+                                      className='form-range'
+                                  )),
             control_panel_element("log2FC FDR Cutoff", "The FDR-adjusted cutoff for determining if a log2FC value is non-zero.",
                                   dcc.Slider(
                                       id='logfc_fdr',
@@ -170,6 +181,7 @@ def build_interface() -> list:
     State('ligands', 'value'),
     State('interaction_fdr', 'value'),
     State('min_logfc', 'value'),
+    State('min_expression', 'value'),
     State('logfc_fdr', 'value'),
     State('iterations', 'value'),
     background=True,  # Run in background
@@ -186,7 +198,7 @@ def build_interface() -> list:
 def make_graph(set_progress, n_clicks,
                effect_set, network_layout,
                cell_type, ligands,
-               interaction_fdr, min_logfc,
+               interaction_fdr, min_logfc, min_expression,
                logfc_fdr, iterations):
     if n_clicks == 0:
         from dash.exceptions import PreventUpdate
@@ -203,6 +215,7 @@ def make_graph(set_progress, n_clicks,
         ligands == DEFAULT_LIGAND_EFFECT_ARGS['ligands'] and
         interaction_fdr == DEFAULT_LIGAND_EFFECT_ARGS['interaction_fdr'] and
         min_logfc == DEFAULT_LIGAND_EFFECT_ARGS['min_logfc'] and
+        min_expression == DEFAULT_LIGAND_EFFECT_ARGS['min_expression'] and
         logfc_fdr == DEFAULT_LIGAND_EFFECT_ARGS['logfc_fdr'] and
         iterations == DEFAULT_LIGAND_EFFECT_ARGS['iterations']):
         import pickle
@@ -219,6 +232,7 @@ def make_graph(set_progress, n_clicks,
         iterations=int(iterations),
         interaction_fdr_cutoff=float(interaction_fdr),
         min_logfc=float(min_logfc),
+        min_expression=float(min_expression),
         logfc_fdr_cutoff=float(logfc_fdr),
         layout=network_layout,
         set_progress_callback=set_progress
@@ -268,6 +282,7 @@ if __name__ == '__main__':
             iterations=int(DEFAULT_LIGAND_EFFECT_ARGS['iterations']),
             interaction_fdr_cutoff=float(DEFAULT_LIGAND_EFFECT_ARGS['interaction_fdr']),
             min_logfc=float(DEFAULT_LIGAND_EFFECT_ARGS['min_logfc']),
+            min_expression=float(DEFAULT_LIGAND_EFFECT_ARGS['min_expression']),
             logfc_fdr_cutoff=float(DEFAULT_LIGAND_EFFECT_ARGS['logfc_fdr']),
             layout=DEFAULT_LIGAND_EFFECT_ARGS['network_layout'],
             set_progress_callback=None
