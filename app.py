@@ -58,7 +58,17 @@ if callback_manager is None:
         shutil.rmtree('./ct_viz_cache')
     callback_manager = DiskcacheManager(Cache('./ct_viz_cache'), expire=LONG_CALLBACK_EXPIRY)
 
+"""
+font-family: 'Courier Prime', monospace;
+font-family: 'IBM Plex Mono', monospace;
+font-family: 'Noto Sans', sans-serif;
+font-family: 'Source Code Pro', monospace;
+"""
 
+
+# Custom style made with https://bootstrap.build/ based on FLATLY
+STYLESHEET = "bootstrap.min.css"  # dbc.themes.MINTY
+# FIXME BASE ON Pre-made themes http://dash-bootstrap-components.opensource.faculty.ai/docs/themes/explorer/
 app = Dash(__name__,
            suppress_callback_exceptions=True,
            compress=True,
@@ -68,9 +78,24 @@ app = Dash(__name__,
                 {'name': 'robots', 'content': 'index,follow'},
            ],
            title='ContactTracing',
-           external_stylesheets=[dbc.themes.MINTY, dbc.icons.FONT_AWESOME],
+           external_stylesheets=[
+               # Fonts
+               dict(rel="preconnect",
+                    href="https://fonts.googleapis.com"),
+               dict(rel="preconnect",
+                    href="https://fonts.gstatic.com",
+                    crossorigin=""),
+               dict(rel="stylesheet",
+                    href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=IBM+Plex+Mono:wght@400;700&family=Noto+Sans:wght@400;600&family=Source+Code+Pro:wght@400;700&display=swap"),
+               # Stylesheets
+               dbc.themes.FLATLY,
+               dbc.icons.BOOTSTRAP,
+               dbc.icons.FONT_AWESOME,
+               STYLESHEET,
+           ],
            use_pages=True,
-           background_callback_manager=callback_manager)
+           background_callback_manager=callback_manager
+           )
 server = app.server
 
 
@@ -93,10 +118,11 @@ layout = html.Div([
                 )
             ]
         ),
-        color='primary',
+        color='light',
         fixed='top',
-        dark=True,
-        className='mb-5'
+        dark=False,
+        light=True,
+        className='mb-5',
     ),
     dcc.Store(id='data-session', storage_type='session'),  # Temporary session storage
     html.Div(id='page-content', children=dbc.Container(dash.page_container, fluid=True, class_name='mt-5 pt-5'))
