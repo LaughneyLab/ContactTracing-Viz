@@ -125,6 +125,8 @@ def build_interface() -> list:
     State('circos_min_ligand_logfc', 'value'),
     background=True,
     prevent_initial_call=True,
+    interval=500,
+    cache_args_to_ignore=['submit-button-circos', 'n_clicks'],
     running=[
         (Output('submit-button-circos', 'disabled'), True, False),
         (Output('progress-bar', 'style'), {'visibility': 'visible'}, {'visibility': 'hidden'}),
@@ -178,6 +180,7 @@ def make_circos_plot(set_progress, n_clicks,
     Output('circos_min_ligand_logfc', 'max'),
     Input('inter_circos_fdr', 'value'),
     Input('logfc_circos_fdr', 'value'),
+    interval=10,
     background=True,
     running=[
         (Output('submit-button-circos', 'disabled'), True, False),

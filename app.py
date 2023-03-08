@@ -1,6 +1,7 @@
 import os
 import shutil
 import sys
+from uuid import uuid4
 
 import dash
 from dash import Dash, html, dcc, Output, Input
@@ -39,6 +40,9 @@ except:
 # Compile our data for optimized queries
 compile_data()
 
+# Each server instance gets a unique cache
+launch_uuid = uuid4()
+
 
 callback_manager = None
 if 'REDIS_URL' in os.environ:
@@ -46,7 +50,7 @@ if 'REDIS_URL' in os.environ:
         from dash import CeleryManager
         from celery import Celery
         celery_app = Celery(__name__, broker=os.environ['REDIS_URL'] + "/0", backend=os.environ['REDIS_URL'] + "/1")
-        callback_manager = CeleryManager(celery_app, expire=LONG_CALLBACK_EXPIRY)
+        callback_manager = CeleryManager(celery_app, cache_by=[lambda: launch_uuid], expire=LONG_CALLBACK_EXPIRY)
     except:
         callback_manager = None
 if callback_manager is None:
@@ -56,7 +60,7 @@ if callback_manager is None:
     # Don't remove unless its the main process
     if __name__ == "__main__" and os.path.exists('./ct_viz_cache'):
         shutil.rmtree('./ct_viz_cache')
-    callback_manager = DiskcacheManager(Cache('./ct_viz_cache'), expire=LONG_CALLBACK_EXPIRY)
+    callback_manager = DiskcacheManager(Cache('./ct_viz_cache'), cache_by=[lambda: launch_uuid], expire=LONG_CALLBACK_EXPIRY)
 
 """
 font-family: 'Courier Prime', monospace;

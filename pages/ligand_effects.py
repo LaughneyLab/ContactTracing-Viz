@@ -184,6 +184,8 @@ def build_interface() -> list:
     State('min_expression', 'value'),
     State('logfc_fdr', 'value'),
     State('iterations', 'value'),
+    interval=500,
+    cache_args_to_ignore=['submit_button', 'n_clicks'],
     background=True,  # Run in background
     prevent_initial_call=True,
     running=[  # Disable the button while the callback is running
@@ -244,6 +246,7 @@ def make_graph(set_progress, n_clicks,
 @callback(
     Output('min_logfc', 'max'),
     Input('effect_set', 'value'),
+    interval=10,
     background=True,  # Run in background,
     running=[  # Disable the button while the callback is running
         (Output('submit_button', 'disabled'), True, False),

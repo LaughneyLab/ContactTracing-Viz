@@ -188,6 +188,8 @@ def build_interface() -> list:
     State('min_numsigi1_bipartite', 'value'),
     State('bipartite_inter_fdr', 'value'),
     State('bipartite_logfc_fdr', 'value'),
+    interval=500,
+    cache_args_to_ignore=['submit-button-bipartite', 'n_clicks'],
     background=True,  # Run in background
     prevent_initial_call=True,
     running=[  # Disable the button while the callback is running
@@ -252,6 +254,7 @@ def make_graph(set_progress, n_clicks,
     Output('min_numsigi1_bipartite', 'max'),
     Input('bipartite_inter_fdr', 'value'),
     Input('bipartite_logfc_fdr', 'value'),
+    interval=10,
     background=True,  # Run in background,
     running=[  # Disable the button while the callback is running
         (Output('submit-button-bipartite', 'disabled'), True, False),
