@@ -61,7 +61,7 @@ def make_custom_slider(id: str, min, max, value, step) -> html.Div:
             # Slider should always be in range
             return slider_input, slider_input, slider_input
 
-        raise PreventUpdate
+        return value, value, value
 
     return slider_element
 

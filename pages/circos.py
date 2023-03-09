@@ -54,7 +54,7 @@ def build_interface() -> list:
                                   make_custom_slider(
                                       id='circos_min_numsigi1',
                                       min=0,
-                                      max=10,  # Fill in later
+                                      max=250,  # Fill in later
                                       value=DEFAULT_CIRCOS_ARGS['circos_min_numsigi1'],
                                       step=1
                                   ))
@@ -63,7 +63,7 @@ def build_interface() -> list:
                                   make_custom_slider(
                                       id='circos_min_numdeg',
                                       min=0,
-                                      max=10,  # Fill in later
+                                      max=250,  # Fill in later
                                       value=DEFAULT_CIRCOS_ARGS['circos_min_numdeg'],
                                       step=1
                                   ))
@@ -72,7 +72,7 @@ def build_interface() -> list:
                                   make_custom_slider(
                                       id='circos_min_ligand_logfc',
                                       min=0,
-                                      max=1,  # Fill in
+                                      max=2,  # Fill in
                                       value=DEFAULT_CIRCOS_ARGS['circos_min_ligand_logfc'],
                                       step=0.01
                                   ))
@@ -164,35 +164,34 @@ def make_circos_plot(set_progress, n_clicks,
                                min_chord_ligand_logfc)]
 
 
-@callback(
-    Output('circos_min_numsigi1', 'max'),
-    Output('circos_min_numdeg', 'max'),
-    Output('circos_min_ligand_logfc', 'max'),
-    Input('inter_circos_fdr', 'data'),
-    Input('logfc_circos_fdr', 'data'),
-    interval=10,
-    background=True,
-    prevent_initial_call=True,
-    running=[
-        (Output('submit-button-circos', 'disabled'), True, False),
-        (Output('spinner-holder', 'children'), [
-            dbc.Spinner(color='primary', size='md', fullscreen=True, type='grow')
-        ], [])
-    ]
-)
-def initialize_options(inter_circos_fdr, logfc_circos_fdr):
-    from viz.data import read_circos_file
-
-    fdr = inter_circos_fdr
-
-    # Read the maximum values from the circos file to determine range of sliders
-    max_obs = read_circos_file('highCIN_vs_noSTING', fdr)
-
-    max_deg = max_obs['numDEG'].max()
-    max_numsigi1 = max_obs['numSigI1'].max()
-    max_logfc = max_obs['MAST_log2FC'].abs().max()
-
-    return max_numsigi1, max_deg, max_logfc
+# @callback(
+#     Output('circos_min_numsigi1', 'max'),
+#     Output('circos_min_numdeg', 'max'),
+#     Output('circos_min_ligand_logfc', 'max'),
+#     Input('inter_circos_fdr', 'data'),
+#     Input('logfc_circos_fdr', 'data'),
+#     interval=10,
+#     background=False,
+#     running=[
+#         (Output('submit-button-circos', 'disabled'), True, False),
+#         (Output('spinner-holder', 'children'), [
+#             dbc.Spinner(color='primary', size='md', fullscreen=True, type='grow')
+#         ], [])
+#     ]
+# )
+# def initialize_options(inter_circos_fdr, logfc_circos_fdr):
+#     from viz.data import read_circos_file
+#
+#     #fdr = inter_circos_fdr
+#
+#     # Read the maximum values from the circos file to determine range of sliders
+#     #max_obs = read_circos_file('highCIN_vs_noSTING', 'fdr25')
+#
+#     max_deg = 250 #  max_obs['numDEG'].max()
+#     max_numsigi1 = 250 #  max_obs['numSigI1'].max()
+#     max_logfc = 2 #  max_obs['MAST_log2FC'].abs().max()
+#
+#     return max_numsigi1, max_deg, max_logfc
 
 
 layout = [

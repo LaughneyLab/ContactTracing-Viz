@@ -243,35 +243,34 @@ def make_graph(set_progress, n_clicks,
     return fig
 
 
-@callback(
-    Output('min_logfc_bipartite', 'max'),
-    Output('min_numsigi1_bipartite', 'max'),
-    Input('bipartite_inter_fdr', 'value'),
-    Input('bipartite_logfc_fdr', 'value'),
-    interval=10,
-    background=True,  # Run in background,
-    prevent_initial_call=True,
-    running=[  # Disable the button while the callback is running
-        (Output('submit-button-bipartite', 'disabled'), True, False),
-        (Output('spinner-holder', 'children'), [
-            dbc.Spinner(color='primary',
-                        size='md',
-                        fullscreen=True,
-                        type='grow')],
-         []),
-    ]
-)
-def initialize_options(inter_fdr, logfc_fdr):
-    from viz.data import read_interactions_file
-
-    fdr = inter_fdr
-
-    # Use the max set
-    interactions = read_interactions_file('highCIN_vs_noSTING', fdr)
-
-    max_logfc = max(max(interactions.MAST_log2FC_ligand.abs()), max(interactions.MAST_log2FC_receptor.abs()))
-    max_inter = max(interactions.numSigI1)
-
+# @callback(
+#     Output('min_logfc_bipartite', 'max'),
+#     Output('min_numsigi1_bipartite', 'max'),
+#     Input('bipartite_inter_fdr', 'value'),
+#     Input('bipartite_logfc_fdr', 'value'),
+#     interval=10,
+#     background=False,  # Run in background,
+#     running=[  # Disable the button while the callback is running
+#         (Output('submit-button-bipartite', 'disabled'), True, False),
+#         (Output('spinner-holder', 'children'), [
+#             dbc.Spinner(color='primary',
+#                         size='md',
+#                         fullscreen=True,
+#                         type='grow')],
+#          []),
+#     ]
+# )
+# def initialize_options(inter_fdr, logfc_fdr):
+#     from viz.data import read_interactions_file
+#
+#     fdr = inter_fdr
+#
+#     # Use the max set
+#     interactions = read_interactions_file('highCIN_vs_noSTING', fdr)
+#
+#     max_logfc = max(max(interactions.MAST_log2FC_ligand.abs()), max(interactions.MAST_log2FC_receptor.abs()))
+#     max_inter = max(interactions.numSigI1)
+#
     return max_logfc, max_inter
 
 

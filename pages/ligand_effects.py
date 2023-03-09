@@ -77,8 +77,8 @@ def build_interface() -> list:
             control_panel_element("Interaction FDR Cutoff", "The maximum interaction test FDR to consider.",
                                   make_custom_slider(
                                       id='interaction_fdr',
-                                      max=1,
-                                      min=0,
+                                      max=0.25,
+                                      min=0.01,
                                       step=0.01,
                                       value=DEFAULT_LIGAND_EFFECT_ARGS['interaction_fdr']
                                   ))
@@ -86,7 +86,7 @@ def build_interface() -> list:
             control_panel_element("Minimum abs(Log2FC)", "The minimum induced log2FC for targets.",
                                   make_custom_slider(
                                       id='min_logfc',
-                                      max=1,
+                                      max=2,
                                       min=0,
                                       step=0.01,
                                       value=DEFAULT_LIGAND_EFFECT_ARGS['min_logfc']
@@ -230,26 +230,25 @@ def make_graph(set_progress, n_clicks,
     return fig
 
 
-@callback(
-    Output('min_logfc', 'max'),
-    Input('effect_set', 'value'),
-    interval=10,
-    background=True,  # Run in background,
-    prevent_initial_call=True,
-    running=[  # Disable the button while the callback is running
-        (Output('submit_button', 'disabled'), True, False),
-        (Output('spinner-holder', 'children'), [
-            dbc.Spinner(color='primary',
-                        size='md',
-                        fullscreen=True,
-                        type='grow')],
-         []),
-    ]
-)
-def initialize_options(effect_set):
-    # TODO Should we scan to find true max logfc?
-    max_logfc = 2
-    return max_logfc
+# @callback(
+#     Output('min_logfc', 'max'),
+#     Input('effect_set', 'value'),
+#     interval=10,
+#     background=False,  # Run in background,
+#     running=[  # Disable the button while the callback is running
+#         (Output('submit_button', 'disabled'), True, False),
+#         (Output('spinner-holder', 'children'), [
+#             dbc.Spinner(color='primary',
+#                         size='md',
+#                         fullscreen=True,
+#                         type='grow')],
+#          []),
+#     ]
+# )
+# def initialize_options(effect_set):
+#     # TODO Should we scan to find true max logfc?
+#     max_logfc = 2
+#     return max_logfc
 
 
 layout = [
