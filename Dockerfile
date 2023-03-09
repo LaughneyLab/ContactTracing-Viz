@@ -31,6 +31,8 @@ FROM redis:bullseye AS runtime
 # Copy environment
 COPY --from=build /venv /venv
 
+WORKDIR /app
+
 ENV REDIS_URL="redis://localhost:6379"
 EXPOSE 8000
 
@@ -38,7 +40,7 @@ SHELL ["/bin/bash", "-c"]
 
 ADD . .
 
-# Pre-compile the data
+# Pre-compile the data if it's not available
 RUN source /venv/bin/activate && \
     python viz/data.py
 

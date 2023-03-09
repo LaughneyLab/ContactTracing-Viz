@@ -135,6 +135,9 @@ def _compile_interactions(interactions: pd.DataFrame,
     os.makedirs(prefix, exist_ok=True)
     file = _filename(prefix, condition_name, fdr, 'csv')
 
+    if os.path.exists(file):
+        return
+
     interactions_df = _combine_obs_for_interactions(interactions, exp_adata, adata, condition_name, fdr)
     interactions_df.to_csv(file, index=False)
 
@@ -226,6 +229,10 @@ def _compile_circos(interactions: pd.DataFrame,
     prefix = 'data/compiled/circos'
     os.makedirs(prefix, exist_ok=True)
     file = _filename(prefix, condition_name, fdr, 'csv')
+
+    if os.path.exists(file):
+        return
+
     fdr = f"fdr{fdr}"
 
     if condition_name == 'highCIN_vs_noSTING':
