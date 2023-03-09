@@ -31,12 +31,12 @@ DEFAULT_LIGAND_EFFECT_ARGS = {
 LIGAND_EFFECT_SAVE_LOCATION = "data/compiled/default_ligand_effects.pkl"
 
 DEFAULT_INTERACTIONS_ARGS = {
-    'inter_set': 'cin',
-    'min_numsigi1_bipartite': 10,
-    'min_logfc_bipartite': 0.1,
-    'min_expression_bipartite': 0.1,
-    'bipartite_inter_fdr': 'fdr05',
-    'bipartite_logfc_fdr': 'fdr05',
+    'inter_set': 'max',
+    'min_numsigi1_bipartite': 1,
+    'min_logfc_bipartite': 0.12,
+    'min_expression_bipartite': 0.0,
+    'bipartite_inter_fdr': 'fdr25',
+    'bipartite_logfc_fdr': 'fdr25',
     'first_celltype': 'Tumor cells',
     'second_celltype': 'Macrophages/mMDSC',
     'third_celltype': '(None)'

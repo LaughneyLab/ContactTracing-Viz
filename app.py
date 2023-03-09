@@ -96,6 +96,7 @@ app = Dash(__name__,
                dbc.icons.BOOTSTRAP,
                dbc.icons.FONT_AWESOME,
                STYLESHEET,
+               "custom.css"  # Custom overrides
            ],
            use_pages=True,
            background_callback_manager=callback_manager

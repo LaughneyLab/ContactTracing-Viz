@@ -73,7 +73,7 @@ def jumbotron(title, main_content, sub_content, *additional_content, dark=False)
         html.Hr(className='my-2'),
         html.P(sub_content),
         *[html.P(content) for content in additional_content]
-    ], fluid=True, className='py-3'), className="p-3 rounded-3 " + ('bg-dark text-white' if dark else 'bg-light'))
+    ], fluid=True, className='py-3'), className="p-3 rounded-3 " + ('dark text-white' if dark else 'light'))
 
 
 def control_panel_element(title, description, input, footer=None, outline=True) -> dbc.Card:
@@ -113,20 +113,21 @@ def figure_output(title, footer, element) -> html.Div:
                                  style={'visibility': 'hidden'}),
                     element,
                     html.Br()
-                ], className='card-text')
+                ], className='card-text light')
             ]),
             dbc.CardFooter(footer)
         ], color='light')
     ])
 
 
-def interactive_panel(title, *content, dark=False):
-    return dbc.Card([
-        dbc.CardHeader(title),
-        dbc.CardBody([
-            html.Div(content)
-        ])
-    ], className='mb-3 ' + ('bg-dark text-white' if dark else 'bg-light'))
+def interactive_panel(title, subtitle, *content, dark=False):
+    return html.Div(dbc.Container([
+        html.H3(title, className='display-7'),
+        html.P(subtitle, className='lead'),
+        html.Hr(className='my-2'),
+        html.Br(),
+        html.Div(dbc.Container(content), className='card-text')
+    ], fluid=True, className='py-3'), className="p-3 rounded-3 " + ('dark text-white' if dark else 'light'))
 
 
 def wrap_icon(icon, *content, right=False, high_margin='.75em', low_margin='.18em'):
@@ -234,8 +235,8 @@ def make_circos_figure(set_progress,
         'PMN/gMDSC': 4,
         'B cells': 3,
         'pDC': 2,
-        'NK cells': 1,
-        'cDC': 0
+        'cDC': 1,
+        'NK cells': 0
     }
     layout = list(sorted(layout, key=lambda x: (ct2order.get(x['celltype'], -1), x['len']), reverse=True))
     if set_progress is not None:
@@ -268,6 +269,7 @@ def make_circos_figure(set_progress,
     # Next ring for Differential abundance
     max_da = outer_data['DA_score'].max()
     min_da = outer_data['DA_score'].min()
+    # TODO: Different colorscale for
     colormap = ColorTransformer(min_da, max_da, 'seismic')
     da_data = []
     for celltype in celltypes:
@@ -371,8 +373,9 @@ def make_circos_figure(set_progress,
         set_progress((7, 7))
     ring_width = 15
     return dashbio.Circos(
-        #enableDownloadSVG=True,
+        enableDownloadSVG=True,
         enableZoomPan=True,
+        style={'position': ''},
         layout=layout,
         selectEvent={
             "0": "hover",

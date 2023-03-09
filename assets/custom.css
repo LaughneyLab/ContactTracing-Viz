@@ -1,0 +1,7 @@
+.circos-tooltip {
+    position: unset !important;
+}
+
+body > div.circos-tooltip {
+    position: unset !important;
+}

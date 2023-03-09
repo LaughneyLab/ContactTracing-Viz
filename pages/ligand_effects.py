@@ -252,7 +252,7 @@ def make_graph(set_progress, n_clicks,
 
 
 layout = [
-    interactive_panel(wrap_icon('fa-maximize', 'Downstream Ligand Effects'),
+    interactive_panel(wrap_icon('fa-maximize', 'Downstream Ligand Effects', "Predict the downstream effects of ligands across a microenvironment."),
                       *build_interface()
                       )
 ]
