@@ -4,7 +4,8 @@ import dash
 import dash_bootstrap_components as dbc
 from dash import callback, Output, Input, dcc, State
 
-from viz.web import interactive_panel, wrap_icon, control_panel, control_panel_element, figure_output
+from viz.web import interactive_panel, wrap_icon, control_panel, control_panel_element, figure_output, \
+    make_custom_slider
 
 if __name__ != '__main__':
     dash.register_page(__name__,
@@ -74,53 +75,39 @@ def build_interface() -> list:
                                   ))
         ], [
             control_panel_element("Interaction FDR Cutoff", "The maximum interaction test FDR to consider.",
-                                  dcc.Slider(
+                                  make_custom_slider(
                                       id='interaction_fdr',
                                       max=1,
                                       min=0,
                                       step=0.01,
-                                      value=DEFAULT_LIGAND_EFFECT_ARGS['interaction_fdr'],
-                                      marks=None,
-                                      tooltip={'placement': 'bottom'},
-                                      persistence=True,
-                                      persistence_type='session',
-                                      className='form-range'
+                                      value=DEFAULT_LIGAND_EFFECT_ARGS['interaction_fdr']
                                   ))
         ], [
             control_panel_element("Minimum abs(Log2FC)", "The minimum induced log2FC for targets.",
-                                  dcc.Slider(
+                                  make_custom_slider(
                                       id='min_logfc',
                                       max=1,
                                       min=0,
                                       step=0.01,
-                                      value=DEFAULT_LIGAND_EFFECT_ARGS['min_logfc'],
-                                      marks=None,
-                                      tooltip={'placement': 'bottom'},
-                                      persistence=False,
-                                      className='form-range'
-                                  )),
+                                      value=DEFAULT_LIGAND_EFFECT_ARGS['min_logfc']
+                                  ))
+        ], [
             control_panel_element("Minimum Expression", "The minimum expression of target genes to be considered.",
-                                  dcc.Slider(
+                                  make_custom_slider(
                                       id='min_expression',
                                       max=1,
                                       min=0,
                                       step=0.01,
-                                      value=DEFAULT_LIGAND_EFFECT_ARGS['min_expression'],
-                                      marks=None,
-                                      tooltip={'placement': 'bottom'},
-                                      className='form-range'
-                                  )),
+                                      value=DEFAULT_LIGAND_EFFECT_ARGS['min_expression']
+                                  ))
+        ], [
             control_panel_element("log2FC FDR Cutoff", "The FDR-adjusted cutoff for determining if a log2FC value is non-zero.",
-                                  dcc.Slider(
+                                  make_custom_slider(
                                       id='logfc_fdr',
                                       max=1,
                                       min=0,
                                       step=0.01,
-                                      value=DEFAULT_LIGAND_EFFECT_ARGS['logfc_fdr'],
-                                      marks=None,
-                                      tooltip={'placement': 'bottom'},
-                                      persistence=True, persistence_type='session',
-                                      className='form-range'
+                                      value=DEFAULT_LIGAND_EFFECT_ARGS['logfc_fdr']
                                   ))
         ], [
             control_panel_element("Network Building Iterations", "This controls how many downstream interactions may be detected.",
@@ -179,10 +166,10 @@ def build_interface() -> list:
     State('network_layout', 'value'),
     State('cell_type', 'value'),
     State('ligands', 'value'),
-    State('interaction_fdr', 'value'),
-    State('min_logfc', 'value'),
-    State('min_expression', 'value'),
-    State('logfc_fdr', 'value'),
+    State('interaction_fdr', 'data'),
+    State('min_logfc', 'data'),
+    State('min_expression', 'data'),
+    State('logfc_fdr', 'data'),
     State('iterations', 'value'),
     interval=500,
     cache_args_to_ignore=['submit_button', 'n_clicks'],
@@ -248,6 +235,7 @@ def make_graph(set_progress, n_clicks,
     Input('effect_set', 'value'),
     interval=10,
     background=True,  # Run in background,
+    prevent_initial_call=True,
     running=[  # Disable the button while the callback is running
         (Output('submit_button', 'disabled'), True, False),
         (Output('spinner-holder', 'children'), [

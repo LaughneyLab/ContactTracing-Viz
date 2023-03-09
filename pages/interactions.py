@@ -4,7 +4,8 @@ import dash
 from dash import dcc, callback, Output, Input, State
 import dash_bootstrap_components as dbc
 
-from viz.web import interactive_panel, wrap_icon, control_panel, control_panel_element, figure_output
+from viz.web import interactive_panel, wrap_icon, control_panel, control_panel_element, figure_output, \
+    make_custom_slider
 
 if __name__ != '__main__':
     dash.register_page(__name__,
@@ -32,42 +33,35 @@ def build_interface() -> list:
                                       options=[{'label': 'CIN-Dependent Effect', 'value': 'cin'},
                                                {'label': 'CIN & STING Max Effect', 'value': 'max'}],
                                       value=DEFAULT_INTERACTIONS_ARGS['inter_set']
-                                  )),
+                                  ))
+        ], [
             control_panel_element("Minimum numSigI1", "The minimum number of significant target gene interactions.",
-                                  dcc.Slider(
+                                  make_custom_slider(
                                       id="min_numsigi1_bipartite",
                                       min=0,
                                       max=10,  # Fill in
                                       step=1,
-                                      value=DEFAULT_INTERACTIONS_ARGS['min_numsigi1_bipartite'],
-                                      marks=None,
-                                      tooltip={'placement': 'bottom'},
-                                      persistence=False,
-                                      className="form-range"
+                                      value=DEFAULT_INTERACTIONS_ARGS['min_numsigi1_bipartite']
                                   ))
         ], [
             control_panel_element("Minimum abs(log2FC)", "The minimum log2FC for either ligands or receptors between conditions.",
-                                  dcc.Slider(
+                                  make_custom_slider(
                                       id="min_logfc_bipartite",
                                       min=0,
                                       max=1,  # Fill in
                                       step=0.01,
-                                      value=DEFAULT_INTERACTIONS_ARGS['min_logfc_bipartite'],
-                                      marks=None,
-                                      tooltip={'placement': 'bottom'},
-                                      className="form-range"
-                                  )),
+                                      value=DEFAULT_INTERACTIONS_ARGS['min_logfc_bipartite']
+                                  ))
+        ], [
             control_panel_element("Minimum Expression", "The minimum fraction of cells expressing genes to be considered.",
-                                  dcc.Slider(
+                                  make_custom_slider(
                                       id="min_expression_bipartite",
                                       min=0,
                                       max=1,
                                       step=0.01,
-                                      value=DEFAULT_INTERACTIONS_ARGS['min_expression_bipartite'],
-                                      marks=None,
-                                      tooltip={'placement': 'bottom'},
-                                      className="form-range"
-                                  )),
+                                      value=DEFAULT_INTERACTIONS_ARGS['min_expression_bipartite']
+                                  ))
+        ], [
             control_panel_element("Interaction Effect FDR Cutoff", "FDR-adjusted requirements for interaction effects.",
                                   dbc.Select(
                                       id='bipartite_inter_fdr',
@@ -183,9 +177,9 @@ def build_interface() -> list:
     State('first_celltype', 'value'),
     State('second_celltype', 'value'),
     State('third_celltype', 'value'),
-    State('min_logfc_bipartite', 'value'),
-    State('min_expression_bipartite', 'value'),
-    State('min_numsigi1_bipartite', 'value'),
+    State('min_logfc_bipartite', 'data'),
+    State('min_expression_bipartite', 'data'),
+    State('min_numsigi1_bipartite', 'data'),
     State('bipartite_inter_fdr', 'value'),
     State('bipartite_logfc_fdr', 'value'),
     interval=500,
@@ -256,6 +250,7 @@ def make_graph(set_progress, n_clicks,
     Input('bipartite_logfc_fdr', 'value'),
     interval=10,
     background=True,  # Run in background,
+    prevent_initial_call=True,
     running=[  # Disable the button while the callback is running
         (Output('submit-button-bipartite', 'disabled'), True, False),
         (Output('spinner-holder', 'children'), [

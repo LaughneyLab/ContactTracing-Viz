@@ -4,7 +4,8 @@ import dash
 from dash import html, callback, Output, Input, State, dcc
 import dash_bootstrap_components as dbc
 
-from viz.web import interactive_panel, wrap_icon, control_panel, figure_output, control_panel_element
+from viz.web import interactive_panel, wrap_icon, control_panel, figure_output, control_panel_element, \
+    make_custom_slider
 
 if __name__ != '__main__':
     dash.register_page(__name__,
@@ -50,41 +51,30 @@ def build_interface() -> list:
                                   ))
         ], [
             control_panel_element('Minimum numSigI1', 'Minimum number of significant interactions for a receptor to be included.',
-                                  dcc.Slider(
+                                  make_custom_slider(
                                       id='circos_min_numsigi1',
                                       min=0,
                                       max=10,  # Fill in later
                                       value=DEFAULT_CIRCOS_ARGS['circos_min_numsigi1'],
-                                      step=1,
-                                      marks=None,
-                                      tooltip={'placement': 'bottom'},
-                                      persistence=False,
-                                      className='form-range'
-                                  )),
+                                      step=1
+                                  ))
+        ], [
             control_panel_element('Minimum numDEG', 'Minimum number of differentially expressed genes conditioned on a target gene.',
-                                  dcc.Slider(
+                                  make_custom_slider(
                                       id='circos_min_numdeg',
                                       min=0,
                                       max=10,  # Fill in later
                                       value=DEFAULT_CIRCOS_ARGS['circos_min_numdeg'],
-                                      step=1,
-                                      marks=None,
-                                      tooltip={'placement': 'bottom'},
-                                      persistence=False,
-                                      className='form-range'
+                                      step=1
                                   ))
         ], [
             control_panel_element('Chord Ligand abs(log2FC) Cutoff', 'The minimum ligand log2FC required for a chord to be drawn.',
-                                  dcc.Slider(
+                                  make_custom_slider(
                                       id='circos_min_ligand_logfc',
                                       min=0,
                                       max=1,  # Fill in
                                       value=DEFAULT_CIRCOS_ARGS['circos_min_ligand_logfc'],
-                                      step=0.01,
-                                      marks=None,
-                                      tooltip={'placement': 'bottom'},
-                                      persistence=False,
-                                      className='form-range'
+                                      step=0.01
                                   ))
         ], [
             control_panel_element("Plot", "",
@@ -120,9 +110,9 @@ def build_interface() -> list:
     State('inter_circos_fdr', 'value'),
     State('logfc_circos_fdr', 'value'),
     State('circos_set', 'value'),
-    State('circos_min_numsigi1', 'value'),
-    State('circos_min_numdeg', 'value'),
-    State('circos_min_ligand_logfc', 'value'),
+    State('circos_min_numsigi1', 'data'),
+    State('circos_min_numdeg', 'data'),
+    State('circos_min_ligand_logfc', 'data'),
     background=True,
     prevent_initial_call=True,
     interval=500,
@@ -178,10 +168,11 @@ def make_circos_plot(set_progress, n_clicks,
     Output('circos_min_numsigi1', 'max'),
     Output('circos_min_numdeg', 'max'),
     Output('circos_min_ligand_logfc', 'max'),
-    Input('inter_circos_fdr', 'value'),
-    Input('logfc_circos_fdr', 'value'),
+    Input('inter_circos_fdr', 'data'),
+    Input('logfc_circos_fdr', 'data'),
     interval=10,
     background=True,
+    prevent_initial_call=True,
     running=[
         (Output('submit-button-circos', 'disabled'), True, False),
         (Output('spinner-holder', 'children'), [

@@ -1,12 +1,64 @@
 from typing import List, Tuple, Optional
 
+import dash
 import dash_bootstrap_components as dbc
 import numpy as np
 import pandas as pd
-from dash import html, Output, Input
+from dash import html, Output, Input, dcc, callback
 import dash_bio as dashbio
+from dash.exceptions import PreventUpdate
 
 from viz.util import ColorTransformer, celltype_to_colors, saturate_color, smooth_step
+
+
+def make_custom_slider(id: str, min, max, value, step) -> html.Div:
+    # Generate a slider with a textbox
+    # Use the 'data' field of this component to get the value
+    slider = dcc.Slider(
+        id=id + '-slider',
+        min=min,
+        max=max,
+        value=value,
+        step=step,
+        marks=None,
+        tooltip={'placement': 'bottom'},
+        className='form-range'
+    )
+    input = dbc.Input(id=id + '-input',
+                      type='number',
+                      min=min,
+                      max=max,
+                      step=step,
+                      value=value)
+    value_store = dcc.Store(id=id, data=value)
+    slider_element = html.Div(dbc.Container([
+        value_store,
+        dbc.Row([
+            dbc.Col(slider, align="end"),
+            dbc.Col(input, width=2, align="start")
+        ])
+    ], fluid=True))
+
+    @callback(
+        Output(value_store, 'value'),
+        Output(input, 'value'),
+        Output(slider, 'value'),
+        Input(input, 'value'),
+        Input(slider, 'value')
+    )
+    def update_input(text_input, slider_input):
+        if dash.callback_context.triggered_id == id + '-input':
+            # Input should always be in range
+            if text_input is None or (text_input < min or text_input > max):
+                raise PreventUpdate
+            return text_input, text_input, text_input
+        elif dash.callback_context.triggered_id == id + '-slider':
+            # Slider should always be in range
+            return slider_input, slider_input, slider_input
+
+        raise PreventUpdate
+
+    return slider_element
 
 
 def jumbotron(title, main_content, sub_content, *additional_content, dark=False):
