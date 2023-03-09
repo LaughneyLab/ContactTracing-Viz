@@ -25,6 +25,8 @@ def _normalize_condition_name(condition: str) -> str:
 
 
 def _normalize_fdr_name(fdr: str) -> str:
+    if fdr is None:
+        return None
     return fdr.split('.')[-1].replace("fdr", "")
 
 

@@ -51,7 +51,12 @@ def make_custom_slider(id: str, min, max, value, step) -> html.Div:
             # Input should always be in range
             if text_input is None or (text_input < min or text_input > max):
                 raise PreventUpdate
-            return text_input, text_input, text_input
+            # Round to the nearest multiple of the step
+            rounded_input = round(text_input / step) * step
+            # If step is an integer, cast to int
+            if step == int(step):
+                rounded_input = int(rounded_input)
+            return rounded_input, rounded_input, rounded_input
         elif dash.callback_context.triggered_id == id + '-slider':
             # Slider should always be in range
             return slider_input, slider_input, slider_input
