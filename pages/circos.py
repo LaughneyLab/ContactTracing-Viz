@@ -43,7 +43,7 @@ def build_interface() -> list:
                                   ))
         ], [
             control_panel_element("Interaction Set", "Biological condition to compare.",
-                                  dbc.Select(
+                                  dbc.RadioItems(
                                       id='circos_set',
                                       options=[{'label': 'CIN-Dependent Effect', 'value': 'cin'},
                                                {'label': 'CIN & STING-Dependent Effect', 'value': 'sting'}],
