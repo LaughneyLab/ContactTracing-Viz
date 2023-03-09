@@ -184,7 +184,7 @@ def bipartite_graph(df,
                 x=1.15,
                 y=1
             ),
-            colorscale=[[i / (len(colorscale) - 1), col] for (i, col) in enumerate(colorscale)]
+            colorscale=colorscale.make_plotly_colorscale()
         )
     )
 
@@ -581,7 +581,7 @@ def make_plot_from_graph(G: nx.DiGraph, celltypes, layout="planar") -> go.Figure
                 x=1,
                 y=1
             ),
-            colorscale=[[i / (len(colorscale) - 1), col] for (i, col) in enumerate(colorscale)]
+            colorscale=colorscale.make_plotly_colorscale()
         )
     )
     edge_traces = []

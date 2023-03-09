@@ -19,19 +19,23 @@ class ColorTransformer(Sized, Callable, Iterable):
         self.norm = colors.Normalize(vmin=min, vmax=max, clip=True)
         self.alpha = alpha
 
-    def __call__(self, value):
+    def __call__(self, value, alpha=None):
         rgb = colors.colorConverter.to_rgb(self.cmap(self.norm(value)))
-        if self.alpha:
+        keep_alpha = alpha or (alpha is None and self.alpha)
+        if keep_alpha:
             rgb = rgb + (self.alpha,)
-        return colors.rgb2hex(rgb, keep_alpha=self.alpha is not None)
+        return colors.rgb2hex(rgb, keep_alpha=keep_alpha)
 
     def __len__(self) -> int:
         color_range = self.max - self.min
         return 255 if color_range <= 1 else int(color_range)
 
     def __iter__(self):
-        for i in range(len(self)):
-            yield self(i)
+        for i in np.linspace(self.min, self.max, len(self)):
+            yield self(i, alpha=False)
+
+    def make_plotly_colorscale(self):
+        return [[i / (len(self) - 1), col] for (i, col) in enumerate(self)]
 
 
 def saturate_color(color, saturation):

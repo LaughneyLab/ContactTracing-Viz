@@ -2,7 +2,7 @@ from typing import List, Tuple, Optional
 
 import dash
 import dash_bootstrap_components as dbc
-import numpy as np
+import plotly.graph_objects as go
 import pandas as pd
 from dash import html, Output, Input, dcc, callback
 import dash_bio as dashbio
@@ -245,7 +245,7 @@ def make_circos_figure(set_progress,
     # Build next ring for DC1 heatmap
     max_dc1 = outer_data['cell_type_dc1'].max()
     min_dc1 = outer_data['cell_type_dc1'].min()
-    colormap = ColorTransformer(min_dc1, max_dc1, 'cividis')
+    dc1_colormap = ColorTransformer(min_dc1, max_dc1, 'cividis')
     diffusion_data = []
     for celltype in celltypes:
         id = celltype2id[celltype]
@@ -259,8 +259,8 @@ def make_circos_figure(set_progress,
                 'start': i,
                 'end': (i + 1),
                 'value': dc1,
-                'value_text': f"DC1={dc1:.2f}",
-                'color': colormap(dc1),
+                'value_text': f"<h3>{celltype}<br>{t} DC1={dc1:.2f}</h3>",
+                'color': dc1_colormap(dc1),
                 'target': t
             })
     if set_progress is not None:
@@ -270,7 +270,7 @@ def make_circos_figure(set_progress,
     max_da = outer_data['DA_score'].max()
     min_da = outer_data['DA_score'].min()
     # TODO: Different colorscale for
-    colormap = ColorTransformer(min_da, max_da, 'seismic')
+    da_colormap = ColorTransformer(min_da, max_da, 'RdBu_r')
     da_data = []
     for celltype in celltypes:
         id = celltype2id[celltype]
@@ -282,8 +282,8 @@ def make_circos_figure(set_progress,
                 'start': i,
                 'end': (i + 1),
                 'value': da,
-                'value_text': f"DA={da:.2f}",
-                'color': colormap(da),
+                'value_text': f"<h3>{celltype}<br>{t} DA={da:.2f}</h3>",
+                'color': da_colormap(da),
                 'target': t
             })
     if set_progress is not None:
@@ -319,7 +319,7 @@ def make_circos_figure(set_progress,
                     'start': i,
                     'end': (i + 1),
                     'value': lig_effect,
-                    'value_text': f"numSigI1={lig_effect:d}",
+                    'value_text': f"<h3>{celltype}<br>{t} numSigI1={lig_effect:d}</h3>",
                     'color': color,
                     'target': t
                 })
@@ -327,7 +327,7 @@ def make_circos_figure(set_progress,
         set_progress((6, 7))
 
     # Next ring for chords connecting ligands to receptors
-    colormap = ColorTransformer(-0.2, 0.2, 'bwr', alpha=0.8)
+    log2fc_colormap = ColorTransformer(-0.2, 0.2, 'bwr', alpha=0.8)
     chord_data = []
     text_data = dict()
     for i, inter_row in inter_data.iterrows():
@@ -353,8 +353,7 @@ def make_circos_figure(set_progress,
         }
 
         chord_data.append({
-            'color': colormap(inter_row['MAST_log2FC_ligand']),
-            'value_text': f"{lig}/{rec} MAST_log2FC={inter_row['MAST_log2FC_ligand']:.2f}",
+            'color': log2fc_colormap(inter_row['MAST_log2FC_ligand']),
             'logfc': inter_row['MAST_log2FC_ligand'],
             'source': {
                 'id': celltype2id[source_celltype],
@@ -365,6 +364,7 @@ def make_circos_figure(set_progress,
                 'id': celltype2id[target_celltype],
                 'start': target_position - thickness,
                 'end': target_position + thickness,
+                'value_text': f"<br>{lig} + {rec} log2FC={inter_row['MAST_log2FC_ligand']:.2f} numSigI1={inter_row['numSigI1']}",
             },
         })
     # Sort to place red chords on top
@@ -372,97 +372,235 @@ def make_circos_figure(set_progress,
     if set_progress is not None:
         set_progress((7, 7))
     ring_width = 15
-    return dashbio.Circos(
-        enableDownloadSVG=True,
-        enableZoomPan=True,
-        style={'position': ''},
-        layout=layout,
-        selectEvent={
-            "0": "hover",
-            "1": "hover",
-            "2": "hover",
-            "3": "hover"
-        },
-        tracks=[{
-            'type': 'TEXT',
-            'data': list(text_data.values()),
-            'config': {
-                'innerRadius': 17.5*ring_width,
-                'outerRadius': 21*ring_width,
-                'style': {
-                    'font-size': 6
-                }
-            }
-        }, {
-            'type': 'CHORDS',
-            'data': chord_data,
-            'config': {
-                'color': {
-                    'name': 'color',
+
+    legend_group = make_circos_legend(min_receptor_numSigI1, max_receptor_numSigI1,
+                                      log2fc_colormap, da_colormap, dc1_colormap)
+
+    return dbc.Row([
+        dbc.Col(
+            dashbio.Circos(
+                enableDownloadSVG=False,
+                enableZoomPan=True,
+                layout=layout,
+                selectEvent={
+                    "0": "both",
+                    "1": "both",
+                    "2": "both",
+                    "3": "both",
+                    "4": "both"
                 },
-                'opacity': 0.9,
-                'radius': 17*ring_width,
-                'tooltipContent': {
-                    'source': 'source',
-                    'sourceID': 'id',
-                    'target': 'target',
-                    'targetID': 'id',
-                    'targetEnd': 'value_text'
+                tracks=[{
+                    'type': 'TEXT',
+                    'data': list(text_data.values()),
+                    'config': {
+                        'innerRadius': 17.5*ring_width,
+                        'outerRadius': 21*ring_width,
+                        'style': {
+                            'font-size': 6
+                        }
+                    }
+                }, {
+                    'type': 'CHORDS',
+                    'data': chord_data,
+                    'config': {
+                        'color': {
+                            'name': 'color',
+                        },
+                        'opacity': 0.9,
+                        'radius': 17*ring_width,
+                        'tooltipContent': {
+                            'source': 'source',
+                            'sourceID': 'id',
+                            'target': 'target',
+                            'targetID': 'id',
+                            'targetEnd': 'value_text'
+                        }
+                    }
+                }, {
+                    'type': 'HISTOGRAM',
+                    'data': numSigI1_data,
+                    'config': {
+                        'color': {
+                            'name': 'color',
+                        },
+                        'innerRadius': 21*ring_width,
+                        'outerRadius': 22*ring_width,
+                        'direction': 'in',
+                        'min': 0,
+                        'max': max_receptor_numSigI1 - min_receptor_numSigI1,
+                        'tooltipContent': {
+                            'name': 'value_text'
+                        }
+                    }
+                }, {
+                    'type': 'HEATMAP',
+                    'data': da_data,
+                    'config': {
+                        'color': {
+                            'name': 'color',
+                        },
+                        'innerRadius': 22*ring_width,
+                        'outerRadius': 23*ring_width,
+                        'tooltipContent': {
+                            'name': 'value_text'
+                        }
+                    }
+                }, {
+                    'type': 'HEATMAP',
+                    'data': diffusion_data,
+                    'config': {
+                        'color': {
+                            'name': 'color',  # Redirect to color property
+                        },
+                        'innerRadius': 23*ring_width,
+                        'outerRadius': 24*ring_width,
+                        'tooltipContent': {
+                            'name': 'value_text'
+                       }
+                    }
+                }],
+                config={
+                    "labels": {
+                        "display": True
+                    },
+                    "ticks": {
+                        "display": False
+                    },
+                    "innerRadius": 24*ring_width,
+                    "outerRadius": 25*ring_width,
+                    'size': 800
+                    #"cornerRadius": 4,
                 }
-            }
-        }, {
-            'type': 'HISTOGRAM',
-            'data': numSigI1_data,
-            'config': {
-                'color': {
-                    'name': 'color',
-                },
-                'innerRadius': 21*ring_width,
-                'outerRadius': 22*ring_width,
-                'direction': 'in',
-                'min': 0,
-                'max': max_receptor_numSigI1 - min_receptor_numSigI1,
-                'tooltipContent': {
-                    'name': 'value_text'
+            )
+        ), dbc.Col(
+            dcc.Graph(
+                figure=legend_group,
+                config={
+                    'displaylogo': False,
+                    'showTips': False,
+                    'displayModeBar': False,
+                    'scrollZoom': False,
+                    'responsive': False,
+                    'showLink': False,
+                    'watermark': False
                 }
-            }
-        }, {
-            'type': 'HEATMAP',
-            'data': da_data,
-            'config': {
-                'color': {
-                    'name': 'color',
-                },
-                'innerRadius': 22*ring_width,
-                'outerRadius': 23*ring_width,
-                'tooltipContent': {
-                    'name': 'value_text'
-                }
-            }
-        }, {
-            'type': 'HEATMAP',
-            'data': diffusion_data,
-            'config': {
-                'color': {
-                    'name': 'color',  # Redirect to color property
-                },
-                'innerRadius': 23*ring_width,
-                'outerRadius': 24*ring_width,
-                'tooltipContent': {
-                    'name': 'value_text'
-               }
-            }
-        }],
-        config={
-            "labels": {
-                "display": True
-            },
-            "ticks": {
-                "display": False
-            },
-            "innerRadius": 24*ring_width,
-            "outerRadius": 25*ring_width,
-            'size': 800
-            #"cornerRadius": 4,
-        }
+            )
+        )])
+
+
+def make_circos_legend(min_numSigI1, max_numSigI1,
+                       logfc_transformer: ColorTransformer,
+                       da_transformer: ColorTransformer,
+                       dc1_transformer: ColorTransformer) -> go.Figure:
+    line_size_min_legend = go.Scatter(
+        name=str(min_numSigI1),
+        x=[None], y=[None],
+        mode='lines',
+        showlegend=True,
+        legendgroup='numSigI1',
+        legendgrouptitle=dict(text='Receptor numSigI1'),
+        line=dict(
+            color='black',
+            width=0.33,
+            dash='solid'
+        )
+    )
+
+    line_size_max_legend = go.Scatter(
+        name=str(max_numSigI1),
+        x=[None], y=[None],
+        mode='lines',
+        showlegend=True,
+        legendgroup='numSigI1',
+        legendgrouptitle=dict(text='Receptor numSigI1'),
+        line=dict(
+            color='black',
+            width=3,
+            dash='solid'
+        )
+    )
+
+    logfc_legend = go.Scatter(
+        x=[None], y=[None],
+        text=[],
+        mode='markers',
+        hoverinfo='text',
+        showlegend=False,
+        marker=dict(
+            opacity=0,
+            cmin=logfc_transformer.min,
+            cmax=logfc_transformer.max,
+            color=[],
+            colorbar=dict(
+                title="Ligand LogFC",
+                thickness=25,
+                titleside='right',
+                x=1, y=1
+            ),
+            colorscale=logfc_transformer.make_plotly_colorscale()
+        )
+    )
+
+    da_legend = go.Scatter(
+        x=[None], y=[None],
+        text=[],
+        mode='markers',
+        hoverinfo='text',
+        showlegend=False,
+        marker=dict(
+            opacity=0,
+            cmin=da_transformer.min,
+            cmax=da_transformer.max,
+            color=[],
+            colorbar=dict(
+                title="Differential Abundance",
+                thickness=25,
+                titleside='right',
+                x=1, y=1
+            ),
+            colorscale=da_transformer.make_plotly_colorscale()
+        )
+    )
+
+    dc1_legend = go.Scatter(
+        x=[None], y=[None],
+        text=[],
+        mode='markers',
+        hoverinfo='text',
+        showlegend=False,
+        marker=dict(
+            opacity=0,
+            cmin=dc1_transformer.min,
+            cmax=dc1_transformer.max,
+            color=[],
+            colorbar=dict(
+                title="Diffusion Component 1",
+                thickness=25,
+                titleside='right',
+                x=1, y=1
+            ),
+            colorscale=dc1_transformer.make_plotly_colorscale()
+        )
+    )
+
+    return go.Figure(
+        data=[line_size_min_legend, line_size_max_legend, logfc_legend, da_legend, dc1_legend],
+        layout=go.Layout(
+            title=dict(text='Legend'),
+            titlefont_size=14,
+            showlegend=True,
+            hovermode='closest',
+            autosize=False,
+            width=100,
+            height=800,  # Match circos
+            plot_bgcolor='white',
+            legend=dict(
+                yanchor='top',
+                y=1,
+                xanchor='left',
+                x=1
+            ),
+            xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+            yaxis=dict(showgrid=False, zeroline=False, showticklabels=False, scaleratio=1, scaleanchor='x')
+        )
     )
