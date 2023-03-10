@@ -99,7 +99,7 @@ def control_panel(*element_rows: List[dbc.Card]) -> html.Div:
     )
 
 
-def figure_output(title, footer, element) -> html.Div:
+def figure_output(title, footer, element, outline=True) -> html.Div:
     return html.Div([
         dbc.Card([
             dbc.CardHeader(title),
@@ -113,10 +113,10 @@ def figure_output(title, footer, element) -> html.Div:
                                  style={'visibility': 'hidden'}),
                     element,
                     html.Br()
-                ], className='card-text light')
+                ])
             ]),
             dbc.CardFooter(footer)
-        ], color='light')
+        ], color='light', outline=outline)
     ])
 
 
