@@ -377,9 +377,9 @@ def make_circos_figure(set_progress,
                                       log2fc_colormap, da_colormap, dc1_colormap)
 
     return dbc.Row([
-        dbc.Col(
+        dbc.Col(dbc.Container(html.Div(
             dashbio.Circos(
-                enableDownloadSVG=False,
+                enableDownloadSVG=True,
                 enableZoomPan=True,
                 layout=layout,
                 selectEvent={
@@ -472,20 +472,20 @@ def make_circos_figure(set_progress,
                     #"cornerRadius": 4,
                 }
             )
-        ), dbc.Col(
-            dcc.Graph(
-                figure=legend_group,
-                config={
-                    'displaylogo': False,
-                    'showTips': False,
-                    'displayModeBar': False,
-                    'scrollZoom': False,
-                    'responsive': False,
-                    'showLink': False,
-                    'watermark': False
-                }
-            )
-        )])
+        , style={'height': 800, 'width': 800})), width=9), dbc.Col(
+                dcc.Graph(
+                    figure=legend_group,
+                    config={
+                        'displaylogo': False,
+                        'showTips': False,
+                        'displayModeBar': False,
+                        'scrollZoom': False,
+                        'responsive': False,
+                        'showLink': False,
+                        'watermark': False
+                    }
+                )
+        )], className='g-0')
 
 
 def make_circos_legend(min_numSigI1, max_numSigI1,
@@ -501,7 +501,7 @@ def make_circos_legend(min_numSigI1, max_numSigI1,
         legendgrouptitle=dict(text='Receptor numSigI1'),
         line=dict(
             color='black',
-            width=0.33,
+            width=1,
             dash='solid'
         )
     )
@@ -515,7 +515,7 @@ def make_circos_legend(min_numSigI1, max_numSigI1,
         legendgrouptitle=dict(text='Receptor numSigI1'),
         line=dict(
             color='black',
-            width=3,
+            width=6,
             dash='solid'
         )
     )
@@ -535,7 +535,13 @@ def make_circos_legend(min_numSigI1, max_numSigI1,
                 title="Ligand LogFC",
                 thickness=25,
                 titleside='right',
-                x=1, y=1
+                bgcolor='rgba(0,0,0,0)',
+                len=0.75,
+                lenmode='fraction',
+                xanchor='right',
+                yanchor='top',
+                x=1.25,
+                y=3
             ),
             colorscale=logfc_transformer.make_plotly_colorscale()
         )
@@ -556,7 +562,13 @@ def make_circos_legend(min_numSigI1, max_numSigI1,
                 title="Differential Abundance",
                 thickness=25,
                 titleside='right',
-                x=1, y=1
+                bgcolor='rgba(0,0,0,0)',
+                len=0.75,
+                lenmode='fraction',
+                xanchor='right',
+                yanchor='top',
+                x=1.25,
+                y=1.5
             ),
             colorscale=da_transformer.make_plotly_colorscale()
         )
@@ -577,30 +589,38 @@ def make_circos_legend(min_numSigI1, max_numSigI1,
                 title="Diffusion Component 1",
                 thickness=25,
                 titleside='right',
-                x=1, y=1
+                bgcolor='rgba(0,0,0,0)',
+                len=0.75,
+                lenmode='fraction',
+                xanchor='right',
+                yanchor='top',
+                x=1.25,
+                y=0
             ),
             colorscale=dc1_transformer.make_plotly_colorscale()
         )
     )
 
-    return go.Figure(
-        data=[line_size_min_legend, line_size_max_legend, logfc_legend, da_legend, dc1_legend],
+    fig = go.Figure(
+        data=[line_size_max_legend, line_size_min_legend, dc1_legend, da_legend, logfc_legend],
         layout=go.Layout(
-            title=dict(text='Legend'),
+            title=dict(text=''),
             titlefont_size=14,
             showlegend=True,
             hovermode='closest',
             autosize=False,
-            width=100,
+            width=250,
             height=800,  # Match circos
-            plot_bgcolor='white',
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor="rgba(0,0,0,0)",
             legend=dict(
-                yanchor='top',
-                y=1,
-                xanchor='left',
-                x=1
+                xanchor='right',
+                yanchor='bottom',
+                x=-2,
+                y=-.5
             ),
             xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
             yaxis=dict(showgrid=False, zeroline=False, showticklabels=False, scaleratio=1, scaleanchor='x')
         )
     )
+    return fig
