@@ -60,7 +60,7 @@ def read_ligand_receptor_file(filename: str = 'data/allgenes/all_interactions.ts
 def calculate_expression(celltype, target, exp_adata: ad.AnnData):
     filter = (exp_adata.obs['Cell Type'] == celltype)
     expressing_cells = (exp_adata[filter, target].layers['X'].flatten() > 0).sum()
-    return expressing_cells / filter.sum()
+    return np.nan_to_num((expressing_cells / filter.sum()).item())
 
 
 def calculate_expressions(adata: ad.AnnData, exp_adata: ad.AnnData):
@@ -83,7 +83,7 @@ def calculate_aggregated_stats(adata: ad.AnnData, fdr: str) -> pd.DataFrame:
         logfc_fdr = row['MAST_fdr_highCIN_vs_lowCIN']
         selected = adata[(adata.obs['cell type'] == celltype) & (adata.obs['target'] == target)]
         numDEG = int((selected.layers['fdr'].flatten() < fdr).sum())
-        numSigI1 = int((selected.layers['fdr'].flatten() < fdr).sum())
+        numSigI1 = int((selected.layers['fdr.i1'].flatten() < fdr).sum())
         data.append({
             'cell_type': celltype,
             'target': target,

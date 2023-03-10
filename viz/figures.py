@@ -899,10 +899,25 @@ def pseudotime_interaction_propagation_graph(effect_set: str,
             df = df[df['cell_type'] == celltype]
         if df is None:
             return pd.DataFrame()
-        return df[(df['fdr'] < logfc_fdr_cutoff) &
-                  (df['i1.fdr'] < interaction_fdr_cutoff) &
-                  (df['log2FC'].abs() >= min_logfc) &
-                  (df['target_expression'] >= min_expression)]
+
+        # Ligand target filter
+        ligand_filter = (
+            (df['MAST_log2FC'].abs() >= min_logfc) &
+            (df['MAST_fdr'] < logfc_fdr_cutoff) &
+            (df['target_expression'] >= min_expression) &
+            (df['gene_is_receptor'])
+        ) & df['ligand']
+
+        # Receptor target filter
+        receptor_filter = (
+            (df['log2FC'].abs() >= min_logfc) &
+            (df['fdr'] < logfc_fdr_cutoff) &
+            (df['i1.fdr'] < interaction_fdr_cutoff) &
+            (df['target_expression'] >= min_expression) &
+            (df['gene_is_ligand'])
+        ) & df['receptor']
+
+        return df[ligand_filter | receptor_filter]
 
     if isinstance(seed_ligands, str):
         ligands = []
@@ -931,6 +946,10 @@ def pseudotime_interaction_propagation_graph(effect_set: str,
                 receptors = ligand_receptor_pairs[ligand_receptor_pairs['ligand'] == gene]['receptor'].unique()
                 for receptor in receptors:
                     df = pd.concat([df, _read_filtered_df(None, receptor)])  # Get all possible receptors
+            if 'Receptor' in gene_type:
+                ligands = ligand_receptor_pairs[ligand_receptor_pairs['receptor'] == gene]['ligand'].unique()
+                for ligand in ligands:
+                    df = pd.concat([df, _read_filtered_df(None, ligand)])
         df = df.drop_duplicates(ignore_index=True)
 
         if t == 0:
@@ -972,8 +991,8 @@ def pseudotime_interaction_propagation_graph(effect_set: str,
                             curr_G.add_edge(node, next_node,
                                             t=t, ligand=node,
                                             receptor=next_node,
-                                            response_logfc=row['log2FC'],
-                                            weight=row['log2FC']
+                                            response_logfc=row['MAST_log2FC'],
+                                            weight=row['MAST_log2FC']
                                             )
                             new_frontier.add(next_node)
 
