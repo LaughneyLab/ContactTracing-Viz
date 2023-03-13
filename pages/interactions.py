@@ -5,7 +5,7 @@ from dash import dcc, callback, Output, Input, State
 import dash_bootstrap_components as dbc
 
 from viz.web import interactive_panel, wrap_icon, control_panel, control_panel_element, figure_output, \
-    make_custom_slider
+    make_custom_slider, make_fdr_slider
 
 if __name__ != '__main__':
     dash.register_page(__name__,
@@ -63,19 +63,9 @@ def build_interface() -> list:
                                   ))
         ], [
             control_panel_element("Interaction Effect FDR Cutoff", "FDR-adjusted requirements for interaction effects.",
-                                  dbc.Select(
-                                      id='bipartite_inter_fdr',
-                                      options=[{'label': '0.05', 'value': 'fdr05'},
-                                               {'label': '0.25', 'value': 'fdr25'}],
-                                      value=DEFAULT_INTERACTIONS_ARGS['bipartite_inter_fdr']
-                                  )),
+                                  make_fdr_slider('bipartite_inter_fdr', DEFAULT_INTERACTIONS_ARGS['bipartite_inter_fdr'])),
             control_panel_element("log2FC FDR Cutoff", "FDR-adjusted requirements for interaction effects.",
-                                  dbc.Select(
-                                      id='bipartite_logfc_fdr',
-                                      options=[{'label': '0.05', 'value': 'fdr05'},
-                                               {'label': '0.25', 'value': 'fdr25'}],
-                                      value=DEFAULT_INTERACTIONS_ARGS['bipartite_logfc_fdr']
-                                  ))
+                                  make_fdr_slider('bipartite_logfc_fdr', DEFAULT_INTERACTIONS_ARGS['bipartite_logfc_fdr'])),
         ], [
             control_panel_element("First Cell Type", "The first cell type to examine interactions between.",
                                   dbc.Select(
@@ -180,8 +170,8 @@ def build_interface() -> list:
     State('min_logfc_bipartite', 'data'),
     State('min_expression_bipartite', 'data'),
     State('min_numsigi1_bipartite', 'data'),
-    State('bipartite_inter_fdr', 'value'),
-    State('bipartite_logfc_fdr', 'value'),
+    State('bipartite_inter_fdr', 'data'),
+    State('bipartite_logfc_fdr', 'data'),
     interval=500,
     cache_args_to_ignore=['submit-button-bipartite', 'n_clicks'],
     background=True,  # Run in background

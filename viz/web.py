@@ -11,7 +11,15 @@ from dash.exceptions import PreventUpdate
 from viz.util import ColorTransformer, celltype_to_colors, saturate_color, smooth_step
 
 
-def make_custom_slider(id: str, min, max, value, step) -> html.Div:
+def make_fdr_slider(id: str, value) -> html.Div:
+    if isinstance(value, str):
+        value = float("." + value[3:])
+    return make_custom_slider(
+        id, 0.01, 0.25, value, 0.01, lambda x: "fdr" + f"{x:.2f}".split(".")[1]
+    )
+
+
+def make_custom_slider(id: str, min, max, value, step, transform=None) -> html.Div:
     # Generate a slider with a textbox
     # Use the 'data' field of this component to get the value
     slider = dcc.Slider(
@@ -30,7 +38,7 @@ def make_custom_slider(id: str, min, max, value, step) -> html.Div:
                       max=max,
                       step=step,
                       value=value)
-    value_store = dcc.Store(id=id, data=value)
+    value_store = dcc.Store(id=id, data=transform(value) if transform else value)
     slider_element = html.Div(dbc.Container([
         value_store,
         dbc.Row([
@@ -40,7 +48,7 @@ def make_custom_slider(id: str, min, max, value, step) -> html.Div:
     ], fluid=True))
 
     @callback(
-        Output(value_store, 'value'),
+        Output(value_store, 'data'),
         Output(input, 'value'),
         Output(slider, 'value'),
         Input(input, 'value'),
@@ -56,12 +64,12 @@ def make_custom_slider(id: str, min, max, value, step) -> html.Div:
             # If step is an integer, cast to int
             if step == int(step):
                 rounded_input = int(rounded_input)
-            return rounded_input, rounded_input, rounded_input
+            return transform(rounded_input) if transform else rounded_input, rounded_input, rounded_input
         elif dash.callback_context.triggered_id == id + '-slider':
             # Slider should always be in range
-            return slider_input, slider_input, slider_input
+            return transform(slider_input) if transform else slider_input, slider_input, slider_input
 
-        return value, value, value
+        return transform(value) if transform else value, value, value
 
     return slider_element
 
@@ -617,7 +625,7 @@ def make_circos_legend(min_numSigI1, max_numSigI1,
                 xanchor='right',
                 yanchor='bottom',
                 x=-2,
-                y=-.5
+                y=-.65
             ),
             xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
             yaxis=dict(showgrid=False, zeroline=False, showticklabels=False, scaleratio=1, scaleanchor='x')

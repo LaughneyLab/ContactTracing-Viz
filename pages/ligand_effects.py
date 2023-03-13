@@ -5,7 +5,7 @@ import dash_bootstrap_components as dbc
 from dash import callback, Output, Input, dcc, State
 
 from viz.web import interactive_panel, wrap_icon, control_panel, control_panel_element, figure_output, \
-    make_custom_slider
+    make_custom_slider, make_fdr_slider
 
 if __name__ != '__main__':
     dash.register_page(__name__,
@@ -75,13 +75,7 @@ def build_interface() -> list:
                                   ))
         ], [
             control_panel_element("Interaction FDR Cutoff", "The maximum interaction test FDR to consider.",
-                                  make_custom_slider(
-                                      id='interaction_fdr',
-                                      max=0.25,
-                                      min=0.01,
-                                      step=0.01,
-                                      value=DEFAULT_LIGAND_EFFECT_ARGS['interaction_fdr']
-                                  ))
+                                  make_fdr_slider("interaction_fdr", DEFAULT_LIGAND_EFFECT_ARGS['interaction_fdr']))
         ], [
             control_panel_element("Minimum abs(Log2FC)", "The minimum induced log2FC for targets.",
                                   make_custom_slider(
@@ -102,13 +96,7 @@ def build_interface() -> list:
                                   ))
         ], [
             control_panel_element("log2FC FDR Cutoff", "The FDR-adjusted cutoff for determining if a log2FC value is non-zero.",
-                                  make_custom_slider(
-                                      id='logfc_fdr',
-                                      max=1,
-                                      min=0,
-                                      step=0.01,
-                                      value=DEFAULT_LIGAND_EFFECT_ARGS['logfc_fdr']
-                                  ))
+                                  make_fdr_slider("logfc_fdr", DEFAULT_LIGAND_EFFECT_ARGS['logfc_fdr']))
         ], [
             control_panel_element("Network Building Iterations", "This controls how many downstream interactions may be detected.",
                                   dbc.Input(
@@ -219,10 +207,10 @@ def make_graph(set_progress, n_clicks,
         seed_cell=cell_type,
         seed_ligands=ligands,
         iterations=int(iterations),
-        interaction_fdr_cutoff=float(interaction_fdr),
+        interaction_fdr_cutoff=float("." + interaction_fdr[3:]),
         min_logfc=float(min_logfc),
         min_expression=float(min_expression),
-        logfc_fdr_cutoff=float(logfc_fdr),
+        logfc_fdr_cutoff=float("." + logfc_fdr[3:]),
         layout=network_layout,
         set_progress_callback=set_progress
     )

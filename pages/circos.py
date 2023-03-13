@@ -5,7 +5,7 @@ from dash import html, callback, Output, Input, State, dcc
 import dash_bootstrap_components as dbc
 
 from viz.web import interactive_panel, wrap_icon, control_panel, figure_output, control_panel_element, \
-    make_custom_slider
+    make_custom_slider, make_fdr_slider
 
 if __name__ != '__main__':
     dash.register_page(__name__,
@@ -28,19 +28,10 @@ def build_interface() -> list:
     controls = control_panel(
         [
             control_panel_element("Interaction Effect FDR Cutoff", "FDR-adjusted requirements for interaction effects.",
-                                  dbc.Select(
-                                      id='inter_circos_fdr',
-                                      options=[{'label': '0.05', 'value': 'fdr05'},
-                                               {'label': '0.25', 'value': 'fdr25'}],
-                                      value=DEFAULT_CIRCOS_ARGS['inter_circos_fdr']
-                                  )),
+                                  make_fdr_slider('inter_circos_fdr', DEFAULT_CIRCOS_ARGS['inter_circos_fdr'])),
+        ], [
             control_panel_element("log2FC FDR Cutoff", "FDR-adjusted requirements for interaction effects.",
-                                  dbc.Select(
-                                      id='logfc_circos_fdr',
-                                      options=[{'label': '0.05', 'value': 'fdr05'},
-                                               {'label': '0.25', 'value': 'fdr25'}],
-                                      value=DEFAULT_CIRCOS_ARGS['logfc_circos_fdr']
-                                  ))
+                                  make_fdr_slider('logfc_circos_fdr', DEFAULT_CIRCOS_ARGS['logfc_circos_fdr'])),
         ], [
             control_panel_element("Interaction Set", "Biological condition to compare.",
                                   dbc.RadioItems(
@@ -107,8 +98,8 @@ def build_interface() -> list:
 @callback(
     Output('circos-graph-holder', 'children'),
     Input('submit-button-circos', 'n_clicks'),
-    State('inter_circos_fdr', 'value'),
-    State('logfc_circos_fdr', 'value'),
+    State('inter_circos_fdr', 'data'),
+    State('logfc_circos_fdr', 'data'),
     State('circos_set', 'value'),
     State('circos_min_numsigi1', 'data'),
     State('circos_min_numdeg', 'data'),
