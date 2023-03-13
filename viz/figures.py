@@ -120,6 +120,7 @@ def bipartite_graph(df,
     ct_ordering = [cell1, cell2]
     if cell3:
         ct_ordering.append(cell3)
+    ct_ordering.reverse()
     pos = multipartite_layout(G, subset_key='celltype', scale=1, space_mult_x=30 * scaleratio, space_mult_y=60,
                               ordering=ct_ordering)
 
