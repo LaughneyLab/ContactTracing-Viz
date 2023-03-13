@@ -143,7 +143,8 @@ def make_circos_plot(set_progress, n_clicks,
         except:
             pass
 
-    data = read_circos_file(circos_set, inter_circos_fdr)
+    #data = read_circos_file(circos_set, inter_circos_fdr)
+    data = read_circos_file('sting', inter_circos_fdr)  # Keep outer data consistent
     inter_data = read_interactions_file(circos_set, inter_circos_fdr)
 
     return [make_circos_figure(set_progress,

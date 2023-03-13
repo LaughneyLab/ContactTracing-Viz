@@ -66,7 +66,10 @@ def bipartite_graph(df,
     scaleratio = .9
     height = 1000
 
-    if 'none' in str(cell3).lower():
+    if cell3 is not None and 'none' in str(cell3).lower():
+        cell3 = None
+
+    if cell3 is None:
         selected = df[((df.cell_type_ligand == cell1) & (df.cell_type_receptor == cell2)) |
                       ((df.cell_type_ligand == cell2) & (df.cell_type_receptor == cell1))]
     else:
@@ -120,7 +123,6 @@ def bipartite_graph(df,
     ct_ordering = [cell1, cell2]
     if cell3:
         ct_ordering.append(cell3)
-    ct_ordering.reverse()
     pos = multipartite_layout(G, subset_key='celltype', scale=1, space_mult_x=30 * scaleratio, space_mult_y=60,
                               ordering=ct_ordering)
 
@@ -938,7 +940,6 @@ def pseudotime_interaction_propagation_graph(effect_set: str,
         for node in frontier:
             celltype = curr_G.nodes[node]['celltype']
             gene = curr_G.nodes[node]['gene']
-            celltypes.add(celltype)
             gene_type = curr_G.nodes[node]['gene_type']
             # Get current node's info
             df = pd.concat([df, _read_filtered_df(celltype, gene)])
@@ -972,10 +973,11 @@ def pseudotime_interaction_propagation_graph(effect_set: str,
                 if 'Ligand' in gene_type:
                     ligand = curr_G.nodes[node]['gene']
                     receivers = ligand_receptor_pairs[ligand_receptor_pairs['ligand'] == ligand]['receptor'].unique()
-                    receiver_inters = df[df['target'].isin(receivers) & (df['gene_is_receptor'])]
+                    receiver_inters = df[df['target'].isin(receivers)].drop_duplicates(('cell_type', 'target'), ignore_index=True)
                     for i, row in receiver_inters.iterrows():
                         receptor = row['target']
                         receptor_celltype = row['cell_type']
+                        celltypes.add(receptor_celltype)
                         next_node = f"{receptor_celltype}_{receptor}_receptor"
 
                         #if get_interaction_fdr(ct, celltype, ligand, receptor) > interaction_fdr_cutoff:
@@ -1002,11 +1004,12 @@ def pseudotime_interaction_propagation_graph(effect_set: str,
                     # Get the downstream ligands
                     down_ligands = df[(df['target'] == receptor) &
                                       (df['cell_type'] == celltype) &
-                                      (df['gene_is_ligand'])].drop_duplicates()
+                                      (df['gene_is_ligand'])].drop_duplicates(ignore_index=True)
 
                     for i, row in down_ligands.iterrows():
                         ligand = row['gene']
                         ligand_celltype = celltype
+                        celltypes.add(ligand_celltype)
                         next_node = f"{ligand_celltype}_{ligand}_ligand"
 
                         if not curr_G.has_node(next_node):

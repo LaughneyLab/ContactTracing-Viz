@@ -9,6 +9,10 @@ import numpy as np
 import pandas as pd
 
 
+# Exclude these cell types
+EXCLUDED_CELL_TYPES = ['Osteoclasts']
+
+
 def _filename(prefix, condition, fdr, extension):
     return os.path.join(prefix, f'{condition}_{fdr}.{extension}')
 
@@ -31,6 +35,7 @@ def _normalize_fdr_name(fdr: str) -> str:
 def read_circos_file(condition: str, fdr: str) -> pd.DataFrame:
     prefix = 'data/compiled/circos'
     df = pd.read_csv(_filename(prefix, _normalize_condition_name(condition), _normalize_fdr_name(fdr), 'csv'))
+    df = df[~df['cell_type'].isin(EXCLUDED_CELL_TYPES)]
     return df
 
 
@@ -41,12 +46,14 @@ def read_ligand_effect_for(condition: str, target: str) -> pd.DataFrame:
     if not os.path.exists(prefix):
         return None
     df = pd.read_csv(prefix)
+    df = df[~df['cell_type'].isin(EXCLUDED_CELL_TYPES)]
     return df
 
 
 def read_interactions_file(condition: str, fdr: str) -> pd.DataFrame:
     prefix = 'data/compiled/interactions'
     df = pd.read_csv(_filename(prefix, _normalize_condition_name(condition), _normalize_fdr_name(fdr), 'csv'))
+    df = df[(~df['cell_type_receptor'].isin(EXCLUDED_CELL_TYPES)) & (~df['cell_type_ligand'].isin(EXCLUDED_CELL_TYPES))]
     return df
 
 
@@ -125,7 +132,7 @@ def _combine_obs_for_interactions(interactions: pd.DataFrame,
                                         main_agg['numSigI1_cin'], main_agg['numSigI1_sting'])
         main_agg['numDEG'] = np.where(main_agg['numDEG_cin'] > main_agg['numDEG_sting'],
                                         main_agg['numDEG_cin'], main_agg['numDEG_sting'])
-        logfc_selector = main_agg['MAST_log2FC_cin'] > main_agg['MAST_log2FC_sting']
+        logfc_selector = main_agg['MAST_log2FC_cin'].abs() > main_agg['MAST_log2FC_sting'].abs()
         main_agg['MAST_log2FC'] = np.where(logfc_selector, main_agg['MAST_log2FC_cin'], main_agg['MAST_log2FC_sting'])
         main_agg['MAST_fdr'] = np.where(logfc_selector, main_agg['MAST_fdr_cin'], main_agg['MAST_fdr_sting'])
     # We are only using this for receptors
@@ -305,7 +312,7 @@ def _compile_circos(interactions: pd.DataFrame,
                                         main_agg['numSigI1_cin'], main_agg['numSigI1_sting'])
         main_agg['numDEG'] = np.where(main_agg['numDEG_cin'] > main_agg['numDEG_sting'],
                                         main_agg['numDEG_cin'], main_agg['numDEG_sting'])
-        logfc_selector = main_agg['MAST_log2FC_cin'] > main_agg['MAST_log2FC_sting']
+        logfc_selector = main_agg['MAST_log2FC_cin'].abs() > main_agg['MAST_log2FC_sting'].abs()
         main_agg['MAST_log2FC'] = np.where(logfc_selector, main_agg['MAST_log2FC_cin'], main_agg['MAST_log2FC_sting'])
         main_agg['MAST_fdr'] = np.where(logfc_selector, main_agg['MAST_fdr_cin'], main_agg['MAST_fdr_sting'])
 
@@ -319,6 +326,8 @@ def _compile_circos(interactions: pd.DataFrame,
     })
 
     df = pd.merge(df, main_agg, on=['cell_type', 'target'], how='right', suffixes=('_old', ''))
+    # Replace numSigI1 for ligands that are not receptors to 0
+    df['numSigI1'] = np.where(~df['receptor'], df['numSigI1'], 0)
 
     df.to_csv(file, index=False)
     return df
@@ -353,7 +362,7 @@ def compile_data(
     # Compile a bunch of FDRs
     for fdr in range(1, 26):
         fdr = str(fdr).zfill(2)
-        print("Compiling FDR", fdr)
+        print("Compiling FDR", fdr, flush=True)
         _compile_interactions(interactions, exp_adata, cin_adata, cin_sting_adata, cin_condition, fdr)
         _compile_interactions(interactions, exp_adata, cin_adata, cin_sting_adata, cin_sting_condition, fdr)
 

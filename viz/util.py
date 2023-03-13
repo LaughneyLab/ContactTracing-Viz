@@ -62,7 +62,7 @@ def celltype_to_colors(celltypes: list):
     # Color labels from paper
 
     celltype2color = dict()
-    for i, ct in enumerate(celltypes):
+    for i, ct in enumerate({ct for ct in itertools.chain(celltypes, mouse_colors.keys())}):
         celltype2color[ct] = mouse_colors.get(ct, default_colors[i])
     return celltype2color
 
