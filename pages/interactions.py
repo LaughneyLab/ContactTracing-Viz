@@ -18,23 +18,15 @@ def build_interface() -> list:
     from viz.figures import DEFAULT_INTERACTIONS_ARGS, INTERACTIONS_SAVE_LOCATION
 
     import pickle
-    default_plot = {}
+    default_plots = None
     try:
         with open(INTERACTIONS_SAVE_LOCATION, 'rb') as f:
-            default_plot = pickle.load(f)
+            default_plots = pickle.load(f)
     except:
         pass
 
     controls = control_panel(
         [
-            control_panel_element("Interaction Set", "Biological condition to compare.",
-                                  dbc.RadioItems(
-                                      id='inter_set',
-                                      options=[{'label': 'CIN-Dependent Effect', 'value': 'cin'},
-                                               {'label': 'CIN & STING Max Effect', 'value': 'max'}],
-                                      value=DEFAULT_INTERACTIONS_ARGS['inter_set']
-                                  ))
-        ], [
             control_panel_element("Minimum numSigI1", "The minimum number of significant target gene interactions.",
                                   make_custom_slider(
                                       id="min_numsigi1_bipartite",
@@ -131,6 +123,14 @@ def build_interface() -> list:
                                       color="primary",
                                       className='me-1',
                                       n_clicks=0
+                                  )),
+            control_panel_element("Interaction Set", "Biological condition to compare.",
+                                  dbc.RadioItems(
+                                      id='inter_set',
+                                      options=[{'label': 'CIN-Dependent Effect', 'value': 'cin'},
+                                               {'label': 'CIN & STING Max Effect', 'value': 'max'}],
+                                      value=DEFAULT_INTERACTIONS_ARGS['inter_set'],
+                                      persistence=False
                                   ))
         ]
     )
@@ -139,7 +139,7 @@ def build_interface() -> list:
         title="Cell Type Interactions",
         footer="Circle = Ligand, Square = Receptor, Diamond = Ligand and Receptor",
         element=dcc.Graph(id="celltype-interaction-graph",
-                          figure=default_plot,
+                          figure=default_plots[1] if default_plots is not None else {},
                           config={
                               'displaylogo': False,
                               'showTips': True,
@@ -156,14 +156,30 @@ def build_interface() -> list:
 
     return [
         controls,
-        results
+        results,
+        dcc.Store(id='cin_bipartite_plot', data=default_plots[0] if default_plots is not None else {}),
+        dcc.Store(id='max_bipartite_plot', data=default_plots[1] if default_plots is not None else {}),
     ]
 
 
 @callback(
     Output('celltype-interaction-graph', 'figure'),
+    Input('inter_set', 'value'),
+    Input('cin_bipartite_plot', 'data'),
+    Input('max_bipartite_plot', 'data'),
+    prevent_initial_call=True
+)
+def update_bipartite_plot(inter_set, cin_bipartite_plot, max_bipartite_plot):
+    if inter_set == 'cin':
+        return cin_bipartite_plot
+    else:
+        return max_bipartite_plot
+
+
+@callback(
+    Output('cin_bipartite_plot', 'data'),
+    Output('max_bipartite_plot', 'data'),
     Input('submit-button-bipartite', 'n_clicks'),
-    State('inter_set', 'value'),
     State('first_celltype', 'value'),
     State('second_celltype', 'value'),
     State('third_celltype', 'value'),
@@ -186,7 +202,6 @@ def build_interface() -> list:
     ]
 )
 def make_graph(set_progress, n_clicks,
-               inter_set,
                first_ct, second_ct, third_ct,
                min_logfc, min_expression, min_numSigI1,
                inter_fdr, logfc_fdr):
@@ -197,11 +212,10 @@ def make_graph(set_progress, n_clicks,
     from viz.data import read_interactions_file
     from viz.figures import bipartite_graph, DEFAULT_INTERACTIONS_ARGS, INTERACTIONS_SAVE_LOCATION
 
-    set_progress((50, 100))
+    set_progress((0, 2))
 
     # Check if arguments match default, if so return the pre-computed default
-    if (inter_set == DEFAULT_INTERACTIONS_ARGS['inter_set'] and
-            first_ct == DEFAULT_INTERACTIONS_ARGS['first_celltype'] and
+    if (first_ct == DEFAULT_INTERACTIONS_ARGS['first_celltype'] and
             second_ct == DEFAULT_INTERACTIONS_ARGS['second_celltype'] and
             third_ct == DEFAULT_INTERACTIONS_ARGS['third_celltype'] and
             min_logfc == DEFAULT_INTERACTIONS_ARGS['min_logfc_bipartite'] and
@@ -217,10 +231,11 @@ def make_graph(set_progress, n_clicks,
             pass
 
     # Do some work
-    interactions = read_interactions_file(inter_set, inter_fdr)
+    cin_interactions = read_interactions_file('cin', inter_fdr)
+    sting_interactions = read_interactions_file('sting', inter_fdr)
 
-    fig = bipartite_graph(
-        df=interactions,
+    cin_fig = bipartite_graph(
+        df=cin_interactions,
         cell1=first_ct,
         cell2=second_ct,
         cell3=third_ct,
@@ -230,7 +245,22 @@ def make_graph(set_progress, n_clicks,
         logfc_fdr_bipartite_cutoff=float(logfc_fdr.replace('fdr', '.'))
     )
 
-    return fig
+    set_progress((1, 2))
+
+    sting_fig = bipartite_graph(
+        df=sting_interactions,
+        cell1=first_ct,
+        cell2=second_ct,
+        cell3=third_ct,
+        numInteractions=min_numSigI1,
+        min_logfc_bipartite=min_logfc,
+        min_expression_bipartite=min_expression,
+        logfc_fdr_bipartite_cutoff=float(logfc_fdr.replace('fdr', '.'))
+    )
+
+    set_progress((2, 2))
+
+    return [cin_fig, sting_fig]
 
 
 # @callback(
@@ -277,10 +307,22 @@ if __name__ == '__main__':
     if not os.path.exists(INTERACTIONS_SAVE_LOCATION):
         from viz.data import read_interactions_file
         import pickle
-        interactions = read_interactions_file(DEFAULT_INTERACTIONS_ARGS['inter_set'], DEFAULT_INTERACTIONS_ARGS['bipartite_inter_fdr'])
+        cin_interactions = read_interactions_file('cin', DEFAULT_INTERACTIONS_ARGS['bipartite_inter_fdr'])
+        sting_interactions = read_interactions_file('max', DEFAULT_INTERACTIONS_ARGS['bipartite_inter_fdr'])
 
-        fig = bipartite_graph(
-            df=interactions,
+        cin_fig = bipartite_graph(
+            df=cin_interactions,
+            cell1=DEFAULT_INTERACTIONS_ARGS['first_celltype'],
+            cell2=DEFAULT_INTERACTIONS_ARGS['second_celltype'],
+            cell3=DEFAULT_INTERACTIONS_ARGS['third_celltype'],
+            numInteractions=DEFAULT_INTERACTIONS_ARGS['min_numsigi1_bipartite'],
+            min_logfc_bipartite=DEFAULT_INTERACTIONS_ARGS['min_logfc_bipartite'],
+            min_expression_bipartite=DEFAULT_INTERACTIONS_ARGS['min_expression_bipartite'],
+            logfc_fdr_bipartite_cutoff=float(DEFAULT_INTERACTIONS_ARGS['bipartite_logfc_fdr'].replace('fdr', '.'))
+        )
+
+        sting_fig = bipartite_graph(
+            df=sting_interactions,
             cell1=DEFAULT_INTERACTIONS_ARGS['first_celltype'],
             cell2=DEFAULT_INTERACTIONS_ARGS['second_celltype'],
             cell3=DEFAULT_INTERACTIONS_ARGS['third_celltype'],
@@ -291,4 +333,4 @@ if __name__ == '__main__':
         )
 
         with open(INTERACTIONS_SAVE_LOCATION, 'wb') as f:
-            pickle.dump(fig, f)
+            pickle.dump([cin_fig, sting_fig], f)

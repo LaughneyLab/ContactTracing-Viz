@@ -85,7 +85,7 @@ def build_interface() -> list:
         footer="Layers from outside ring to center: Cell Type, Diffusion Component Value, Differential Abundance, Number of significant interactions, Strongest ligand/receptor interactions",
         element=html.Div(
             id="circos-graph-holder",
-            children=default_plots[0] if default_plots is not None else None
+            children=default_plots[1] if default_plots is not None else None
         )
     )
 
@@ -102,6 +102,7 @@ def build_interface() -> list:
     Input('circos_set', 'value'),
     Input('cin_circos_plot', 'data'),
     Input('sting_circos_plot', 'data'),
+    prevent_initial_call=True
 )
 def update_circos_plot(circos_set, cin_circos_plot, sting_circos_plot):
     if circos_set == 'cin':

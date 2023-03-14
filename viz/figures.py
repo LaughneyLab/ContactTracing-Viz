@@ -935,6 +935,9 @@ def pseudotime_interaction_propagation_graph(effect_set: str,
     frontier = set()
     celltypes = {seed_cell}
     for t in range(iterations):
+        if set_progress_callback is not None:
+            set_progress_callback((t, iterations))
+
         # Create dynamic dataframe for the frontier
         df = pd.DataFrame()
         for node in frontier:
@@ -1030,8 +1033,6 @@ def pseudotime_interaction_propagation_graph(effect_set: str,
 
             frontier = new_frontier
         Gs.append(curr_G.copy())
-        if set_progress_callback:
-            set_progress_callback(((t+1)//iterations * 100, 100))
         if len(frontier) == 0:
             break
 

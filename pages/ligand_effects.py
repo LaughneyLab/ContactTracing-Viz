@@ -18,24 +18,15 @@ def build_interface() -> list:
     from viz.figures import DEFAULT_LIGAND_EFFECT_ARGS, LIGAND_EFFECT_SAVE_LOCATION
 
     import pickle
-    default_plot = {}
+    default_plots = None
     try:
         with open(LIGAND_EFFECT_SAVE_LOCATION, 'rb') as f:
-            default_plot = pickle.load(f)
+            default_plots = pickle.load(f)
     except:
         pass
 
     controls = control_panel(
         [
-            control_panel_element("Interaction Set", "Biological condition to compare.",
-                                  dbc.RadioItems(
-                                      id='effect_set',
-                                      options=[{'label': 'CIN-Dependent Effect', 'value': 'cin'},
-                                               {'label': 'CIN & STING Max Effect', 'value': 'max', 'disabled': True}
-                                               ],
-                                      value=DEFAULT_LIGAND_EFFECT_ARGS['effect_set'],
-
-                                  )),
             control_panel_element("Network Layout", 'Select how you would like to structure nodes.',
                                   dbc.Select(
                                       id='network_layout',
@@ -117,6 +108,15 @@ def build_interface() -> list:
                                       color="primary",
                                       className='me-1',
                                       n_clicks=0
+                                  )),
+            control_panel_element("Interaction Set", "Biological condition to compare.",
+                                  dbc.RadioItems(
+                                      id='effect_set',
+                                      options=[{'label': 'CIN-Dependent Effect', 'value': 'cin'},
+                                               {'label': 'CIN & STING Max Effect', 'value': 'max', 'disabled': True}
+                                               ],
+                                      value=DEFAULT_LIGAND_EFFECT_ARGS['effect_set'],
+                                      persistence=False
                                   ))
         ]
     )
@@ -125,7 +125,7 @@ def build_interface() -> list:
         title='Ligand Network Figure',
         footer="Circle = Ligand, Square = Receptor, Diamond = Ligand and Receptor",
         element=dcc.Graph(id='network_graph',
-                          figure=default_plot,
+                          figure=default_plots[0] if default_plots else {},
                           config={
                              'displaylogo': False,
                              'showTips': True,
@@ -142,14 +142,30 @@ def build_interface() -> list:
 
     return [
         controls,
-        results
+        results,
+        dcc.Store(id='cin_network_plot', storage_type='memory', data=default_plots[0] if default_plots is not None else {}),
+        dcc.Store(id='sting_network_plot', storage_type='memory', data=default_plots[1] if default_plots is not None else {})
     ]
 
 
 @callback(
     Output('network_graph', 'figure'),
+    Input('effect_set', 'value'),
+    Input('cin_network_plot', 'data'),
+    Input('sting_network_plot', 'data'),
+    prevent_initial_call=True
+)
+def update_network_figure(effect_set, cin_network_plot, sting_network_plot):
+    if effect_set == 'cin':
+        return cin_network_plot
+    else:
+        return sting_network_plot
+
+
+@callback(
+    Output('cin_network_plot', 'data'),
+    Output('sting_network_plot', 'data'),
     Input('submit_button', 'n_clicks'),
-    State('effect_set', 'value'),
     State('network_layout', 'value'),
     State('cell_type', 'value'),
     State('ligands', 'value'),
@@ -172,7 +188,7 @@ def build_interface() -> list:
     ]
 )
 def make_graph(set_progress, n_clicks,
-               effect_set, network_layout,
+               network_layout,
                cell_type, ligands,
                interaction_fdr, min_logfc, min_expression,
                logfc_fdr, iterations):
@@ -182,11 +198,10 @@ def make_graph(set_progress, n_clicks,
 
     from viz.figures import pseudotime_interaction_propagation_graph, DEFAULT_LIGAND_EFFECT_ARGS, LIGAND_EFFECT_SAVE_LOCATION
 
-    set_progress((0, 100))
+    set_progress((0, iterations))
 
     # Check if arguments match default, if so return the pre-computed default
-    if (effect_set == DEFAULT_LIGAND_EFFECT_ARGS['effect_set'] and
-        network_layout == DEFAULT_LIGAND_EFFECT_ARGS['network_layout'] and
+    if (network_layout == DEFAULT_LIGAND_EFFECT_ARGS['network_layout'] and
         cell_type == DEFAULT_LIGAND_EFFECT_ARGS['cell_type'] and
         ligands == DEFAULT_LIGAND_EFFECT_ARGS['ligands'] and
         interaction_fdr == DEFAULT_LIGAND_EFFECT_ARGS['interaction_fdr'] and
@@ -202,7 +217,7 @@ def make_graph(set_progress, n_clicks,
             pass
 
     fig = pseudotime_interaction_propagation_graph(
-        effect_set=effect_set,
+        effect_set=DEFAULT_LIGAND_EFFECT_ARGS['effect_set'],  # Keep this fixed
         seed_cell=cell_type,
         seed_ligands=ligands,
         iterations=int(iterations),
@@ -214,7 +229,7 @@ def make_graph(set_progress, n_clicks,
         set_progress_callback=set_progress
     )
 
-    return fig
+    return [fig, None]
 
 
 # @callback(
@@ -253,7 +268,7 @@ if __name__ == '__main__':
         import pickle
 
         fig = pseudotime_interaction_propagation_graph(
-            effect_set=DEFAULT_LIGAND_EFFECT_ARGS['effect_set'],
+            effect_set=DEFAULT_LIGAND_EFFECT_ARGS['effect_set'],  # Calculate both sets if we decide to implement a selector
             seed_cell=DEFAULT_LIGAND_EFFECT_ARGS['cell_type'],
             seed_ligands=DEFAULT_LIGAND_EFFECT_ARGS['ligands'],
             iterations=int(DEFAULT_LIGAND_EFFECT_ARGS['iterations']),
@@ -266,4 +281,4 @@ if __name__ == '__main__':
         )
 
         with open(LIGAND_EFFECT_SAVE_LOCATION, 'wb') as f:
-            pickle.dump(fig, f)
+            pickle.dump([fig, None], f)
