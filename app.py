@@ -4,7 +4,7 @@ import sys
 from uuid import uuid4
 
 import dash
-from dash import Dash, html, dcc, Output, Input
+from dash import Dash, html, dcc, Output, Input, State
 import dash_bootstrap_components as dbc
 from dash.exceptions import PreventUpdate
 
@@ -104,6 +104,37 @@ app = Dash(__name__,
 server = app.server
 
 
+def access_code_page():
+    #page_container = dash.page_container
+    CODE = 'cintme123'
+
+    access_modal = dbc.Modal([
+        dbc.ModalHeader("Enter Access Code", close_button=False),
+        dbc.ModalBody([
+            dbc.Input(id='access-code', type='password', placeholder='Enter access code', className='mb-3'),
+        ]),
+        dbc.ModalFooter(dbc.Button("Enter", id="access-modal-close", className="ms-auto", n_clicks=0))
+    ], is_open=True, size='xl', backdrop='static', keyboard=False, centered=True)
+
+    container = dbc.Container(fluid=True, children=[
+        html.Div(id='access-wrapper', children=access_modal)
+    ])
+
+    @dash.callback(
+        Output('access-wrapper', 'children'),
+        Input('access-modal-close', 'n_clicks'),
+        State('access-code', 'value'),
+    )
+    def access_modal_close(n_clicks, code):
+        if n_clicks == 0:
+            raise PreventUpdate
+        if code == CODE:
+            return None
+        return access_modal
+
+    return container
+
+
 layout = html.Div([
     dbc.Navbar(
         dbc.Container(
@@ -129,8 +160,11 @@ layout = html.Div([
         light=True,
         className='mb-5',
     ),
-    dcc.Store(id='data-session', storage_type='session'),  # Temporary session storage
-    html.Div(id='page-content', children=dbc.Container(dash.page_container, fluid=True, class_name='mt-5 pt-5'))
+    dcc.Store(id='access-code-entered', storage_type='local', data=False),  # Temporary session storage
+    html.Div(id='page-content', children=dbc.Container([
+        dash.page_container,
+        access_code_page()],
+        fluid=True, class_name='mt-5 pt-5'))
 ])
 
 
