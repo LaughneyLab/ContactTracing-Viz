@@ -125,7 +125,6 @@ def build_interface() -> list:
         title='Ligand Network Figure',
         footer="Circle = Ligand, Square = Receptor, Diamond = Ligand and Receptor",
         element=dcc.Graph(id='network_graph',
-                          animate=True,
                           figure=default_plot,
                           config={
                              'displaylogo': False,
