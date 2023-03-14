@@ -53,7 +53,8 @@ mouse_colors = {
     "cDC": '#c438fb',
     "Fibroblast cells": '#226c04',
     "NK cells": '#ea0d0c',
-    "Macrophages/mMDSC": '#0047cf'
+    "Macrophages/mMDSC": '#0047cf',
+    "Endothelial cells": '#6d0909',
 }
 
 

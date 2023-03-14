@@ -135,9 +135,6 @@ def _combine_obs_for_interactions(interactions: pd.DataFrame,
         logfc_selector = main_agg['MAST_log2FC_cin'].abs() > main_agg['MAST_log2FC_sting'].abs()
         main_agg['MAST_log2FC'] = np.where(logfc_selector, main_agg['MAST_log2FC_cin'], main_agg['MAST_log2FC_sting'])
         main_agg['MAST_fdr'] = np.where(logfc_selector, main_agg['MAST_fdr_cin'], main_agg['MAST_fdr_sting'])
-    # We are only using this for receptors
-    main_agg['cell_type_receptor'] = main_agg['cell_type']
-    main_agg['receptor'] = main_agg['target']
 
     all_celltypes = set(main_adata.obs['cell type'])
     full_df = pd.DataFrame()
@@ -149,29 +146,30 @@ def _combine_obs_for_interactions(interactions: pd.DataFrame,
 
         ligand_df = pd.DataFrame({
             'ligand': lig_adata.obs.target,
-            'MAST_log2FC_ligand': lig_adata.obs[f'MAST_log2FC_highCIN_vs_lowCIN'],
-            'MAST_fdr_ligand': lig_adata.obs["MAST_fdr_highCIN_vs_lowCIN"],
             'cell_type_ligand_dc1': lig_adata.obs['cell_type_dc1'],
             'DA_ligand': lig_adata.obs['DA_score'],
             'expression_ligand': calculate_expressions(lig_adata, exp_adata),
         })
         ligand_df['cell_type_ligand'] = donor_celltype
-
-        agg_df = main_agg[main_agg['cell_type_receptor'] == target_celltype]
+        agg_df = main_agg[main_agg['cell_type'] == donor_celltype]
+        # Don't need cell type in the df anymore
+        agg_df = agg_df.drop(columns=['cell_type', 'numSigI1', 'numDEG'])
+        ligand_df = pd.merge(ligand_df, agg_df, left_on='ligand', right_on='target', how='inner', suffixes=('', '_ignore'))
 
         receptor_df = pd.DataFrame({
             'receptor': rec_adata.obs.target,
-            'MAST_log2FC_receptor': rec_adata.obs[f'MAST_log2FC_highCIN_vs_lowCIN'],
-            'MAST_fdr_receptor': rec_adata.obs["MAST_fdr_highCIN_vs_lowCIN"],
             'cell_type_receptor_dc1': rec_adata.obs['cell_type_dc1'],
             'DA_receptor': rec_adata.obs['DA_score'],
             'expression_receptor': calculate_expressions(rec_adata, exp_adata)
         })
         receptor_df['cell_type_receptor'] = target_celltype
-        receptor_df = pd.merge(receptor_df, agg_df, on=['cell_type_receptor', 'receptor'], how='inner', suffixes=('', '_old'))
+        agg_df = main_agg[main_agg['cell_type'] == target_celltype]
+        # Don't need cell type in the df anymore
+        agg_df = agg_df.drop(columns=['cell_type'])
+        receptor_df = pd.merge(receptor_df, agg_df, left_on='receptor', right_on='target', how='inner', suffixes=('', '_ignore'))
 
-        interactions_ct = pd.merge(interactions, ligand_df, on='ligand')
-        interactions_ct = pd.merge(interactions_ct, receptor_df, on='receptor')
+        interactions_ct = pd.merge(interactions, ligand_df, on='ligand', suffixes=('', '_ligand'))
+        interactions_ct = pd.merge(interactions_ct, receptor_df, on='receptor', suffixes=('_ligand', '_receptor'))
 
         full_df = pd.concat([full_df, interactions_ct])
 
