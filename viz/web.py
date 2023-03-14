@@ -157,7 +157,7 @@ def make_data_redirect_buttons():
     ])
 
 
-def make_circos_figure(set_progress,
+def make_circos_figure(set_progress, progress_offset: int,
                        outer_data: pd.DataFrame,
                        inter_data: pd.DataFrame,
                        logfc_fdr: str,
@@ -165,7 +165,7 @@ def make_circos_figure(set_progress,
                        min_numdeg: int,
                        min_logfc: float):
     if set_progress is not None:
-        set_progress((1, 7))
+        set_progress((1+(progress_offset*7), 7*(progress_offset+1)))
 
     #inter_pvalue_cutoff = float("0." + inter_fdr.replace('fdr', ''))  # pval from name
     logfc_pvalue_cutoff = float("0." + logfc_fdr.replace('fdr', ''))  # pval from name
@@ -185,13 +185,13 @@ def make_circos_figure(set_progress,
                             | (outer_data['ligand'] & (outer_data['MAST_fdr_cin'] < logfc_pvalue_cutoff) & (outer_data['MAST_fdr_sting'] < logfc_pvalue_cutoff) & (np.sign(outer_data['MAST_log2FC_cin']) == np.sign(outer_data['MAST_log2FC_sting'])))]
 
     # Only select interactions present in outer_data
-    inter_receptor_index = pd.MultiIndex.from_frame(inter_data[['receptor', 'cell_type_receptor']])
-    outer_receptor_index = pd.MultiIndex.from_frame(outer_data[['target', 'cell_type']])
     inter_ligand_index = pd.MultiIndex.from_frame(inter_data[['ligand', 'cell_type_ligand']])
     outer_ligand_index = pd.MultiIndex.from_frame(outer_data[['target', 'cell_type']])
     inter_data = inter_data.loc[inter_ligand_index.isin(outer_ligand_index)]
+    inter_receptor_index = pd.MultiIndex.from_frame(inter_data[['receptor', 'cell_type_receptor']])
+    outer_receptor_index = pd.MultiIndex.from_frame(outer_data[['target', 'cell_type']])
     inter_data = inter_data.loc[inter_receptor_index.isin(outer_receptor_index)]
-    del inter_ligand_index, outer_ligand_index
+    del inter_ligand_index, outer_ligand_index, inter_receptor_index, outer_receptor_index
 
     # Filter outer data to just receptors and ligands with interactions
     outer_data = outer_data[outer_data['receptor'] | outer_data['target'].isin(inter_data['ligand'])]
@@ -203,7 +203,7 @@ def make_circos_figure(set_progress,
 
     # Filter obs to just the selected ligands and receptors
     if set_progress is not None:
-        set_progress((2, 7))
+        set_progress((2+(progress_offset*7), 7*(progress_offset+1)))
 
     layout = []
     for celltype in celltypes:
@@ -235,7 +235,7 @@ def make_circos_figure(set_progress,
     }
     layout = list(sorted(layout, key=lambda x: (ct2order.get(x['celltype'], -1), x['len']), reverse=True))
     if set_progress is not None:
-        set_progress((3, 7))
+        set_progress((3+(progress_offset*7), 7*(progress_offset+1)))
 
     # Build next ring for DC1 heatmap
     max_dc1 = outer_data['cell_type_dc1'].max()
@@ -259,7 +259,7 @@ def make_circos_figure(set_progress,
                 'target': t
             })
     if set_progress is not None:
-        set_progress((4, 7))
+        set_progress((4+(progress_offset*7), 7*(progress_offset+1)))
 
     # Next ring for Differential abundance
     max_da = outer_data['DA_score'].max()
@@ -282,7 +282,7 @@ def make_circos_figure(set_progress,
                 'target': t
             })
     if set_progress is not None:
-        set_progress((5, 7))
+        set_progress((5+(progress_offset*7), 7*(progress_offset+1)))
 
     # Next ring for magnitude of CIN-dependent effect
     receptor_info = outer_data[outer_data['receptor']]
@@ -319,7 +319,7 @@ def make_circos_figure(set_progress,
                     'target': t
                 })
     if set_progress is not None:
-        set_progress((6, 7))
+        set_progress((6+(progress_offset*7), 7*(progress_offset+1)))
 
     # Next ring for chords connecting ligands to receptors
     log2fc_colormap = ColorTransformer(-0.2, 0.2, 'bwr', alpha=0.8)
@@ -365,7 +365,7 @@ def make_circos_figure(set_progress,
     # Sort to place red chords on top
     chord_data = sorted(chord_data, key=lambda c: c['logfc'], reverse=False)
     if set_progress is not None:
-        set_progress((7, 7))
+        set_progress((7+(progress_offset*7), 7*(progress_offset+1)))
     ring_width = 15
 
     legend_group = make_circos_legend(min_receptor_numSigI1, max_receptor_numSigI1,

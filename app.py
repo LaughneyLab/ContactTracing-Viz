@@ -122,15 +122,17 @@ def access_code_page():
 
     @dash.callback(
         Output('access-wrapper', 'children'),
+        Output('access-code-entered', 'data'),
         Input('access-modal-close', 'n_clicks'),
         State('access-code', 'value'),
+        State('access-code-entered', 'data'),
     )
-    def access_modal_close(n_clicks, code):
+    def access_modal_close(n_clicks, code, was_entered):
         if n_clicks == 0:
             raise PreventUpdate
-        if code == CODE:
-            return None
-        return access_modal
+        if code == CODE or was_entered:
+            return None, True
+        return access_modal, False
 
     return container
 
@@ -160,10 +162,10 @@ layout = html.Div([
         light=True,
         className='mb-5',
     ),
-    dcc.Store(id='access-code-entered', storage_type='local', data=False),  # Temporary session storage
+    dcc.Store(id='access-code-entered', storage_type='local', data='debug' in sys.argv),  # Temporary session storage
     html.Div(id='page-content', children=dbc.Container([
         dash.page_container,
-        access_code_page()],
+        access_code_page() if 'debug' not in sys.argv else None],
         fluid=True, class_name='mt-5 pt-5'))
 ])
 

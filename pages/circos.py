@@ -18,10 +18,10 @@ def build_interface() -> list:
     from viz.figures import DEFAULT_CIRCOS_ARGS, CIRCOS_SAVE_LOCATION
 
     import pickle
-    default_plot = None
+    default_plots = None
     try:
         with open(CIRCOS_SAVE_LOCATION, 'rb') as f:
-            default_plot = pickle.load(f)
+            default_plots = pickle.load(f)
     except:
         pass
 
@@ -33,15 +33,7 @@ def build_interface() -> list:
             control_panel_element("log2FC FDR Cutoff", "FDR-adjusted requirements for interaction effects.",
                                   make_fdr_slider('logfc_circos_fdr', DEFAULT_CIRCOS_ARGS['logfc_circos_fdr'])),
         ], [
-            control_panel_element("Interaction Set", "Biological condition to compare.",
-                                  dbc.RadioItems(
-                                      id='circos_set',
-                                      options=[{'label': 'CIN-Dependent Effect', 'value': 'cin'},
-                                               {'label': 'CIN & STING-Dependent Effect', 'value': 'sting'}],
-                                      value=DEFAULT_CIRCOS_ARGS['circos_set']
-                                  ))
-        ], [
-            control_panel_element('Minimum numSigI1', 'Minimum number of significant interactions for a receptor to be included.',
+             control_panel_element('Minimum numSigI1', 'Minimum number of significant interactions for a receptor to be included.',
                                   make_custom_slider(
                                       id='circos_min_numsigi1',
                                       min=0,
@@ -76,6 +68,14 @@ def build_interface() -> list:
                                       color="primary",
                                       className='me-1',
                                       n_clicks=0
+                                  )),
+            control_panel_element("Interaction Set", "Biological condition to compare.",
+                                  dbc.RadioItems(
+                                      id='circos_set',
+                                      options=[{'label': 'CIN-Dependent Effect', 'value': 'cin'},
+                                               {'label': 'CIN & STING-Dependent Effect', 'value': 'sting'}],
+                                      value=DEFAULT_CIRCOS_ARGS['circos_set'],
+                                      persistence=False
                                   ))
         ]
     )
@@ -85,22 +85,37 @@ def build_interface() -> list:
         footer="Layers from outside ring to center: Cell Type, Diffusion Component Value, Differential Abundance, Number of significant interactions, Strongest ligand/receptor interactions",
         element=html.Div(
             id="circos-graph-holder",
-            children=default_plot
+            children=default_plots[0] if default_plots is not None else None
         )
     )
 
     return [
         controls,
-        results
+        results,
+        dcc.Store(id='cin_circos_plot', storage_type='memory', data=default_plots[0] if default_plots is not None else None),
+        dcc.Store(id='sting_circos_plot', storage_type='memory', data=default_plots[1] if default_plots is not None else None)
     ]
 
 
 @callback(
     Output('circos-graph-holder', 'children'),
+    Input('circos_set', 'value'),
+    Input('cin_circos_plot', 'data'),
+    Input('sting_circos_plot', 'data'),
+)
+def update_circos_plot(circos_set, cin_circos_plot, sting_circos_plot):
+    if circos_set == 'cin':
+        return cin_circos_plot
+    else:
+        return sting_circos_plot
+
+
+@callback(
+    Output('cin_circos_plot', 'data'),
+    Output('sting_circos_plot', 'data'),
     Input('submit-button-circos', 'n_clicks'),
     State('inter_circos_fdr', 'data'),
     State('logfc_circos_fdr', 'data'),
-    State('circos_set', 'value'),
     State('circos_min_numsigi1', 'data'),
     State('circos_min_numdeg', 'data'),
     State('circos_min_ligand_logfc', 'data'),
@@ -118,13 +133,13 @@ def build_interface() -> list:
     ]
 )
 def make_circos_plot(set_progress, n_clicks,
-                     inter_circos_fdr, logfc_circos_fdr, circos_set,
+                     inter_circos_fdr, logfc_circos_fdr,
                      min_numsigi1, min_numdeg, min_chord_ligand_logfc):
     if n_clicks == 0:
         from dash.exceptions import PreventUpdate
         raise PreventUpdate
 
-    set_progress((0, 7))
+    set_progress((0, 14))
     from viz.data import read_circos_file, read_interactions_file
     from viz.web import make_circos_figure
     from viz.figures import DEFAULT_CIRCOS_ARGS, CIRCOS_SAVE_LOCATION
@@ -132,28 +147,38 @@ def make_circos_plot(set_progress, n_clicks,
     # Check if arguments match default, if so return the pre-computed default
     if (inter_circos_fdr == DEFAULT_CIRCOS_ARGS['inter_circos_fdr'] and
         logfc_circos_fdr == DEFAULT_CIRCOS_ARGS['logfc_circos_fdr'] and
-        circos_set == DEFAULT_CIRCOS_ARGS['circos_set'] and
         min_numsigi1 == DEFAULT_CIRCOS_ARGS['circos_min_numsigi1'] and
         min_numdeg == DEFAULT_CIRCOS_ARGS['circos_min_numdeg'] and
         min_chord_ligand_logfc == DEFAULT_CIRCOS_ARGS['circos_min_ligand_logfc']):
         import pickle
         try:
             with open(CIRCOS_SAVE_LOCATION, 'rb') as f:
-                return [pickle.load(f)]
+                return pickle.load(f)
         except:
             pass
 
     #data = read_circos_file(circos_set, inter_circos_fdr)
     data = read_circos_file('sting', inter_circos_fdr)  # Keep outer data consistent
-    inter_data = read_interactions_file(circos_set, inter_circos_fdr)
+    cin_inter_data = read_interactions_file('cin', inter_circos_fdr)
+    sting_inter_data = read_interactions_file('sting', inter_circos_fdr)
 
-    return [make_circos_figure(set_progress,
+    cin_circos = make_circos_figure(set_progress, 0,
                                data,
-                               inter_data,
+                               cin_inter_data,
                                logfc_circos_fdr,
                                min_numsigi1,
                                min_numdeg,
-                               min_chord_ligand_logfc)]
+                               min_chord_ligand_logfc)
+
+    sting_circos = make_circos_figure(set_progress, 1,
+                               data,
+                               sting_inter_data,
+                               logfc_circos_fdr,
+                               min_numsigi1,
+                               min_numdeg,
+                               min_chord_ligand_logfc)
+
+    return [cin_circos, sting_circos]
 
 
 # @callback(
@@ -187,7 +212,9 @@ def make_circos_plot(set_progress, n_clicks,
 
 
 layout = [
-    interactive_panel(wrap_icon('fa-circle-dot', 'Circos Plot of Interactions'), "Visualize all interactions across an experiment.", *build_interface())
+    interactive_panel(wrap_icon('fa-circle-dot', 'Circos Plot of Interactions'),
+                      "Visualize all interactions across an experiment.",
+                      *build_interface())
 ]
 
 
@@ -200,17 +227,24 @@ if __name__ == '__main__':
         from viz.web import make_circos_figure
         import pickle
 
-        data = read_circos_file(DEFAULT_CIRCOS_ARGS['circos_set'], DEFAULT_CIRCOS_ARGS['inter_circos_fdr'])
-        inter_data = read_interactions_file(DEFAULT_CIRCOS_ARGS['circos_set'], DEFAULT_CIRCOS_ARGS['inter_circos_fdr'])
-
-        fig = make_circos_figure(None,
+        data = read_circos_file('sting', DEFAULT_CIRCOS_ARGS['inter_circos_fdr'])
+        cin_inter_data = read_interactions_file('cin', DEFAULT_CIRCOS_ARGS['inter_circos_fdr'])
+        sting_inter_data = read_interactions_file('sting', DEFAULT_CIRCOS_ARGS['inter_circos_fdr'])
+        cin_fig = make_circos_figure(None, 0,
                                  data,
-                                 inter_data,
+                                 cin_inter_data,
                                  DEFAULT_CIRCOS_ARGS['logfc_circos_fdr'],
                                  DEFAULT_CIRCOS_ARGS['circos_min_numsigi1'],
                                  DEFAULT_CIRCOS_ARGS['circos_min_numdeg'],
                                  DEFAULT_CIRCOS_ARGS['circos_min_ligand_logfc'])
+        sting_fig = make_circos_figure(None, 1,
+                                     data,
+                                     sting_inter_data,
+                                     DEFAULT_CIRCOS_ARGS['logfc_circos_fdr'],
+                                     DEFAULT_CIRCOS_ARGS['circos_min_numsigi1'],
+                                     DEFAULT_CIRCOS_ARGS['circos_min_numdeg'],
+                                     DEFAULT_CIRCOS_ARGS['circos_min_ligand_logfc'])
 
         # Dump the figure to a pickle file
         with open(CIRCOS_SAVE_LOCATION, 'wb') as f:
-            pickle.dump(fig, f)
+            pickle.dump([cin_fig, sting_fig], f)
