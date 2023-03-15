@@ -238,9 +238,7 @@ def make_circos_figure(set_progress, progress_offset: int,
         set_progress((3+(progress_offset*7), 7*(progress_offset+1)))
 
     # Build next ring for DC1 heatmap
-    max_dc1 = outer_data['cell_type_dc1'].max()
-    min_dc1 = outer_data['cell_type_dc1'].min()
-    dc1_colormap = ColorTransformer(min_dc1, max_dc1, 'cividis')
+    dc1_colormap = ColorTransformer(-1, 1, 'cividis')
     diffusion_data = []
     for celltype in celltypes:
         id = celltype2id[celltype]
@@ -262,10 +260,7 @@ def make_circos_figure(set_progress, progress_offset: int,
         set_progress((4+(progress_offset*7), 7*(progress_offset+1)))
 
     # Next ring for Differential abundance
-    max_da = outer_data['DA_score'].max()
-    min_da = outer_data['DA_score'].min()
-    # TODO: Different colorscale for
-    da_colormap = ColorTransformer(min_da, max_da, 'RdBu_r')
+    da_colormap = ColorTransformer(-0.5, 0.5, 'coolwarm') #'RdBu_r')
     da_data = []
     for celltype in celltypes:
         id = celltype2id[celltype]
@@ -535,7 +530,7 @@ def make_circos_legend(min_numSigI1, max_numSigI1,
                 lenmode='fraction',
                 xanchor='right',
                 yanchor='top',
-                x=1.25,
+                x=1.5,
                 y=3
             ),
             colorscale=logfc_transformer.make_plotly_colorscale()
@@ -562,7 +557,7 @@ def make_circos_legend(min_numSigI1, max_numSigI1,
                 lenmode='fraction',
                 xanchor='right',
                 yanchor='top',
-                x=1.25,
+                x=1.5,
                 y=1.5
             ),
             colorscale=da_transformer.make_plotly_colorscale()
@@ -589,7 +584,7 @@ def make_circos_legend(min_numSigI1, max_numSigI1,
                 lenmode='fraction',
                 xanchor='right',
                 yanchor='top',
-                x=1.25,
+                x=1.5,
                 y=0
             ),
             colorscale=dc1_transformer.make_plotly_colorscale()
