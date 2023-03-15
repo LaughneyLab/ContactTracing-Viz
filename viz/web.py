@@ -5,7 +5,7 @@ import dash_bootstrap_components as dbc
 import numpy as np
 import plotly.graph_objects as go
 import pandas as pd
-from dash import html, Output, Input, dcc, callback
+from dash import html, Output, Input, dcc, callback, State
 import dash_bio as dashbio
 from dash.exceptions import PreventUpdate
 
@@ -109,9 +109,25 @@ def control_panel(*element_rows: List[dbc.Card]) -> html.Div:
 
 
 def figure_output(title, footer, element, outline=True) -> html.Div:
+    help_button = dbc.Button(html.Div(wrap_icon('fa-circle-question'), className='text-center'), color='link', outline=True, className='float-end')
+    help_modal = dbc.Modal("TODO")  # TODO
+
+    @callback(
+        Output(help_modal, "is_open"),
+        Input(help_button, "n_clicks"),
+        State(help_modal, "is_open")
+    )
+    def toggle_help(n_clicks, is_open):
+        if n_clicks:
+            return not is_open
+        return is_open
+
     return html.Div([
         dbc.Card([
-            dbc.CardHeader(title),
+            dbc.CardHeader(dbc.Row([
+                dbc.Col(title),
+                dbc.Col(help_button, width=1)
+            ])),
             dbc.CardBody([
                 html.P([
                     html.Div(id='spinner-holder'),
@@ -259,7 +275,7 @@ def make_circos_figure(set_progress, progress_offset: int,
         set_progress((4+(progress_offset*7), 7*(progress_offset+1)))
 
     # Next ring for Differential abundance
-    da_colormap = ColorTransformer(-0.5, 0.5, 'coolwarm') #'RdBu_r')
+    da_colormap = ColorTransformer(-0.5, 0.5, 'RdBu_r')  # FIXME: Extremes appear too dark?
     da_data = []
     for celltype in celltypes:
         id = celltype2id[celltype]

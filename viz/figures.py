@@ -499,7 +499,7 @@ def get_all_edge_attr_for_node(G, node, attr):
     return successor_attrs + predecessor_attrs
 
 
-def make_plot_from_graph(G: nx.DiGraph, celltypes, layout="planar") -> go.Figure:
+def make_plot_from_graph(G: nx.DiGraph, celltypes, layout="planar", colormap=None) -> go.Figure:
     scaleratio = 1.5
     height = 800
 
@@ -530,7 +530,7 @@ def make_plot_from_graph(G: nx.DiGraph, celltypes, layout="planar") -> go.Figure
     }
 
     color_step = 255
-    colorscale = ColorTransformer(0, color_step, cmap='bwr')
+    colorscale = ColorTransformer(0, color_step, cmap='bwr' if not colormap else colormap)
 
     # colorscale = [x.hex for x in list(Color(start_color).range_to(Color(end_color), color_step))]
 
@@ -540,6 +540,8 @@ def make_plot_from_graph(G: nx.DiGraph, celltypes, layout="planar") -> go.Figure
     min_abs_logfc = None
     for edge in G.edges():
         logfc = G[edge[0]][edge[1]]['response_logfc']
+        if logfc is None:
+            logfc = 0
         if max_logfc is None:
             min_logfc = max_logfc = logfc
             min_abs_logfc = max_abs_logfc = abs(logfc)
@@ -557,6 +559,8 @@ def make_plot_from_graph(G: nx.DiGraph, celltypes, layout="planar") -> go.Figure
     max_color_threshold = 0.2  # max_logfc
 
     def get_color(value, minimum, maximum):
+        if value is None:
+            value = 0
         step_size = (max_color_threshold - min_color_threshold) / (color_step - 1)
         index = (value - min_color_threshold) // step_size
         return colorscale(min(max(int(index), 0), color_step - 1))
@@ -589,14 +593,14 @@ def make_plot_from_graph(G: nx.DiGraph, celltypes, layout="planar") -> go.Figure
     )
     edge_traces = []
     EDGE_PADDING = .08
-    MIN_WIDTH = 2
+    MIN_WIDTH = 3
     MAX_WIDTH = 6
     INTERPOLATION_POINTS = 20
 
     for edge in G.edges():
         x0, y0 = pos[edge[0]]
         x1, y1 = pos[edge[1]]
-        logfc = G[edge[0]][edge[1]]['response_logfc']
+        logfc = G[edge[0]][edge[1]]['response_logfc'] or 0
         ligand = G[edge[0]][edge[1]]['ligand']
         receptor = G[edge[0]][edge[1]]['receptor']
 
@@ -641,7 +645,9 @@ def make_plot_from_graph(G: nx.DiGraph, celltypes, layout="planar") -> go.Figure
             hoverinfo='none',
             mode='lines'
         )
-        hover_text = f"Ligand: {ligand}<br>Receptor: {receptor}<br>Ligand LogFC Effect: {logfc}"
+        hover_text = f"Ligand: {ligand}<br>Receptor: {receptor}<br>"
+        if logfc is not None:
+            hover_text += f"Ligand LogFC Effect: {logfc:.2f}<br>"
         edge_trace.text = [hover_text] * (len(edge_x) + len(arrow_x))
         edge_traces.append(edge_trace)
 
@@ -673,7 +679,7 @@ def make_plot_from_graph(G: nx.DiGraph, celltypes, layout="planar") -> go.Figure
         gene = G.nodes[node]['gene']
         gene_type = G.nodes[node]['gene_type']
 
-        response_logfc = max(get_all_edge_attr_for_node(G, node, "response_logfc") + [0], key=abs)
+        response_logfc = max(get_all_edge_attr_for_node(G, node, "response_logfc") + [0], key=lambda x: abs(x or 0))
         #ligand_logfc = max(get_all_edge_attr_for_node(G, node, "ligand_logfc") + [0], key=abs)
         #receptor_logfc = max(get_all_edge_attr_for_node(G, node, "receptor_logfc") + [0], key=abs)
 
@@ -725,10 +731,11 @@ def make_plot_from_graph(G: nx.DiGraph, celltypes, layout="planar") -> go.Figure
         #genetype2nodes[gene_type][5].append(receptor_logfc)
 
     # Get the size range
-    max_node_logfc = max(nx.get_edge_attributes(G, 'weight').values())
-    min_node_logfc = min(nx.get_edge_attributes(G, 'weight').values())
+    weights = [(x or 0) for x in nx.get_edge_attributes(G, 'weight').values()]
+    max_node_logfc = max(weights)
+    min_node_logfc = min(weights)
 
-    MIN_NODE_SIZE = 8
+    MIN_NODE_SIZE = 12
     MAX_NODE_SIZE = 18
     NODE_SIZE_RANGE = MAX_NODE_SIZE - MIN_NODE_SIZE
 
@@ -746,7 +753,7 @@ def make_plot_from_graph(G: nx.DiGraph, celltypes, layout="planar") -> go.Figure
         # Need to adjust y-values to center the triangle
         # gene_ys = [y*.95 for y in gene_ys]
 
-        node_sizes = [(MIN_NODE_SIZE + (NODE_SIZE_RANGE*(abs(logfc)/max_node_logfc))) * (1.25 if 'triangle-up' in symbol else 1) for logfc in response_logfc]  # Triangles visually appear smaller than expected
+        node_sizes = [(MIN_NODE_SIZE + (NODE_SIZE_RANGE*(abs(logfc or 0)/max_node_logfc))) * (1.25 if 'triangle-up' in symbol else 1) for logfc in response_logfc]  # Triangles visually appear smaller than expected
 
         node_trace = go.Scatter(
             name=gene_type,
@@ -966,7 +973,8 @@ def pseudotime_interaction_propagation_graph(effect_set: str,
                                 )
                 frontier.add(seed_node)
         else:
-            if df.shape[0] == 0:
+            # Break early if no new nodes or too many nodes
+            if df.shape[0] == 0 or len(frontier) > 45:
                 break
             new_frontier = set()
             for node in frontier:
@@ -997,8 +1005,8 @@ def pseudotime_interaction_propagation_graph(effect_set: str,
                             curr_G.add_edge(node, next_node,
                                             t=t, ligand=node,
                                             receptor=next_node,
-                                            response_logfc=row['MAST_log2FC'],
-                                            weight=row['MAST_log2FC']
+                                            response_logfc=None,
+                                            weight=None  # row['MAST_log2FC']
                                             )
                             new_frontier.add(next_node)
 
@@ -1044,7 +1052,7 @@ def pseudotime_interaction_propagation_graph(effect_set: str,
     if last_graph.number_of_nodes() == 0 or last_graph.number_of_edges() == 0:
         return None
 
-    return make_plot_from_graph(last_graph, list(celltypes), layout=layout)
+    return make_plot_from_graph(last_graph, list(celltypes), layout=layout, colormap='cividis')
 
 
 def polar2cartesian(r, theta):

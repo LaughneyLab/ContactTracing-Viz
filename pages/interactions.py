@@ -136,7 +136,7 @@ def build_interface() -> list:
                                           className='me-1',
                                           n_clicks=0
                                       ),
-                                  className='text-center')),
+                                  className='text-center d-grid gap-2')),
         ]
     )
 
