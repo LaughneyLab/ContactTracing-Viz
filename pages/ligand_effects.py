@@ -2,7 +2,7 @@ import os.path
 
 import dash
 import dash_bootstrap_components as dbc
-from dash import callback, Output, Input, dcc, State
+from dash import callback, Output, Input, dcc, State, html
 
 from viz.web import interactive_panel, wrap_icon, control_panel, control_panel_element, figure_output, \
     make_custom_slider, make_fdr_slider
@@ -66,7 +66,10 @@ def build_interface() -> list:
                                   ))
         ], [
             control_panel_element("Interaction FDR Cutoff", "The maximum interaction test FDR to consider.",
-                                  make_fdr_slider("interaction_fdr", DEFAULT_LIGAND_EFFECT_ARGS['interaction_fdr']))
+                                  make_fdr_slider("interaction_fdr", DEFAULT_LIGAND_EFFECT_ARGS['interaction_fdr'])),
+            control_panel_element("log2FC FDR Cutoff",
+                                  "The FDR-adjusted cutoff for determining if a log2FC value is non-zero.",
+                                  make_fdr_slider("logfc_fdr", DEFAULT_LIGAND_EFFECT_ARGS['logfc_fdr']))
         ], [
             control_panel_element("Minimum abs(Log2FC)", "The minimum induced log2FC for targets.",
                                   make_custom_slider(
@@ -75,8 +78,7 @@ def build_interface() -> list:
                                       min=0,
                                       step=0.01,
                                       value=DEFAULT_LIGAND_EFFECT_ARGS['min_logfc']
-                                  ))
-        ], [
+                                  )),
             control_panel_element("Minimum Expression", "The minimum expression of target genes to be considered.",
                                   make_custom_slider(
                                       id='min_expression',
@@ -85,9 +87,6 @@ def build_interface() -> list:
                                       step=0.01,
                                       value=DEFAULT_LIGAND_EFFECT_ARGS['min_expression']
                                   ))
-        ], [
-            control_panel_element("log2FC FDR Cutoff", "The FDR-adjusted cutoff for determining if a log2FC value is non-zero.",
-                                  make_fdr_slider("logfc_fdr", DEFAULT_LIGAND_EFFECT_ARGS['logfc_fdr']))
         ], [
             control_panel_element("Network Building Iterations", "This controls how many downstream interactions may be detected.",
                                   dbc.Input(
@@ -100,15 +99,6 @@ def build_interface() -> list:
                                       value=DEFAULT_LIGAND_EFFECT_ARGS['iterations'],
                                       persistence=True, persistence_type='session'
                                   )),
-            control_panel_element("Plot", "",
-                                  dbc.Button(
-                                      "Submit",
-                                      id='submit_button',
-                                      size='lg',
-                                      color="primary",
-                                      className='me-1',
-                                      n_clicks=0
-                                  )),
             control_panel_element("Interaction Set", "Biological condition to compare.",
                                   dbc.RadioItems(
                                       id='effect_set',
@@ -117,7 +107,18 @@ def build_interface() -> list:
                                                ],
                                       value=DEFAULT_LIGAND_EFFECT_ARGS['effect_set'],
                                       persistence=False
-                                  ))
+                                  )),
+            control_panel_element("Plot", "",
+                                  html.Div(
+                                      dbc.Button(
+                                          "Submit",
+                                          id='submit_button',
+                                          size='lg',
+                                          color="primary",
+                                          className='me-1',
+                                          n_clicks=0
+                                      ),
+                                      className='text-center')),
         ]
     )
 

@@ -175,7 +175,7 @@ app.layout = dbc.Container(fluid=True,
 
 
 if __name__ == '__main__':
-    debug = sys.argv[1] == 'debug'
+    debug = len(sys.argv) > 1 and sys.argv[1] == 'debug'
    # debug = False
     app.run(port=8000,
             debug=debug,

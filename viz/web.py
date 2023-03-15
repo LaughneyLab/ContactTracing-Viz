@@ -44,7 +44,7 @@ def make_custom_slider(id: str, min, max, value, step, transform=None) -> html.D
         value_store,
         dbc.Row([
             dbc.Col(slider, align="end"),
-            dbc.Col(input, width=2, align="start")
+            dbc.Col(input, width=2, align="start", class_name='slider_text_input')
         ])
     ], fluid=True))
 
@@ -211,8 +211,7 @@ def make_circos_figure(set_progress, progress_offset: int,
         label = celltype
         id = celltype.replace(" ", "_").replace("-", "_").replace("/", "_")
         celltype2id[celltype] = id
-        celltype2targets[celltype] = sorted(outer_data[outer_data['cell_type'] == celltype].target,
-                                            key=lambda t: outer_data[(outer_data['cell_type'] == celltype) & (outer_data['target'] == t)]['cell_type_dc1'].values[0])
+        celltype2targets[celltype] = outer_data[outer_data['cell_type'] == celltype].sort_values(['cell_type_dc1', 'DA_score']).target.tolist()
         target_count = len(celltype2targets[celltype])
         layout.append({
             'id': id,
@@ -252,7 +251,7 @@ def make_circos_figure(set_progress, progress_offset: int,
                 'start': i,
                 'end': (i + 1),
                 'value': dc1,
-                'value_text': f"<h3>{celltype}<br>{t} DC1={dc1:.2f}</h3>",
+                'value_text': f"<h3>{celltype}<br>{t} DC1: {dc1:.2f}</h3>",
                 'color': dc1_colormap(dc1),
                 'target': t
             })
@@ -272,7 +271,7 @@ def make_circos_figure(set_progress, progress_offset: int,
                 'start': i,
                 'end': (i + 1),
                 'value': da,
-                'value_text': f"<h3>{celltype}<br>{t} DA={da:.2f}</h3>",
+                'value_text': f"<h3>{celltype}<br>{t} DA: {da:.2f}</h3>",
                 'color': da_colormap(da),
                 'target': t
             })
@@ -280,17 +279,17 @@ def make_circos_figure(set_progress, progress_offset: int,
         set_progress((5+(progress_offset*7), 7*(progress_offset+1)))
 
     # Next ring for magnitude of CIN-dependent effect
-    receptor_info = outer_data[outer_data['receptor']]
     max_receptor_numSigI1 = inter_data['numSigI1'].max()
     min_receptor_numSigI1 = inter_data['numSigI1'].min()
     numSigI1_data = []
     for celltype in celltypes:
         id = celltype2id[celltype]
-        color = saturate_color(celltype2color[celltype], .75)
+        color = saturate_color(celltype2color[celltype], .85)
         targets = celltype2targets[celltype]
+        receptor_info = inter_data[inter_data['cell_type_receptor'] == celltype]
         for i, t in enumerate(targets):
             # Set to 0 if target is not a receptor
-            if t not in receptor_info['target'].values:
+            if t not in receptor_info['receptor'].values:
                 numSigI1_data.append({
                     'block_id': id,
                     'start': i,
@@ -301,15 +300,15 @@ def make_circos_figure(set_progress, progress_offset: int,
                     'target': t
                 })
             else:
-                lig_effect = receptor_info[receptor_info['target'] == t]['numSigI1'].values[0]
+                lig_effect = receptor_info[(receptor_info['receptor'] == t) & (receptor_info['cell_type_receptor'] == celltype)]['numSigI1'].values[0]
                 # Normalize to 0 minimum
                 lig_effect -= min_receptor_numSigI1
                 numSigI1_data.append({
                     'block_id': id,
                     'start': i,
                     'end': (i + 1),
-                    'value': lig_effect,
-                    'value_text': f"<h3>{celltype}<br>{t} numSigI1={lig_effect:d}</h3>",
+                    'value': max(lig_effect, 0),
+                    'value_text': f"<h3>{celltype}<br>{t} numSigI: {lig_effect:d}</h3>",
                     'color': color,
                     'target': t
                 })
@@ -384,9 +383,9 @@ def make_circos_figure(set_progress, progress_offset: int,
                     'data': list(text_data.values()),
                     'config': {
                         'innerRadius': 17.5*ring_width,
-                        'outerRadius': 21*ring_width,
+                        'outerRadius': 20*ring_width,
                         'style': {
-                            'font-size': 6
+                            'font-size': 7
                         }
                     }
                 }, {
@@ -413,7 +412,7 @@ def make_circos_figure(set_progress, progress_offset: int,
                         'color': {
                             'name': 'color',
                         },
-                        'innerRadius': 21*ring_width,
+                        'innerRadius': 19*ring_width,
                         'outerRadius': 22*ring_width,
                         'direction': 'in',
                         'min': 0,
@@ -530,8 +529,8 @@ def make_circos_legend(min_numSigI1, max_numSigI1,
                 lenmode='fraction',
                 xanchor='right',
                 yanchor='top',
-                x=1.5,
-                y=3
+                x=1.75,
+                y=0
             ),
             colorscale=logfc_transformer.make_plotly_colorscale()
         )
@@ -557,7 +556,7 @@ def make_circos_legend(min_numSigI1, max_numSigI1,
                 lenmode='fraction',
                 xanchor='right',
                 yanchor='top',
-                x=1.5,
+                x=1.75,
                 y=1.5
             ),
             colorscale=da_transformer.make_plotly_colorscale()
@@ -584,8 +583,8 @@ def make_circos_legend(min_numSigI1, max_numSigI1,
                 lenmode='fraction',
                 xanchor='right',
                 yanchor='top',
-                x=1.5,
-                y=0
+                x=1.75,
+                y=3
             ),
             colorscale=dc1_transformer.make_plotly_colorscale()
         )
@@ -607,7 +606,7 @@ def make_circos_legend(min_numSigI1, max_numSigI1,
                 xanchor='right',
                 yanchor='bottom',
                 x=-2,
-                y=-.65
+                y=-.5
             ),
             xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
             yaxis=dict(showgrid=False, zeroline=False, showticklabels=False, scaleratio=1, scaleanchor='x')

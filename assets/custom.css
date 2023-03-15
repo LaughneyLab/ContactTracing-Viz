@@ -1,3 +1,8 @@
 body > div.circos-tooltip {
     position: absolute !important;
 }
+
+.slider_text_input {
+    max-width: 19.6% !important;
+    flex: 0 0 19.6% !important;
+}

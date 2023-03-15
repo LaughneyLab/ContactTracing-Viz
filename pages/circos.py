@@ -29,7 +29,6 @@ def build_interface() -> list:
         [
             control_panel_element("Interaction Effect FDR Cutoff", "FDR-adjusted requirements for interaction effects.",
                                   make_fdr_slider('inter_circos_fdr', DEFAULT_CIRCOS_ARGS['inter_circos_fdr'])),
-        ], [
             control_panel_element("log2FC FDR Cutoff", "FDR-adjusted requirements for interaction effects.",
                                   make_fdr_slider('logfc_circos_fdr', DEFAULT_CIRCOS_ARGS['logfc_circos_fdr'])),
         ], [
@@ -40,8 +39,7 @@ def build_interface() -> list:
                                       max=250,  # Fill in later
                                       value=DEFAULT_CIRCOS_ARGS['circos_min_numsigi1'],
                                       step=1
-                                  ))
-        ], [
+                                  )),
             control_panel_element('Minimum numDEG', 'Minimum number of differentially expressed genes conditioned on a target gene.',
                                   make_custom_slider(
                                       id='circos_min_numdeg',
@@ -60,15 +58,6 @@ def build_interface() -> list:
                                       step=0.01
                                   ))
         ], [
-            control_panel_element("Plot", "",
-                                  dbc.Button(
-                                      "Submit",
-                                      id="submit-button-circos",
-                                      size="lg",
-                                      color="primary",
-                                      className='me-1',
-                                      n_clicks=0
-                                  )),
             control_panel_element("Interaction Set", "Biological condition to compare.",
                                   dbc.RadioItems(
                                       id='circos_set',
@@ -76,7 +65,18 @@ def build_interface() -> list:
                                                {'label': 'CIN & STING Max Effect', 'value': 'sting'}],
                                       value=DEFAULT_CIRCOS_ARGS['circos_set'],
                                       persistence=False
-                                  ))
+                                  )),
+            control_panel_element("Plot", "",
+                                  html.Div(
+                                      dbc.Button(
+                                          "Submit",
+                                          id="submit-button-circos",
+                                          size="lg",
+                                          color="primary",
+                                          className='me-1',
+                                          n_clicks=0
+                                      ),
+                                      className='text-center'))
         ]
     )
 
@@ -92,8 +92,8 @@ def build_interface() -> list:
     return [
         controls,
         results,
-        dcc.Store(id='cin_circos_plot', storage_type='memory', data=default_plots[0] if default_plots is not None else None),
-        dcc.Store(id='sting_circos_plot', storage_type='memory', data=default_plots[1] if default_plots is not None else None)
+        dcc.Store(id='cin_circos_plot', storage_type='memory', data=[default_plots[0] if default_plots is not None else None]),
+        dcc.Store(id='sting_circos_plot', storage_type='memory', data=[default_plots[1] if default_plots is not None else None])
     ]
 
 

@@ -346,6 +346,6 @@ def get_quiver_arrows(start_x, start_y, end_x, end_y, scaleratio=1):
 def smooth_step(x, min, max):
     assert 0 <= x <= 1
     # Based on: https://math.stackexchange.com/a/2271336
-    curve = betainc(3, 3, x)
+    curve = betainc(12, 12, x)  # Parameters are arbitrary, describe the steepness of the curve
     scaled = min + (max - min) * curve
     return float(scaled)

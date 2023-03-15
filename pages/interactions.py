@@ -1,7 +1,7 @@
 import os.path
 
 import dash
-from dash import dcc, callback, Output, Input, State
+from dash import dcc, callback, Output, Input, State, html
 import dash_bootstrap_components as dbc
 
 from viz.web import interactive_panel, wrap_icon, control_panel, control_panel_element, figure_output, \
@@ -34,17 +34,7 @@ def build_interface() -> list:
                                       max=10,  # Fill in
                                       step=1,
                                       value=DEFAULT_INTERACTIONS_ARGS['min_numsigi1_bipartite']
-                                  ))
-        ], [
-            control_panel_element("Minimum abs(log2FC)", "The minimum log2FC for either ligands or receptors between conditions.",
-                                  make_custom_slider(
-                                      id="min_logfc_bipartite",
-                                      min=0,
-                                      max=1,  # Fill in
-                                      step=0.01,
-                                      value=DEFAULT_INTERACTIONS_ARGS['min_logfc_bipartite']
-                                  ))
-        ], [
+                                  )),
             control_panel_element("Minimum Expression", "The minimum fraction of cells expressing genes to be considered.",
                                   make_custom_slider(
                                       id="min_expression_bipartite",
@@ -55,9 +45,22 @@ def build_interface() -> list:
                                   ))
         ], [
             control_panel_element("Interaction Effect FDR Cutoff", "FDR-adjusted requirements for interaction effects.",
-                                  make_fdr_slider('bipartite_inter_fdr', DEFAULT_INTERACTIONS_ARGS['bipartite_inter_fdr'])),
+                                  make_fdr_slider('bipartite_inter_fdr',
+                                                  DEFAULT_INTERACTIONS_ARGS['bipartite_inter_fdr'])),
             control_panel_element("log2FC FDR Cutoff", "FDR-adjusted requirements for interaction effects.",
-                                  make_fdr_slider('bipartite_logfc_fdr', DEFAULT_INTERACTIONS_ARGS['bipartite_logfc_fdr'])),
+                                  make_fdr_slider('bipartite_logfc_fdr',
+                                                  DEFAULT_INTERACTIONS_ARGS['bipartite_logfc_fdr'])),
+        ], [
+
+            control_panel_element("Minimum abs(log2FC)", "The minimum log2FC for either ligands or receptors between conditions.",
+                                  make_custom_slider(
+                                      id="min_logfc_bipartite",
+                                      min=0,
+                                      max=1,  # Fill in
+                                      step=0.01,
+                                      value=DEFAULT_INTERACTIONS_ARGS['min_logfc_bipartite']
+                                  ))
+
         ], [
             control_panel_element("First Cell Type", "The first cell type to examine interactions between.",
                                   dbc.Select(
@@ -115,15 +118,6 @@ def build_interface() -> list:
                                       value=DEFAULT_INTERACTIONS_ARGS['third_celltype']
                                   )),
         ], [
-            control_panel_element("Plot", "",
-                                  dbc.Button(
-                                      "Submit",
-                                      id="submit-button-bipartite",
-                                      size="lg",
-                                      color="primary",
-                                      className='me-1',
-                                      n_clicks=0
-                                  )),
             control_panel_element("Interaction Set", "Biological condition to compare.",
                                   dbc.RadioItems(
                                       id='inter_set',
@@ -131,7 +125,18 @@ def build_interface() -> list:
                                                {'label': 'CIN & STING Max Effect', 'value': 'max'}],
                                       value=DEFAULT_INTERACTIONS_ARGS['inter_set'],
                                       persistence=False
-                                  ))
+                                  )),
+            control_panel_element("Plot", "",
+                                  html.Div(
+                                      dbc.Button(
+                                          "Submit",
+                                          id="submit-button-bipartite",
+                                          size="lg",
+                                          color="primary",
+                                          className='me-1',
+                                          n_clicks=0
+                                      ),
+                                  className='text-center')),
         ]
     )
 
