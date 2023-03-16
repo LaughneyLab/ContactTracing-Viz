@@ -32,11 +32,11 @@ LIGAND_EFFECT_SAVE_LOCATION = "data/compiled/default_ligand_effects.pkl"
 
 DEFAULT_INTERACTIONS_ARGS = {
     'inter_set': 'max',
-    'min_numsigi1_bipartite': 1,
+    'min_numsigi1_bipartite': 10,
     'min_logfc_bipartite': 0.12,
     'min_expression_bipartite': 0.0,
     'bipartite_inter_fdr': 'fdr25',
-    'bipartite_logfc_fdr': 'fdr25',
+    'bipartite_logfc_fdr': 'fdr05',
     'first_celltype': 'Tumor cells',
     'second_celltype': 'Macrophages/mMDSC',
     'third_celltype': '(None)'
@@ -63,8 +63,8 @@ def bipartite_graph(df,
                     min_expression_bipartite=0,
                     logfc_fdr_bipartite_cutoff=0.05,
                     allow_overlap=True):
-    scaleratio = .9
-    height = 1000
+    scaleratio = .8
+    height = 1275
 
     if cell3 is not None and 'none' in str(cell3).lower():
         cell3 = None

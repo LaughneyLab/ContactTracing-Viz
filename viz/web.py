@@ -364,12 +364,14 @@ def make_circos_figure(set_progress, progress_offset: int,
                 'id': celltype2id[source_celltype],
                 'start': source_position - thickness,
                 'end': source_position + thickness,
+                'info': f"{lig}+ {source_celltype}"
             },
             'target': {
                 'id': celltype2id[target_celltype],
                 'start': target_position - thickness,
                 'end': target_position + thickness,
-                'value_text': f"<br>{lig} + {rec} log2FC={inter_row['MAST_log2FC_ligand']:.2f} numSigI1={inter_row['numSigI1']}",
+                'info': f"{rec}+ {target_celltype}",
+                'value_text': f"<br>log2FC: {inter_row['MAST_log2FC_ligand']:.2f}<br>numSigI1: {inter_row['numSigI1']}",
             },
         })
     # Sort to place red chords on top
@@ -415,9 +417,9 @@ def make_circos_figure(set_progress, progress_offset: int,
                         'radius': 17*ring_width,
                         'tooltipContent': {
                             'source': 'source',
-                            'sourceID': 'id',
+                            'sourceID': 'info',
                             'target': 'target',
-                            'targetID': 'id',
+                            'targetID': 'info',
                             'targetEnd': 'value_text'
                         }
                     }

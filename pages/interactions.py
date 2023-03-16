@@ -31,7 +31,7 @@ def build_interface() -> list:
                                   make_custom_slider(
                                       id="min_numsigi1_bipartite",
                                       min=0,
-                                      max=10,  # Fill in
+                                      max=100,  # Fill in
                                       step=1,
                                       value=DEFAULT_INTERACTIONS_ARGS['min_numsigi1_bipartite']
                                   )),
@@ -149,7 +149,7 @@ def build_interface() -> list:
                               'displaylogo': False,
                               'showTips': True,
                               'toImageButtonOptions': {
-                                  'format': 'png',
+                                  'format': 'svg',
                                   'filename': 'exported_image',
                                   'height': 800,
                                   'width': 1200,
