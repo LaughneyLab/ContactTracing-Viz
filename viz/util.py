@@ -1,3 +1,4 @@
+import colorsys
 import functools
 from typing import Set, Sized, Callable, Iterable
 
@@ -40,7 +41,22 @@ class ColorTransformer(Sized, Callable, Iterable):
 
 def saturate_color(color, saturation):
     color = colors.to_rgb(color)
-    color = [min(c * saturation, 1) for c in color]
+    color = colorsys.rgb_to_hls(*color)
+    color = colorsys.hls_to_rgb(color[0], color[1], min(color[2] * saturation, 1))
+    return colors.to_hex(color)
+
+
+def brighten_color(color, brightness):
+    color = colors.to_rgb(color)
+    color = colorsys.rgb_to_hls(*color)
+    color = colorsys.hls_to_rgb(color[0], min(color[1] * brightness, 1), color[2])
+    return colors.to_hex(color)
+
+
+def brighten_and_saturate_color(color, brighness, saturation):
+    color = colors.to_rgb(color)
+    color = colorsys.rgb_to_hls(*color)
+    color = colorsys.hls_to_rgb(color[0], min(color[1] * brighness, 1), min(color[2] * saturation, 1))
     return colors.to_hex(color)
 
 

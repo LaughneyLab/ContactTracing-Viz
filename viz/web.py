@@ -9,7 +9,8 @@ from dash import html, Output, Input, dcc, callback, State
 import dash_bio as dashbio
 from dash.exceptions import PreventUpdate
 
-from viz.util import ColorTransformer, celltype_to_colors, saturate_color, smooth_step
+from viz.util import ColorTransformer, celltype_to_colors, saturate_color, smooth_step, \
+    brighten_color, brighten_and_saturate_color
 
 
 def make_fdr_slider(id: str, value) -> html.Div:
@@ -179,9 +180,17 @@ def make_circos_figure(set_progress, progress_offset: int,
                        logfc_fdr: str,
                        min_numsigi1: int,
                        min_numdeg: int,
-                       min_logfc: float):
+                       min_logfc: float,
+                       highlighted_genes: str):
     if set_progress is not None:
         set_progress((1+(progress_offset*7), 7*(progress_offset+1)))
+
+    if highlighted_genes is not None and highlighted_genes != '':
+        highlighted_genes = [g.strip() for g in highlighted_genes.split(',')]
+        should_highlight = len(highlighted_genes) > 0
+    else:
+        highlighted_genes = []
+        should_highlight = False
 
     #inter_pvalue_cutoff = float("0." + inter_fdr.replace('fdr', ''))  # pval from name
     logfc_pvalue_cutoff = float("0." + logfc_fdr.replace('fdr', ''))  # pval from name
@@ -214,6 +223,20 @@ def make_circos_figure(set_progress, progress_offset: int,
 
     inter_data = inter_data[(inter_data['numSigI1'] >= min_numsigi1) & (inter_data['numDEG'] >= min_numdeg)
                             & (inter_data['MAST_fdr_ligand'] < logfc_pvalue_cutoff) & (inter_data['MAST_log2FC_ligand'].abs() > min_logfc)]
+
+    # Annotate nodes to highlight
+    if should_highlight:
+        outer_data['highlight'] = outer_data['target'].isin(highlighted_genes)
+        inter_data['highlight'] = inter_data['ligand'].isin(highlighted_genes) | inter_data['receptor'].isin(highlighted_genes)
+
+    def maybe_brighten(colormap, value, *genes):
+        if should_highlight:
+            if not any([g in genes for g in highlighted_genes]):
+                return brighten_and_saturate_color(colormap(value) if colormap is not None else value, 1.75, .5)
+            else:
+                return brighten_and_saturate_color(colormap(value) if colormap is not None else value, 0.95, 1.05)
+        else:
+            return colormap(value) if colormap is not None else value
 
     celltypes = outer_data['cell_type'].unique()
 
@@ -346,20 +369,27 @@ def make_circos_figure(set_progress, progress_offset: int,
         # Max thickness of ribbons on either end of the target position
         thickness = smooth_step(inter_row['numSigI1'] / max_receptor_numSigI1, 0.33, 3)
 
+        # Allow for overwriting if highlighting
+        if should_highlight and (source_celltype, lig) in text_data and text_data[(source_celltype, lig)]['value'] == '':
+            del text_data[(source_celltype, lig)]
+        if should_highlight and (target_celltype, rec) in text_data and text_data[(target_celltype, rec)]['value'] == '':
+            del text_data[(target_celltype, rec)]
+
         text_data[(source_celltype, lig)] = {
             'block_id': celltype2id[source_celltype],
             'position': source_position+.5,
-            'value': lig
+            'value': lig if (not should_highlight) or (lig in highlighted_genes or rec in highlighted_genes) else ""
         }
         text_data[(target_celltype, rec)] = {
             'block_id': celltype2id[target_celltype],
             'position': target_position+.5,
-            'value': rec
+            'value': rec if (not should_highlight) or (rec in highlighted_genes or lig in highlighted_genes) else ""
         }
 
         chord_data.append({
-            'color': log2fc_colormap(inter_row['MAST_log2FC_ligand']),
+            'color': maybe_brighten(log2fc_colormap, inter_row['MAST_log2FC_ligand'], lig, rec),
             'logfc': inter_row['MAST_log2FC_ligand'],
+            'highlighted': (lig in highlighted_genes or rec in highlighted_genes),
             'source': {
                 'id': celltype2id[source_celltype],
                 'start': source_position - thickness,
@@ -375,9 +405,8 @@ def make_circos_figure(set_progress, progress_offset: int,
             },
         })
     # Sort to place red chords on top
-    chord_data = sorted(chord_data, key=lambda c: c['logfc'], reverse=False)
-    if set_progress is not None:
-        set_progress((7+(progress_offset*7), 7*(progress_offset+1)))
+    chord_data = sorted(chord_data, key=lambda c: (c['highlighted'], c['logfc']), reverse=False)
+
     ring_width = 15
 
     legend_group = make_circos_legend(min_receptor_numSigI1, max_receptor_numSigI1,

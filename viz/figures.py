@@ -49,7 +49,8 @@ DEFAULT_CIRCOS_ARGS = {
     'circos_set': 'sting',  # Default from fig 4
     'circos_min_numsigi1': 10,  # Default from fig 4
     'circos_min_numdeg': 0,  # Default from fig 4
-    'circos_min_ligand_logfc': 0.12  # Default from fig 4
+    'circos_min_ligand_logfc': 0.12,  # Default from fig 4
+    'genes': None
 }
 CIRCOS_SAVE_LOCATION = 'data/compiled/default_circos.pkl'
 

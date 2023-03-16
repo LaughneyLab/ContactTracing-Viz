@@ -56,6 +56,14 @@ def build_interface() -> list:
                                       max=2,  # Fill in
                                       value=DEFAULT_CIRCOS_ARGS['circos_min_ligand_logfc'],
                                       step=0.01
+                                  )),
+            control_panel_element("Genes of Interest",
+                                  'Comma-separated list of genes to highlight interactions for in the plot.',
+                                  dbc.Input(
+                                      id='genes',
+                                      autofocus=True,
+                                      value=DEFAULT_CIRCOS_ARGS['genes'],
+                                      placeholder='Example: Ccl2,Apoe'
                                   ))
         ], [
             control_panel_element("Interaction Set", "Biological condition to compare.",
@@ -120,6 +128,7 @@ def update_circos_plot(circos_set, cin_circos_plot, sting_circos_plot):
     State('circos_min_numsigi1', 'data'),
     State('circos_min_numdeg', 'data'),
     State('circos_min_ligand_logfc', 'data'),
+    State('genes', 'value'),
     background=True,
     prevent_initial_call=True,
     interval=500,
@@ -135,10 +144,13 @@ def update_circos_plot(circos_set, cin_circos_plot, sting_circos_plot):
 )
 def make_circos_plot(set_progress, n_clicks,
                      inter_circos_fdr, logfc_circos_fdr,
-                     min_numsigi1, min_numdeg, min_chord_ligand_logfc):
+                     min_numsigi1, min_numdeg, min_chord_ligand_logfc, gene_list):
     if n_clicks == 0:
         from dash.exceptions import PreventUpdate
         raise PreventUpdate
+
+    if gene_list is not None and len(gene_list.strip()) == 0:
+        gene_list = None
 
     set_progress((0, 14))
     from viz.data import read_circos_file, read_interactions_file
@@ -150,7 +162,8 @@ def make_circos_plot(set_progress, n_clicks,
         logfc_circos_fdr == DEFAULT_CIRCOS_ARGS['logfc_circos_fdr'] and
         min_numsigi1 == DEFAULT_CIRCOS_ARGS['circos_min_numsigi1'] and
         min_numdeg == DEFAULT_CIRCOS_ARGS['circos_min_numdeg'] and
-        min_chord_ligand_logfc == DEFAULT_CIRCOS_ARGS['circos_min_ligand_logfc']):
+        min_chord_ligand_logfc == DEFAULT_CIRCOS_ARGS['circos_min_ligand_logfc'] and
+        gene_list == DEFAULT_CIRCOS_ARGS['genes']):
         import pickle
         try:
             with open(CIRCOS_SAVE_LOCATION, 'rb') as f:
@@ -169,7 +182,8 @@ def make_circos_plot(set_progress, n_clicks,
                                logfc_circos_fdr,
                                min_numsigi1,
                                min_numdeg,
-                               min_chord_ligand_logfc)
+                               min_chord_ligand_logfc,
+                               gene_list)
 
     sting_circos = make_circos_figure(set_progress, 1,
                                data,
@@ -177,7 +191,10 @@ def make_circos_plot(set_progress, n_clicks,
                                logfc_circos_fdr,
                                min_numsigi1,
                                min_numdeg,
-                               min_chord_ligand_logfc)
+                               min_chord_ligand_logfc,
+                               gene_list)
+
+    set_progress((14, 14))
 
     return [cin_circos, sting_circos]
 
@@ -237,14 +254,16 @@ if __name__ == '__main__':
                                  DEFAULT_CIRCOS_ARGS['logfc_circos_fdr'],
                                  DEFAULT_CIRCOS_ARGS['circos_min_numsigi1'],
                                  DEFAULT_CIRCOS_ARGS['circos_min_numdeg'],
-                                 DEFAULT_CIRCOS_ARGS['circos_min_ligand_logfc'])
+                                 DEFAULT_CIRCOS_ARGS['circos_min_ligand_logfc'],
+                                 DEFAULT_CIRCOS_ARGS['genes'])
         sting_fig = make_circos_figure(None, 1,
                                      data,
                                      sting_inter_data,
                                      DEFAULT_CIRCOS_ARGS['logfc_circos_fdr'],
                                      DEFAULT_CIRCOS_ARGS['circos_min_numsigi1'],
                                      DEFAULT_CIRCOS_ARGS['circos_min_numdeg'],
-                                     DEFAULT_CIRCOS_ARGS['circos_min_ligand_logfc'])
+                                     DEFAULT_CIRCOS_ARGS['circos_min_ligand_logfc'],
+                                     DEFAULT_CIRCOS_ARGS['genes'])
 
         # Dump the figure to a pickle file
         with open(CIRCOS_SAVE_LOCATION, 'wb') as f:
