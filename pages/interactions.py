@@ -27,7 +27,7 @@ def build_interface() -> list:
 
     controls = control_panel(
         [
-            control_panel_element("Minimum numSigI1", "The minimum number of significant target gene interactions.",
+            control_panel_element("Minimum Interaction Effect", "The minimum number of significant target gene interactions.",
                                   make_custom_slider(
                                       id="min_numsigi1_bipartite",
                                       min=0,

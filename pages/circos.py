@@ -32,7 +32,7 @@ def build_interface() -> list:
             control_panel_element("log2FC FDR Cutoff", "FDR-adjusted requirements for interaction effects.",
                                   make_fdr_slider('logfc_circos_fdr', DEFAULT_CIRCOS_ARGS['logfc_circos_fdr'])),
         ], [
-             control_panel_element('Minimum numSigI1', 'Minimum number of significant interactions for a receptor to be included.',
+             control_panel_element('Minimum Interaction Effect', 'Minimum number of significant interactions for a receptor to be included.',
                                   make_custom_slider(
                                       id='circos_min_numsigi1',
                                       min=0,
