@@ -19,11 +19,10 @@ from viz.util import multipartite_layout, get_quiver_arrows, celltype_to_colors,
 
 DEFAULT_LIGAND_EFFECT_ARGS = {
     'effect_set': 'cin',
-    'network_layout': 'timeline',
     'cell_type': 'Tumor cells',
     'ligands': 'Ccl2,Apoe',
     'interaction_fdr': 0.05,
-    'min_logfc': 0.1,
+    'min_logfc': 0.12,
     'min_expression': 0.1,
     'logfc_fdr': 0.05,
     'iterations': 3
@@ -900,7 +899,6 @@ def pseudotime_interaction_propagation_graph(effect_set: str,
                                              min_logfc=0.01,
                                              min_expression=0.1,
                                              logfc_fdr_cutoff=0.05,
-                                             layout="Planar Layout",
                                              set_progress_callback=None):
 
     # Basic filters to build the network from
@@ -948,6 +946,7 @@ def pseudotime_interaction_propagation_graph(effect_set: str,
 
         # Create dynamic dataframe for the frontier
         df = pd.DataFrame()
+        added = set()  # Track genes that we added full sets for
         for node in frontier:
             celltype = curr_G.nodes[node]['celltype']
             gene = curr_G.nodes[node]['gene']
@@ -958,12 +957,17 @@ def pseudotime_interaction_propagation_graph(effect_set: str,
                 # If its a ligand, we need all possible receptor info
                 receptors = ligand_receptor_pairs[ligand_receptor_pairs['ligand'] == gene]['receptor'].unique()
                 for receptor in receptors:
-                    df = pd.concat([df, _read_filtered_df(None, receptor)])  # Get all possible receptors
+                    if receptor not in added:
+                        df = pd.concat([df, _read_filtered_df(None, receptor)])  # Get all possible receptors
+                        added.add(receptor)
             if 'Receptor' in gene_type:
                 ligands = ligand_receptor_pairs[ligand_receptor_pairs['receptor'] == gene]['ligand'].unique()
                 for ligand in ligands:
-                    df = pd.concat([df, _read_filtered_df(None, ligand)])
+                    if ligand not in added:
+                        df = pd.concat([df, _read_filtered_df(None, ligand)])
+                        added.add(ligand)
         df = df.drop_duplicates(ignore_index=True)
+        del added
 
         if t == 0:
             for seed_ligand in seed_ligands:
@@ -1053,7 +1057,7 @@ def pseudotime_interaction_propagation_graph(effect_set: str,
     if last_graph.number_of_nodes() == 0 or last_graph.number_of_edges() == 0:
         return None
 
-    return make_plot_from_graph(last_graph, list(celltypes), layout=layout, colormap='cividis')
+    return make_plot_from_graph(last_graph, list(celltypes), layout='timeline', colormap='cividis')
 
 
 def polar2cartesian(r, theta):

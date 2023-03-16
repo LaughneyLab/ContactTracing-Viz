@@ -27,18 +27,6 @@ def build_interface() -> list:
 
     controls = control_panel(
         [
-            control_panel_element("Network Layout", 'Select how you would like to structure nodes.',
-                                  dbc.Select(
-                                      id='network_layout',
-                                      options=[
-                                          {'label': 'Planar Layout', 'value': 'planar'},
-                                          {'label': 'Spring Layout', 'value': 'spring'},
-                                          {'label': 'Circular Layout', 'value': 'circular'},
-                                          {'label': 'Timeline Layout', 'value': 'timeline'}
-                                      ],
-                                      persistence=True, persistence_type='session',
-                                      value=DEFAULT_LIGAND_EFFECT_ARGS['network_layout']
-                                  )),
             control_panel_element('Emitting Cell Type', 'Select the initial cell type.',
                                   dbc.Select(
                                     id='cell_type',
@@ -63,7 +51,18 @@ def build_interface() -> list:
                                       autofocus=True,
                                       value=DEFAULT_LIGAND_EFFECT_ARGS['ligands'],
                                       placeholder='Example: Ccl2,Apoe'
-                                  ))
+                                  )),
+            control_panel_element("Network Building Iterations", "This controls how many downstream interactions may be detected.",
+                                  dbc.Input(
+                                      id='iterations',
+                                      type='number',
+                                      debounce=True,
+                                      max=5,
+                                      min=1,
+                                      step=1,
+                                      value=DEFAULT_LIGAND_EFFECT_ARGS['iterations'],
+                                      persistence=True, persistence_type='session'
+                                  )),
         ], [
             control_panel_element("Interaction FDR Cutoff", "The maximum interaction test FDR to consider.",
                                   make_fdr_slider("interaction_fdr", DEFAULT_LIGAND_EFFECT_ARGS['interaction_fdr'])),
@@ -88,17 +87,6 @@ def build_interface() -> list:
                                       value=DEFAULT_LIGAND_EFFECT_ARGS['min_expression']
                                   ))
         ], [
-            control_panel_element("Network Building Iterations", "This controls how many downstream interactions may be detected.",
-                                  dbc.Input(
-                                      id='iterations',
-                                      type='number',
-                                      debounce=True,
-                                      max=5,
-                                      min=1,
-                                      step=1,
-                                      value=DEFAULT_LIGAND_EFFECT_ARGS['iterations'],
-                                      persistence=True, persistence_type='session'
-                                  )),
             control_panel_element("Interaction Set", "Biological condition to compare.",
                                   dbc.RadioItems(
                                       id='effect_set',
@@ -167,7 +155,6 @@ def update_network_figure(effect_set, cin_network_plot, sting_network_plot):
     Output('cin_network_plot', 'data'),
     Output('sting_network_plot', 'data'),
     Input('submit_button', 'n_clicks'),
-    State('network_layout', 'value'),
     State('cell_type', 'value'),
     State('ligands', 'value'),
     State('interaction_fdr', 'data'),
@@ -189,7 +176,6 @@ def update_network_figure(effect_set, cin_network_plot, sting_network_plot):
     ]
 )
 def make_graph(set_progress, n_clicks,
-               network_layout,
                cell_type, ligands,
                interaction_fdr, min_logfc, min_expression,
                logfc_fdr, iterations):
@@ -202,8 +188,7 @@ def make_graph(set_progress, n_clicks,
     set_progress((0, iterations))
 
     # Check if arguments match default, if so return the pre-computed default
-    if (network_layout == DEFAULT_LIGAND_EFFECT_ARGS['network_layout'] and
-        cell_type == DEFAULT_LIGAND_EFFECT_ARGS['cell_type'] and
+    if (cell_type == DEFAULT_LIGAND_EFFECT_ARGS['cell_type'] and
         ligands == DEFAULT_LIGAND_EFFECT_ARGS['ligands'] and
         interaction_fdr == DEFAULT_LIGAND_EFFECT_ARGS['interaction_fdr'] and
         min_logfc == DEFAULT_LIGAND_EFFECT_ARGS['min_logfc'] and
@@ -226,7 +211,6 @@ def make_graph(set_progress, n_clicks,
         min_logfc=float(min_logfc),
         min_expression=float(min_expression),
         logfc_fdr_cutoff=float("." + logfc_fdr[3:]),
-        layout=network_layout,
         set_progress_callback=set_progress
     )
 
@@ -277,7 +261,6 @@ if __name__ == '__main__':
             min_logfc=float(DEFAULT_LIGAND_EFFECT_ARGS['min_logfc']),
             min_expression=float(DEFAULT_LIGAND_EFFECT_ARGS['min_expression']),
             logfc_fdr_cutoff=float(DEFAULT_LIGAND_EFFECT_ARGS['logfc_fdr']),
-            layout=DEFAULT_LIGAND_EFFECT_ARGS['network_layout'],
             set_progress_callback=None
         )
 
