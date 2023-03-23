@@ -85,5 +85,5 @@ VOLUME /app/data
 ENTRYPOINT redis-server --daemonize yes --maxmemory 3g --latency-tracking no && \
     source /venv/bin/activate && \
     celery -A app:celery_app worker --loglevel=info --detach --max-memory-per-child 1000000 && \
-    fastwsgi app:server --port 8000
+    PYTHONPATH=./ fastwsgi app:server --port 8000
 #    gunicorn app:server --workers 1 --bind '0.0.0.0:8000'

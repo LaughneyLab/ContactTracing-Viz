@@ -107,6 +107,7 @@ def access_code_page():
         dbc.ModalHeader("Enter Access Code", close_button=False),
         dbc.ModalBody([
             dbc.Input(id='access-code', type='password', placeholder='Enter access code', className='mb-3', autofocus=True),
+            dbc.Input(id='access-code', type='password', placeholder='Enter access code', className='mb-3', autofocus=True),
         ]),
         dbc.ModalFooter(dbc.Button("Enter", id="access-modal-close", className="ms-auto", n_clicks=0))
     ], is_open=True, size='xl', backdrop='static', keyboard=False, centered=True)
@@ -118,17 +119,18 @@ def access_code_page():
     @dash.callback(
         Output('access-wrapper', 'children'),
         Output('access-code-entered', 'data'),
+        Output('access-code', 'value'),
         Input('access-modal-close', 'n_clicks'),
         Input('access-code', 'n_submit'),
         State('access-code', 'value'),
         State('access-code-entered', 'data'),
     )
     def access_modal_close(n_clicks, n_submit, code, was_entered):
-        if n_clicks < 1 and n_submit < 1 and not was_entered:
-            raise PreventUpdate
+        if (n_clicks is not None and n_clicks < 1) and (n_submit is not None and n_submit < 1) and not was_entered:
+            return access_modal, False, code
         if code == CODE or was_entered:
-            return None, True
-        return access_modal, False
+            return None, True, code
+        return access_modal, False, code
 
     return container
 
