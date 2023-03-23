@@ -14,3 +14,4 @@ data
 .idea
 requirements.txt
 .git
+*.md

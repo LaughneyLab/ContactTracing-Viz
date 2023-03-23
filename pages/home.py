@@ -34,10 +34,17 @@ def make_data_summary(file_path: str, file_name: str, custom=False):
 
 DEFAULT_TAB = [
     # TODO: Images of example plots
-    html.P("By leveraging the intrinsic variability present in the Tumor Microenvironment (TME), we can identify "
-           "transcriptional response profiles that are associated with particularly experimental conditions. This web "
-           "tool produces visualizations of the ContactTracing toolkit on a mouse model of chromosomally unstable "
-           "cancer as described in our associated publication."),
+    html.P(["CIN is a hallmark of human cancer that is associated with metastasis and immune evasion. Through the "
+           "development of ",
+            html.I("ContactTracing"),
+            "– a fundamentally new, systems level approach that exploits inter- and intra-sample variability to infer "
+            "the effect of ligand-receptor-mediated interactions on the tumor microenvironment, we unveil how "
+            "CIN-induced chronic activation of the cGAS-STING innate immune pathway promotes cancer progression in a "
+            "tumor cell non-autonomous manner. Use this dashboard to explore how CIN-induced STING signaling in cancer "
+            "cells shapes the TME. Or run on your own data (",
+            html.A("here", href=""),  # FIXME
+            ")!"
+            ]),
     html.P(["This interactive web tool for exploring the ContactTracing-generated data is built using the ",
             html.A("Plotly Dash framework", href="https://dash.plotly.com/"),
             ". For additional information, please navigate the tabs above."]),
@@ -85,7 +92,7 @@ layout = [
 )
 def update_tab_content(active_tab):
     if active_tab == 'default':
-        return 'ContactTracing is a tool for profiling the TME', DEFAULT_TAB
+        return [html.I("ContactTracing:"), " the impact of chromosomal instability (CIN) on the tumor ecosystem"], DEFAULT_TAB
     elif active_tab == 'dataset':
         return 'Included datasets for visualization', DATASET_DESCRIPTIONS
     elif active_tab == 'plot':

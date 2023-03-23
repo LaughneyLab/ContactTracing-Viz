@@ -253,3 +253,4 @@ ct_viz_cache/
 # We don't include this since we are using a Dockerrun.aws.json file
 Dockerfile
 !Dockerrun.aws.json
+*.md

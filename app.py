@@ -72,7 +72,7 @@ app = Dash(__name__,
            suppress_callback_exceptions=True,
            compress=True,
            meta_tags=[
-                {'name': 'description', 'content': 'An interactive dashboard to visualize transcriptional responses detected by ContactTracing.'},
+                {'name': 'description', 'content': 'An interactive dashboard to visualize transcriptional responses identified by ContactTracing.'},
                 {'name': 'viewport', 'content': 'width=device-width, initial-scale=1'},
                 {'name': 'robots', 'content': 'index,follow'},
            ],
