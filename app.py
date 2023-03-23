@@ -107,7 +107,6 @@ def access_code_page():
         dbc.ModalHeader("Enter Access Code", close_button=False),
         dbc.ModalBody([
             dbc.Input(id='access-code', type='password', placeholder='Enter access code', className='mb-3', autofocus=True),
-            dbc.Input(id='access-code', type='password', placeholder='Enter access code', className='mb-3', autofocus=True),
         ]),
         dbc.ModalFooter(dbc.Button("Enter", id="access-modal-close", className="ms-auto", n_clicks=0))
     ], is_open=True, size='xl', backdrop='static', keyboard=False, centered=True)
