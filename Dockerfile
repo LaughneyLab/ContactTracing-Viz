@@ -1,35 +1,69 @@
-FROM continuumio/miniconda3 AS build
+FROM mambaorg/micromamba:alpine AS build
 
 # Use the faster libmamba solver for conda
-RUN conda install --yes -n base conda-libmamba-solver
-RUN conda config --system --set solver libmamba
+#RUN conda install --yes -n base conda-libmamba-solver
+#RUN conda config --system --set solver libmamba
 
-RUN conda create -n condaenv python=3.9 pip
+COPY --chown=$MAMBA_USER:$MAMBA_USER environment.yml .
+RUN micromamba install -y -n base -f environment.yml
 
-ADD requirements.txt .
+#RUN conda create -n condaenv python=3.9 pip
+
+#ADD requirements.txt .
 
 # Install requirements with conda (with fallback to pip)
 # https://gist.github.com/kobybibas/a0d126a8bc007999ae0bcf8b9980fafa
-RUN while read requirement; do conda install -n condaenv -c conda-forge --yes $requirement || (conda run -n condaenv pip install --no-cache-dir $requirement); done < requirements.txt
+#RUN while read requirement; do conda install -n condaenv -c conda-forge --yes $requirement || (conda run -n condaenv pip install --no-cache-dir $requirement); done < requirements.txt
+#RUN conda run -n condaenv pip install --no-cache-dir -r requirements.txt
 
 # Prepare to use redis
-RUN conda run -n condaenv pip install --no-cache-dir celery[redis]
+#RUN conda run -n condaenv pip install --no-cache-dir celery[redis]
 
 # Webserver
-RUN conda install -n condaenv -c conda-forge --yes gunicorn
+#RUN conda install -n condaenv -c conda-forge --yes gunicorn
 
 # Lets us move the conda environment into a smaller image
-RUN conda install -c conda-forge --yes conda-pack
-RUN conda-pack -n condaenv -o /tmp/condaenv.tar && \
-    mkdir /venv && cd /venv && tar xf /tmp/condaenv.tar && \
-    rm /tmp/condaenv.tar
-RUN /venv/bin/conda-unpack
+RUN micromamba install -y -n base -c conda-forge conda-pack && \
+    micromamba clean --all --yes
+
+WORKDIR /
+
+USER root
+
+RUN micromamba run -n base conda-pack --prefix /opt/conda -o /tmp/condaenv.tar.gz && \
+    mkdir venv && cd venv && tar xf /tmp/condaenv.tar.gz && \
+    rm /tmp/condaenv.tar.gz
+
+WORKDIR /venv
+
+ARG MAMBA_DOCKERFILE_ACTIVATE=1
+
+RUN bin/conda-unpack
+
+# Compile data and default figures
+#WORKDIR /tmp
+#COPY . .
+# Pre-compile the data if it's not available
+#RUN micromamba run -n base \
+#    python viz/data.py
+
+# Pre-compile default figures
+#RUN PYTHONPATH=./ micromamba run -n base \
+#    python pages/circos.py
+#RUN PYTHONPATH=./ micromamba run -n base \
+#    python pages/interactions.py
+#RUN PYTHONPATH=./ micromamba run -n base \
+#    python pages/ligand_effects.py
+#RUN mkdir -p /figures && mv data/compiled/*.pkl /figures/
+
+#RUN rm -rf /tmp/*
 
 
 FROM redis:bullseye AS runtime
 
 # Copy environment
 COPY --from=build /venv /venv
+#COPY --from=build /figures /figures
 
 WORKDIR /app
 
@@ -39,18 +73,17 @@ EXPOSE 8000
 SHELL ["/bin/bash", "-c"]
 
 ADD . .
+#RUN rm -rf data/compiled
 
-# Pre-compile the data if it's not available
-RUN source /venv/bin/activate && \
-    python viz/data.py
+# File system data
+#ADD my_efs .
 
-# Pre-compile default figures
-RUN source /venv/bin/activate && \
-    python pages/circos.py && \
-    python pages/interactions.py && \
-    python pages/ligand_effects.py
+#RUN mv my_efs/data/compiled data/ || true
 
-ENTRYPOINT redis-server --daemonize yes && \
+VOLUME /app/data
+
+ENTRYPOINT redis-server --daemonize yes --maxmemory 3g --latency-tracking no && \
     source /venv/bin/activate && \
-    celery -A app:celery_app worker --loglevel=info --concurrency=2 --detach  && \
-    gunicorn app:server --workers 4 --bind '0.0.0.0:8000'
+    celery -A app:celery_app worker --loglevel=info --detach --max-memory-per-child 1000000 && \
+    fastwsgi app:server --port 8000
+#    gunicorn app:server --workers 1 --bind '0.0.0.0:8000'

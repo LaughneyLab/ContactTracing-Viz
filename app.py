@@ -9,8 +9,6 @@ import dash_bootstrap_components as dbc
 from dash.exceptions import PreventUpdate
 
 from data.config import LONG_CALLBACK_EXPIRY
-from viz.data import compile_data
-from viz.web import wrap_icon
 
 
 # Workaround for dill crashes: Ref: https://github.com/uqfoundation/dill/issues/332#issuecomment-908826972
@@ -36,9 +34,6 @@ try:
 except:
     pass
 
-
-# Compile our data for optimized queries
-compile_data()
 
 # Each server instance gets a unique cache
 launch_uuid = uuid4()
@@ -111,7 +106,7 @@ def access_code_page():
     access_modal = dbc.Modal([
         dbc.ModalHeader("Enter Access Code", close_button=False),
         dbc.ModalBody([
-            dbc.Input(id='access-code', type='password', placeholder='Enter access code', className='mb-3'),
+            dbc.Input(id='access-code', type='password', placeholder='Enter access code', className='mb-3', autofocus=True),
         ]),
         dbc.ModalFooter(dbc.Button("Enter", id="access-modal-close", className="ms-auto", n_clicks=0))
     ], is_open=True, size='xl', backdrop='static', keyboard=False, centered=True)
@@ -124,11 +119,12 @@ def access_code_page():
         Output('access-wrapper', 'children'),
         Output('access-code-entered', 'data'),
         Input('access-modal-close', 'n_clicks'),
+        Input('access-code', 'n_submit'),
         State('access-code', 'value'),
         State('access-code-entered', 'data'),
     )
-    def access_modal_close(n_clicks, code, was_entered):
-        if n_clicks == 0:
+    def access_modal_close(n_clicks, n_submit, code, was_entered):
+        if n_clicks < 1 and n_submit < 1 and not was_entered:
             raise PreventUpdate
         if code == CODE or was_entered:
             return None, True

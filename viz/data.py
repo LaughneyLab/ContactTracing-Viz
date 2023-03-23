@@ -1,3 +1,4 @@
+import functools
 import itertools
 import os
 from collections import namedtuple
@@ -34,7 +35,7 @@ def _normalize_fdr_name(fdr: str) -> str:
 
 def read_circos_file(condition: str, fdr: str) -> pd.DataFrame:
     prefix = 'data/compiled/circos'
-    df = pd.read_csv(_filename(prefix, _normalize_condition_name(condition), _normalize_fdr_name(fdr), 'csv'))
+    df = pd.read_feather(_filename(prefix, _normalize_condition_name(condition), _normalize_fdr_name(fdr), 'feather'))
     df = df[~df['cell_type'].isin(EXCLUDED_CELL_TYPES)]
     return df
 
@@ -42,23 +43,24 @@ def read_circos_file(condition: str, fdr: str) -> pd.DataFrame:
 def read_ligand_effect_for(condition: str, target: str) -> pd.DataFrame:
     prefix = 'data/compiled/ligand_effects/'
     condition = _normalize_condition_name(condition)
-    prefix += condition + '_' + target + '.csv'
+    prefix += condition + '_' + target + '.feather'
     if not os.path.exists(prefix):
         return None
-    df = pd.read_csv(prefix)
+    df = pd.read_feather(prefix)
     df = df[~df['cell_type'].isin(EXCLUDED_CELL_TYPES)]
     return df
 
 
 def read_interactions_file(condition: str, fdr: str) -> pd.DataFrame:
     prefix = 'data/compiled/interactions'
-    df = pd.read_csv(_filename(prefix, _normalize_condition_name(condition), _normalize_fdr_name(fdr), 'csv'))
+    df = pd.read_feather(_filename(prefix, _normalize_condition_name(condition), _normalize_fdr_name(fdr), 'feather'))
     df = df[(~df['cell_type_receptor'].isin(EXCLUDED_CELL_TYPES)) & (~df['cell_type_ligand'].isin(EXCLUDED_CELL_TYPES))]
     return df
 
 
-def read_ligand_receptor_file(filename: str = 'data/allgenes/all_interactions.tsv') -> pd.DataFrame:
-    df = pd.read_csv(filename, sep='\t')[['ligand', 'receptor']].drop_duplicates()
+def read_ligand_receptor_file(filename: str = 'data/compiled/interactions.feather') -> pd.DataFrame:
+    func = pd.read_feather if filename.endswith('.feather') else functools.partial(pd.read_csv, sep='\t')
+    df = func(filename)[['ligand', 'receptor']].drop_duplicates()
     return df
 
 
@@ -136,6 +138,12 @@ def _combine_obs_for_interactions(interactions: pd.DataFrame,
         main_agg['MAST_log2FC'] = np.where(logfc_selector, main_agg['MAST_log2FC_cin'], main_agg['MAST_log2FC_sting'])
         main_agg['MAST_fdr'] = np.where(logfc_selector, main_agg['MAST_fdr_cin'], main_agg['MAST_fdr_sting'])
 
+        # Adjust values if directions are different
+        main_agg['numSigI1'] = np.where((main_agg['numSigI1_cin'] == 0) | (main_agg['numSigI1_sting'] == 0), 0, main_agg['numSigI1'])
+        main_agg['numDEG'] = np.where((main_agg['numDEG_cin'] == 0) | (main_agg['numDEG_sting'] == 0), 0, main_agg['numDEG'])
+        main_agg['MAST_log2FC'] = np.where(np.sign(main_agg['MAST_log2FC_cin']) != np.sign(main_agg['MAST_log2FC_sting']), 0, main_agg['MAST_log2FC'])
+        main_agg['MAST_fdr'] = np.where(np.sign(main_agg['MAST_log2FC_cin']) != np.sign(main_agg['MAST_log2FC_sting']), 1, main_agg['MAST_fdr'])
+
     all_celltypes = set(main_adata.obs['cell type'])
     full_df = pd.DataFrame()
     for donor_celltype, target_celltype in itertools.product(all_celltypes, repeat=2):
@@ -184,13 +192,13 @@ def _compile_interactions(interactions: pd.DataFrame,
                           fdr: str):
     prefix = 'data/compiled/interactions'
     os.makedirs(prefix, exist_ok=True)
-    file = _filename(prefix, condition_name, fdr, 'csv')
+    file = _filename(prefix, condition_name, fdr, 'feather')
 
     if os.path.exists(file):
         return
 
     interactions_df = _combine_obs_for_interactions(interactions, exp_adata, cin_adata, sting_adata, condition_name, fdr)
-    interactions_df.to_csv(file, index=False)
+    interactions_df.reset_index().to_feather(file, compression='zstd')
 
 
 def _compile_ligand_effects(interactions: pd.DataFrame,
@@ -206,9 +214,19 @@ def _compile_ligand_effects(interactions: pd.DataFrame,
         raise ValueError("highCIN_vs_noSTING is not supported")
 
     all_celltypes = set(adata.obs['cell type'])
-    genes = [g for g in adata.var.index]
+    genes = {g for g in adata.var.index} | {g for g in interactions.receptor} | {g for g in interactions.ligand}
+
+    ct_gene_expression = {'max': dict()}
+    for celltype in all_celltypes:
+        ct_gene_expression[celltype] = dict()
+        for gene in genes:
+            ct_gene_expression[celltype][gene] = calculate_expression(celltype, gene, exp_adata)
+    # Max Expressions
+    for gene in genes:
+        ct_gene_expression['max'][gene] = max([ct_gene_expression[celltype].get(gene, 0) for celltype in all_celltypes])
+
     for receptor in set(interactions.receptor):
-        filename = prefix + receptor + ".csv"
+        filename = prefix + receptor + ".feather"
         if os.path.exists(filename):
             continue
         df = pd.DataFrame()
@@ -217,15 +235,30 @@ def _compile_ligand_effects(interactions: pd.DataFrame,
                               (adata.obs['target'] == receptor)]
             if rec_adata.n_obs == 0:
                 continue
-            rec_expression = calculate_expression(celltype, receptor, exp_adata)
+            rec_expression = ct_gene_expression[celltype].get(receptor, 0)
+
             cell_df = pd.DataFrame({
-                'gene': genes,
+                'gene': adata.var.index,
                 'gene_is_ligand': rec_adata.var.index.isin(interactions.ligand),
                 'gene_is_receptor': rec_adata.var.index.isin(interactions.receptor),
+                'gene_expression': [ct_gene_expression[celltype].get(g, 0) for g in adata.var.index],
                 'log2FC': rec_adata.layers['log2FC'].flatten(),
                 'fdr': rec_adata.layers['fdr'].flatten(),
                 'i1.fdr': rec_adata.layers['fdr.i1'].flatten()
             })
+
+            # The max expression of genes in the cell type's microenvironment
+            # If the gene is a receptor, this represents the max expression of its ligands from any cell type
+            # If the gene is not a receptor, it is 0
+            gene_max_ligand_expression = []
+            for gene, is_receptor in zip(cell_df['gene'], cell_df['gene_is_receptor']):
+                if is_receptor:
+                    ligands = interactions[interactions.receptor == gene].ligand.tolist()
+                    gene_max_ligand_expression.append(max([ct_gene_expression['max'].get(l, 0) for l in ligands]))
+                else:
+                    gene_max_ligand_expression.append(0)
+            cell_df['gene_max_ligand_expression'] = gene_max_ligand_expression
+
             cell_df['cell_type'] = celltype
             cell_df['target'] = receptor
             cell_df['target_expression'] = rec_expression
@@ -237,10 +270,10 @@ def _compile_ligand_effects(interactions: pd.DataFrame,
         if df.shape[0] == 0:
             continue
         else:
-            df.to_csv(filename, index=False)
+            df.reset_index().to_feather(filename, compression='zstd')
 
     for ligand in set(interactions.ligand):
-        filename = prefix + ligand + ".csv"
+        filename = prefix + ligand + ".feather"
         if os.path.exists(filename):
             continue
         df = pd.DataFrame()
@@ -249,15 +282,29 @@ def _compile_ligand_effects(interactions: pd.DataFrame,
                               (adata.obs['target'] == ligand)]
             if lig_adata.n_obs == 0:
                 continue
-            lig_expression = calculate_expression(celltype, ligand, exp_adata)
+            lig_expression = ct_gene_expression[celltype].get(ligand, 0)
             cell_df = pd.DataFrame({
-                'gene': genes,
+                'gene': adata.var.index,
                 'gene_is_ligand': lig_adata.var.index.isin(interactions.ligand),
                 'gene_is_receptor': lig_adata.var.index.isin(interactions.receptor),
+                'gene_expression': [ct_gene_expression[celltype].get(g, 0) for g in adata.var.index],
                 'log2FC': lig_adata.layers['log2FC'].flatten(),
                 'fdr': lig_adata.layers['fdr'].flatten(),
                 'i1.fdr': lig_adata.layers['fdr.i1'].flatten()
             })
+
+            # The max expression of genes in the cell type's microenvironment
+            # If the gene is a receptor, this represents the max expression of its ligands from any cell type
+            # If the gene is not a receptor, it is 0
+            gene_max_ligand_expression = []
+            for gene, is_receptor in zip(cell_df['gene'], cell_df['gene_is_receptor']):
+                if is_receptor:
+                    ligands = interactions[interactions.receptor == gene].ligand.tolist()
+                    gene_max_ligand_expression.append(max([ct_gene_expression['max'].get(l, 0) for l in ligands]))
+                else:
+                    gene_max_ligand_expression.append(0)
+            cell_df['gene_max_ligand_expression'] = gene_max_ligand_expression
+
             cell_df['cell_type'] = celltype
             cell_df['target'] = ligand
             cell_df['target_expression'] = lig_expression
@@ -269,7 +316,7 @@ def _compile_ligand_effects(interactions: pd.DataFrame,
         if df.shape[0] == 0:
             continue
         else:
-            df.to_csv(filename, index=False)
+            df.reset_index().to_feather(filename, compression='zstd')
 
 
 def _compile_circos(interactions: pd.DataFrame,
@@ -280,7 +327,7 @@ def _compile_circos(interactions: pd.DataFrame,
                     fdr: str):
     prefix = 'data/compiled/circos'
     os.makedirs(prefix, exist_ok=True)
-    file = _filename(prefix, condition_name, fdr, 'csv')
+    file = _filename(prefix, condition_name, fdr, 'feather')
 
     if os.path.exists(file):
         return
@@ -314,6 +361,12 @@ def _compile_circos(interactions: pd.DataFrame,
         main_agg['MAST_log2FC'] = np.where(logfc_selector, main_agg['MAST_log2FC_cin'], main_agg['MAST_log2FC_sting'])
         main_agg['MAST_fdr'] = np.where(logfc_selector, main_agg['MAST_fdr_cin'], main_agg['MAST_fdr_sting'])
 
+        # Adjust values if directions are different
+        main_agg['numSigI1'] = np.where((main_agg['numSigI1_cin'] == 0) | (main_agg['numSigI1_sting'] == 0), 0, main_agg['numSigI1'])
+        main_agg['numDEG'] = np.where((main_agg['numDEG_cin'] == 0) | (main_agg['numDEG_sting'] == 0), 0, main_agg['numDEG'])
+        main_agg['MAST_log2FC'] = np.where(np.sign(main_agg['MAST_log2FC_cin']) != np.sign(main_agg['MAST_log2FC_sting']), 0, main_agg['MAST_log2FC'])
+        main_agg['MAST_fdr'] = np.where(np.sign(main_agg['MAST_log2FC_cin']) != np.sign(main_agg['MAST_log2FC_sting']), 1, main_agg['MAST_fdr'])
+
     df = pd.DataFrame({
         'cell_type': main_adata.obs['cell type'],
         'target': main_adata.obs['target'],
@@ -327,7 +380,7 @@ def _compile_circos(interactions: pd.DataFrame,
     # Replace numSigI1 for ligands that are not receptors to 0
     df['numSigI1'] = np.where(~df['receptor'], df['numSigI1'], 0)
 
-    df.to_csv(file, index=False)
+    df.reset_index().to_feather(file, compression='zstd')
     return df
 
 
@@ -350,6 +403,11 @@ def compile_data(
         return
 
     interactions = read_ligand_receptor_file(interactions_file)
+    if not os.path.exists('data/compiled/interactions.feather'):
+        # Compile to a feather file (no need to compress since this is a pretty small file)
+        os.makedirs('data/compiled', exist_ok=True)
+        interactions.reset_index().to_feather('data/compiled/interactions.feather')
+
     cin_adata = read_ct_data(cin_adata_file)
     cin_sting_adata = read_ct_data(cin_sting_adata_file)
     exp_adata = read_ct_data(expression_adata_file)
@@ -358,7 +416,7 @@ def compile_data(
     cin_sting_condition = 'highCIN_vs_noSTING'
 
     # Compile a bunch of FDRs
-    for fdr in range(1, 26):
+    for fdr in reversed(range(1, 26)):
         fdr = str(fdr).zfill(2)
         print("Compiling FDR", fdr, flush=True)
         _compile_interactions(interactions, exp_adata, cin_adata, cin_sting_adata, cin_condition, fdr)

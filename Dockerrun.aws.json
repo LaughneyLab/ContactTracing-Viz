@@ -1,0 +1,18 @@
+{
+  "AWSEBDockerrunVersion": "1",
+  "Image": {
+    "Name": "public.ecr.aws/d6q7u0s0/ct-site:latest"
+  },
+  "Ports": [
+      {
+        "ContainerPort": "8000",
+        "HostPort": "8000"
+      }
+  ],
+  "Volumes": [
+    {
+      "HostDirectory": "/efs_data/data",
+      "ContainerDirectory": "/app/data"
+    }
+  ]
+}

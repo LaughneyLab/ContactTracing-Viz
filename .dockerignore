@@ -1,3 +1,16 @@
 ct_viz_cache/
 old_data/
 */__pycache__
+Dockerfile
+my_efs
+data
+*.xlsx
+*.pyc
+*.csv
+.ebextensions
+.elasticbeanstalk
+.platform
+*.exe
+.idea
+requirements.txt
+.git

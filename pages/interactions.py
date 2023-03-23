@@ -15,6 +15,10 @@ if __name__ != '__main__':
 
 
 def build_interface() -> list:
+    # Ignore if this file is run directly
+    if __name__ == '__main__':
+        return []
+
     from viz.figures import DEFAULT_INTERACTIONS_ARGS, INTERACTIONS_SAVE_LOCATION
 
     import pickle
@@ -27,6 +31,13 @@ def build_interface() -> list:
 
     controls = control_panel(
         [
+            control_panel_element("Interaction Effect FDR Cutoff", "FDR-adjusted requirements for interaction effects.",
+                                  make_fdr_slider('bipartite_inter_fdr',
+                                                  DEFAULT_INTERACTIONS_ARGS['bipartite_inter_fdr'])),
+            control_panel_element("Ligand Log2FC FDR Cutoff", "FDR-adjusted requirements for interaction effects.",
+                                  make_fdr_slider('bipartite_logfc_fdr',
+                                                  DEFAULT_INTERACTIONS_ARGS['bipartite_logfc_fdr'])),
+        ], [
             control_panel_element("Minimum Interaction Effect", "The minimum number of significant target gene interactions.",
                                   make_custom_slider(
                                       id="min_numsigi1_bipartite",
@@ -44,23 +55,22 @@ def build_interface() -> list:
                                       value=DEFAULT_INTERACTIONS_ARGS['min_expression_bipartite']
                                   ))
         ], [
-            control_panel_element("Interaction Effect FDR Cutoff", "FDR-adjusted requirements for interaction effects.",
-                                  make_fdr_slider('bipartite_inter_fdr',
-                                                  DEFAULT_INTERACTIONS_ARGS['bipartite_inter_fdr'])),
-            control_panel_element("log2FC FDR Cutoff", "FDR-adjusted requirements for interaction effects.",
-                                  make_fdr_slider('bipartite_logfc_fdr',
-                                                  DEFAULT_INTERACTIONS_ARGS['bipartite_logfc_fdr'])),
-        ], [
-
-            control_panel_element("Minimum abs(log2FC)", "The minimum log2FC for either ligands or receptors between conditions.",
+            control_panel_element("Minimum Ligand abs(Log2FC)", "The minimum log2FC for ligands between conditions.",
                                   make_custom_slider(
                                       id="min_logfc_bipartite",
                                       min=0,
                                       max=1,  # Fill in
                                       step=0.01,
                                       value=DEFAULT_INTERACTIONS_ARGS['min_logfc_bipartite']
-                                  ))
-
+                                  )),
+            control_panel_element("Interaction Directionality", "Whether to consider interactions between all cell types, or only allow interactions to flow from left to right.",
+                                  dbc.RadioItems(
+                                      id='bidirectional_bipartite',
+                                      options=[{'label': 'Bidirectional Interactions', 'value': True},
+                                               {'label': 'Unidirectional Interactions', 'value': False}],
+                                      value=DEFAULT_INTERACTIONS_ARGS['bidirectional_bipartite'],
+                                      persistence=False
+                                  )),
         ], [
             control_panel_element("First Cell Type", "The first cell type to examine interactions between.",
                                   dbc.Select(
@@ -126,7 +136,7 @@ def build_interface() -> list:
                                       value=DEFAULT_INTERACTIONS_ARGS['inter_set'],
                                       persistence=False
                                   )),
-            control_panel_element("Plot", "",
+            control_panel_element("Plot", "You must click submit to update the plot.",
                                   html.Div(
                                       dbc.Button(
                                           "Submit",
@@ -150,13 +160,14 @@ def build_interface() -> list:
                               'showTips': True,
                               'toImageButtonOptions': {
                                   'format': 'svg',
-                                  'filename': 'exported_image',
-                                  'height': 800,
-                                  'width': 1200,
-                                  'scale': 6
+                                  'filename': 'interactions_image',
+                                  'height': 1275,
+                                  'width': 1275*.8,
+                                  'scale': 1
                               },
                               'watermark': False
-                          })
+                          }),
+        help_info=make_help_info()
     )
 
     return [
@@ -164,6 +175,94 @@ def build_interface() -> list:
         results,
         dcc.Store(id='cin_bipartite_plot', data=default_plots[0] if default_plots is not None else {}),
         dcc.Store(id='max_bipartite_plot', data=default_plots[1] if default_plots is not None else {}),
+    ]
+
+
+def make_help_info():
+    return [
+        html.H5(["The pairwise interactions plot highlights TME-specific interactions identified by ",
+                 html.I("ContactTracing"),
+                 " between cells of interest."]),
+        html.Hr(),
+        html.P(html.H6(html.Strong('Filter Options'))),
+        html.Ul([
+            html.Li(html.P([
+                "Interaction Effect FDR Cutoff: ",
+                html.I("ContactTracing"),
+                " identifies the downstream genes that have induced expression shifts from the activation of a "
+                "receptor within a given cell of interest; this modulates the threshold for classifying induced "
+                "expression change as significant after a Benjamini-Hochberg FDR correction. The default value of "
+                "0.25 reflects what was chosen for evaluating the intersection between CIN and STING-dependent "
+                "effects. A cutoff of 0.05 might be more sensible when evaluating CIN-dependent effects on its own."
+            ])),
+            html.Li(html.P([
+                "Ligand Log2FC FDR Cutoff: ",
+                html.I("ContactTracing"),
+                " requires differential availability of a ligand across conditions to identify condition-specific "
+                "effects from the Tumor Microenvironment. This cutoff represents the threshold for identifying "
+                "whether a ligand's differential expression between conditions significantly differs from 0 after a "
+                "Benjamini-Hochberg FDR correction."
+            ])),
+            html.Li(html.P([
+                "Minimum Interaction Effect: As ",
+                html.I("ContactTracing"),
+                " identifies the condition-specific effects of each receptor's activation by evaluating all possible "
+                "genes, this value indicates a filter for the minimum number of condition-specific activations of "
+                "genes by each given receptor using the selected Interaction Effect FDR Cutoff."
+            ])),
+            html.Li(html.P([
+                "Minimum Expression: Allows for Ligands/Receptors to be filtered according to a minimum expression "
+                "value. This value, however, does not represent counts. Instead, \"expression\" refers to the "
+                "fraction of the cells from a given cell type with non-zero counts of a particular gene. Therefore, "
+                "expression values range from 0-1, where zero means that no cells of a cell type express the gene, "
+                "and one means that all cells of a cell type express the gene."
+            ])),
+            html.Li(html.P([
+                "Minimum Ligand abs(Log2FC): While the Ligand Log2FC FDR Cutoff option filters interactions according "
+                "to whether a ligand's differential expression between conditions significantly differs from zero, "
+                "this filter additionally allows for further refinement by requiring a minimum absolute Log2FC. The "
+                "default value reflects the cutoff used for the Circos plot."
+            ])),
+            html.Li(html.P([
+                "Interaction Directionality: By default, the figure generated only depicts pairwise interactions "
+                "between cell types from left to right. In other words, for every cell type depicted, interactions "
+                "shown depict ligands emitted from the cell type directly to the left of a given cell type. "
+                "Bidirectional interactions can also be enabled, which can visualize the two-way cross-talk of cells."
+            ])),
+            html.Li(html.P([
+                "First Cell Type: The first cell type of interest to depict interactions between."
+            ])),
+            html.Li(html.P([
+                "Second Cell Type: The second cell type of interest to depict interactions between."
+            ])),
+            html.Li(html.P([
+                "Third Cell Type: The third cell type to include in the figure; this is optional. If not specified, "
+                "only two cell types will be shown.",
+            ])),
+            html.Li(html.P([
+                "Interaction Set: We have evaluated both CIN-dependent and CIN & STING-dependent interaction effects. "
+                "This toggle lets users instantly see the plot under both conditions. Note that the CIN & STING "
+                "effects represent the maximum value between shared interactions across both conditions and require "
+                "interaction effects to have the same directionality."
+            ]))
+        ]),
+        html.P(html.H6(html.Strong('How to Interpret the Plot'))),
+        html.P("Selected cell types will be represented as columns in the figure according to the order selected "
+               "(ex. first cell type is the leftmost column), with selected genes listed within it. These genes may "
+               "be either a ligand (circle), receptor (square), or a gene that is both a ligand and receptor (diamond "
+               "with dot). Additionally, these genes are colored according to the proportion of cells of the given "
+               "cell type expressing each gene. Note: when many genes are selected, it is possible for labels to "
+               "overlap, in which case the user can toggle the label of each gene by clicking on the representative "
+               "node. Columns of genes are illustrated below:"),
+        html.Div(html.Img(src=dash.get_asset_url('pairwise_help1.png'), style={'width': '20%', 'align': 'center'}, alt='Cell Type Columns', className='mx-auto'), className='text-center'),
+        html.P("To illustrate interactions between ligands and receptors, arrows are drawn between pairs that have "
+               "interactions that meet the user-defined filters. The colors of these arrows indicate the Log2FC "
+               "strength and directionality of the ligand between conditions (red corresponds to up-regulation, and "
+               "blue corresponds to down-regulation). Additionally, each arrow has a thickness relative to the number "
+               "of significant interaction effects in the receptor. Below is an example of the arrows in a "
+               "unidirectional interactions plot. However, users can allow interactions to start at either cell type "
+               "by selecting the \"bidirectional\" Interaction Directionality setting."),
+        html.Div(html.Img(src=dash.get_asset_url('pairwise_help2.png'), style={'width': '20%', 'align': 'center'}, alt='Arrows', className='mx-auto'), className='text-center')
     ]
 
 
@@ -193,6 +292,7 @@ def update_bipartite_plot(inter_set, cin_bipartite_plot, max_bipartite_plot):
     State('min_numsigi1_bipartite', 'data'),
     State('bipartite_inter_fdr', 'data'),
     State('bipartite_logfc_fdr', 'data'),
+    State('bidirectional_bipartite', 'value'),
     interval=500,
     cache_args_to_ignore=['submit-button-bipartite', 'n_clicks'],
     background=True,  # Run in background
@@ -209,7 +309,7 @@ def update_bipartite_plot(inter_set, cin_bipartite_plot, max_bipartite_plot):
 def make_graph(set_progress, n_clicks,
                first_ct, second_ct, third_ct,
                min_logfc, min_expression, min_numSigI1,
-               inter_fdr, logfc_fdr):
+               inter_fdr, logfc_fdr, bidirectional):
     if n_clicks == 0:
         from dash.exceptions import PreventUpdate
         raise PreventUpdate
@@ -227,7 +327,8 @@ def make_graph(set_progress, n_clicks,
             min_expression == DEFAULT_INTERACTIONS_ARGS['min_expression_bipartite'] and
             min_numSigI1 == DEFAULT_INTERACTIONS_ARGS['min_numsigi1_bipartite'] and
             inter_fdr == DEFAULT_INTERACTIONS_ARGS['bipartite_inter_fdr'] and
-            logfc_fdr == DEFAULT_INTERACTIONS_ARGS['bipartite_logfc_fdr']):
+            logfc_fdr == DEFAULT_INTERACTIONS_ARGS['bipartite_logfc_fdr'] and
+            bidirectional == DEFAULT_INTERACTIONS_ARGS['bidirectional_bipartite']):
         import pickle
         try:
             with open(INTERACTIONS_SAVE_LOCATION, 'rb') as f:
@@ -247,7 +348,8 @@ def make_graph(set_progress, n_clicks,
         numInteractions=min_numSigI1,
         min_logfc_bipartite=min_logfc,
         min_expression_bipartite=min_expression,
-        logfc_fdr_bipartite_cutoff=float(logfc_fdr.replace('fdr', '.'))
+        logfc_fdr_bipartite_cutoff=float(logfc_fdr.replace('fdr', '.')),
+        bidirectional=bidirectional
     )
 
     set_progress((1, 2))
@@ -260,7 +362,8 @@ def make_graph(set_progress, n_clicks,
         numInteractions=min_numSigI1,
         min_logfc_bipartite=min_logfc,
         min_expression_bipartite=min_expression,
-        logfc_fdr_bipartite_cutoff=float(logfc_fdr.replace('fdr', '.'))
+        logfc_fdr_bipartite_cutoff=float(logfc_fdr.replace('fdr', '.')),
+        bidirectional=bidirectional
     )
 
     set_progress((2, 2))
@@ -323,7 +426,8 @@ if __name__ == '__main__':
             numInteractions=DEFAULT_INTERACTIONS_ARGS['min_numsigi1_bipartite'],
             min_logfc_bipartite=DEFAULT_INTERACTIONS_ARGS['min_logfc_bipartite'],
             min_expression_bipartite=DEFAULT_INTERACTIONS_ARGS['min_expression_bipartite'],
-            logfc_fdr_bipartite_cutoff=float(DEFAULT_INTERACTIONS_ARGS['bipartite_logfc_fdr'].replace('fdr', '.'))
+            logfc_fdr_bipartite_cutoff=float(DEFAULT_INTERACTIONS_ARGS['bipartite_logfc_fdr'].replace('fdr', '.')),
+            bidirectional=DEFAULT_INTERACTIONS_ARGS['bidirectional_bipartite']
         )
 
         sting_fig = bipartite_graph(
@@ -334,7 +438,8 @@ if __name__ == '__main__':
             numInteractions=DEFAULT_INTERACTIONS_ARGS['min_numsigi1_bipartite'],
             min_logfc_bipartite=DEFAULT_INTERACTIONS_ARGS['min_logfc_bipartite'],
             min_expression_bipartite=DEFAULT_INTERACTIONS_ARGS['min_expression_bipartite'],
-            logfc_fdr_bipartite_cutoff=float(DEFAULT_INTERACTIONS_ARGS['bipartite_logfc_fdr'].replace('fdr', '.'))
+            logfc_fdr_bipartite_cutoff=float(DEFAULT_INTERACTIONS_ARGS['bipartite_logfc_fdr'].replace('fdr', '.')),
+            bidirectional=DEFAULT_INTERACTIONS_ARGS['bidirectional_bipartite']
         )
 
         with open(INTERACTIONS_SAVE_LOCATION, 'wb') as f:

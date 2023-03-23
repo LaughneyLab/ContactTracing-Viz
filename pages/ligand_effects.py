@@ -15,6 +15,10 @@ if __name__ != '__main__':
 
 
 def build_interface() -> list:
+    # Ignore if this file is run directly
+    if __name__ == '__main__':
+        return []
+
     from viz.figures import DEFAULT_LIGAND_EFFECT_ARGS, LIGAND_EFFECT_SAVE_LOCATION
 
     import pickle
@@ -64,20 +68,12 @@ def build_interface() -> list:
                                       persistence=True, persistence_type='session'
                                   )),
         ], [
-            control_panel_element("Interaction FDR Cutoff", "The maximum interaction test FDR to consider.",
+            control_panel_element("Interaction Effect FDR Cutoff", "The maximum interaction test FDR to consider.",
                                   make_fdr_slider("interaction_fdr", DEFAULT_LIGAND_EFFECT_ARGS['interaction_fdr'])),
-            control_panel_element("log2FC FDR Cutoff",
-                                  "The FDR-adjusted cutoff for determining if a log2FC value is non-zero.",
+            control_panel_element("Log2FC FDR Cutoff",
+                                  "The FDR-adjusted p-value cutoff for determining if a gene's log2FC value is non-zero.",
                                   make_fdr_slider("logfc_fdr", DEFAULT_LIGAND_EFFECT_ARGS['logfc_fdr']))
         ], [
-            control_panel_element("Minimum abs(Log2FC)", "The minimum induced log2FC for targets.",
-                                  make_custom_slider(
-                                      id='min_logfc',
-                                      max=2,
-                                      min=0,
-                                      step=0.01,
-                                      value=DEFAULT_LIGAND_EFFECT_ARGS['min_logfc']
-                                  )),
             control_panel_element("Minimum Expression", "The minimum expression of target genes to be considered.",
                                   make_custom_slider(
                                       id='min_expression',
@@ -85,7 +81,15 @@ def build_interface() -> list:
                                       min=0,
                                       step=0.01,
                                       value=DEFAULT_LIGAND_EFFECT_ARGS['min_expression']
-                                  ))
+                                  )),
+            control_panel_element("Minimum abs(Log2FC)", "The minimum induced log2FC for gene interactions.",
+                                  make_custom_slider(
+                                      id='min_logfc',
+                                      max=2,
+                                      min=0,
+                                      step=0.01,
+                                      value=DEFAULT_LIGAND_EFFECT_ARGS['min_logfc']
+                                  )),
         ], [
             control_panel_element("Interaction Set", "Biological condition to compare.",
                                   dbc.RadioItems(
@@ -96,7 +100,7 @@ def build_interface() -> list:
                                       value=DEFAULT_LIGAND_EFFECT_ARGS['effect_set'],
                                       persistence=False
                                   )),
-            control_panel_element("Plot", "",
+            control_panel_element("Plot", "You must click submit to update the plot.",
                                   html.Div(
                                       dbc.Button(
                                           "Submit",
@@ -119,14 +123,15 @@ def build_interface() -> list:
                              'displaylogo': False,
                              'showTips': True,
                              'toImageButtonOptions': {
-                                'format': 'png',  # one of png, svg, jpeg, webp
-                                'filename': 'exported_image',
-                                'height': 800,
+                                'format': 'svg',  # one of png, svg, jpeg, webp
+                                'filename': 'ligand_effects_image',
+                                'height': 1800,
                                 'width': 1200,
-                                'scale': 6  # Multiply title/legend/axis/canvas sizes by this factor
+                                'scale': 1  # Multiply title/legend/axis/canvas sizes by this factor
                              },
                              'watermark': False
-                          })
+                          }),
+        help_info=make_help_info()
     )
 
     return [
@@ -134,6 +139,109 @@ def build_interface() -> list:
         results,
         dcc.Store(id='cin_network_plot', storage_type='memory', data=default_plots[0] if default_plots is not None else {}),
         dcc.Store(id='sting_network_plot', storage_type='memory', data=default_plots[1] if default_plots is not None else {})
+    ]
+
+
+def make_help_info():
+    return [
+        html.H5(["The ligand cascade effects plot visualizes all potential downstream effects from TME-specific"
+                 " identified by ",
+                 html.I("ContactTracing"),
+                 "."]),
+        html.Hr(),
+        html.P(html.H6(html.Strong("Filter Options"))),
+        html.Ul([
+            html.Li(html.P([
+                "Emitting Cell Type: The cell type for which specified ligands are emitted."
+            ])),
+            html.Li(html.P([
+                "Emitted Ligands: The ligand(s) to follow in the figure; must be emitted from the selected cell type."
+                " Multiple genes can be included by separating names with commas. IMPORTANT: This field is CASE"
+                " SENSITIVE."
+            ])),
+            html.Li(html.P([
+                "Network Building Iterations: The number of levels of downstream interactions to include. Note that"
+                " typically, the number of downstream genes per level can increase exponentially. So starting with a"
+                " low value and increasing as needed is recommended since larger values require additional time to"
+                " render."
+            ])),
+            html.Li(html.P([
+                "Interaction Effect FDR Cutoff: ",
+                html.I("ContactTracing"),
+                " identifies the downstream genes that have induced expression shifts from the activation of a "
+                " receptor within a given cell of interest; this modulates the threshold for classifying induced"
+                " expression change as significant after a Benjamini-Hochberg FDR correction. The default value of 0.25"
+                " reflects what was chosen for evaluating the intersection between CIN and STING-dependent effects. A"
+                " cutoff of 0.05 might be more sensible when evaluating CIN-dependent effects on its own."
+            ])),
+            html.Li(html.P([
+                "Log2FC FDR Cutoff: ",
+                html.I("ContactTracing"),
+                " requires differential availability of a ligand across conditions to identify condition-specific"
+                " effects from the Tumor Microenvironment. Additionally, as ",
+                html.I("ContactTracing"),
+                " is able to determine the induced Log2FC of a receptor's activation on a downstream gene, this option"
+                " will also be applied to induced Log2FC tests. The cutoff represents the threshold for identifying whether"
+                " a gene's differential expression between conditions significantly differs from 0 after a"
+                " Benjamini-Hochberg FDR correction."
+            ])),
+            html.Li(html.P([
+                "Minimum Expression: Allows for Ligands/Receptors to be filtered according to a minimum expression"
+                " value. This value, however, does not represent counts. Instead, \"expression\" refers to the fraction"
+                " of the cells from a given cell type with non-zero counts of a particular gene. Therefore, expression"
+                " values range from 0-1, where zero means that no cells of a cell type express the gene, and one means"
+                " that all cells of a cell type express the gene."
+            ])),
+            html.Li(html.P([
+                "Minimum abs(Log2FC): While the Log2FC FDR Cutoff option filters interactions according"
+                " to whether a gene's differential expression between conditions significantly differs from zero,"
+                " this filter additionally allows for further refinement by requiring a minimum absolute Log2FC. The"
+                " default value reflects the cutoff used for the Circos plot."
+            ])),
+            html.Li(html.P([
+                "Interaction Set: While we have evaluated both CIN-dependent and CIN & STING-dependent interaction"
+                " effects, the CIN & STING intersection data set does not have statistical power for examining"
+                " individually induced downstream effects of interactions. Therefore, only CIN-dependent interaction"
+                " effects are enabled."
+            ]))
+        ]),
+        html.P(html.H6(html.Strong("How to Interpret the Plot"))),
+        html.P("This figure illustrates the potential cascading effects of receptor activation in the tumor"
+               " microenvironment. It does so by generating a directed network of gene interactions by following the"
+               " steps listed below:"),
+        html.Ol([
+            html.Li([html.P([
+                    "Starting from a given cell type and a set of ligands, identify all the corresponding receptors that"
+                    " pass the provided filters and have a significant condition-specific interaction effect on downstream"
+                    " signaling, then draw an arrow connecting the ligands to the receptors. Finally, add 1 to the number"
+                    " of network building iterations."
+                ]),
+                html.Div(html.Img(src=dash.get_asset_url("ligand_effects_help1.png"), style={'width': '30%', 'align': 'center'}, alt='Step 1', className='mx-auto'), className='text-center')
+            ]),
+            html.Li([html.P([
+                    "Identify significantly differentially regulated ligands for each added receptor in response to the"
+                    " receptor's activation. Additionally, identify further receptors with a significant interaction effect"
+                    " and a ligand available in the microenvironment. Finally, add 1 to the number of network building"
+                    " iterations."
+                ]),
+                html.Div(html.Img(src=dash.get_asset_url("ligand_effects_help2.png"), style={'width': '25%', 'align': 'center'}, alt='Step 2', className='mx-auto'), className='text-center')
+            ]),
+            html.Li([html.P([
+                    "Repeat steps 1 and 2 until the number of network building iterations equals what was specified by"
+                    " the user."
+                ]),
+                html.Div(html.Img(src=dash.get_asset_url("ligand_effects_help3.png"), style={'width': '25%', 'align': 'center'}, alt='Step 3', className='mx-auto'), className='text-center')
+            ])
+        ]),
+        html.P(["As depicted above, each of these iterations is represented by a column of ligands and receptors. In"
+                " addition, these nodes have arrows connecting to their corresponding receptors and ligands. If the"
+                " arrow is connecting from a receptor to a ligand, the color and arrow thickness represents the Log2FC"
+                " induced by receptor activation. However, if the arrow is connecting from a ligand to a receptor, the"
+                " color is equivalent to a Log2FC of 0 as ligands are not expected to regulate receptor expression"
+                " differentially."]),
+        html.P(["Additionally, the color of nodes represents the cell type in which each gene is expressed; the shape"
+                " of the node represents whether the gene is a ligand, receptor, or both; and the size of each node is"
+                " relative to the total induced Log2FC from receptor activation to ligands."])
     ]
 
 
@@ -233,7 +341,6 @@ def make_graph(set_progress, n_clicks,
 #     ]
 # )
 # def initialize_options(effect_set):
-#     # TODO Should we scan to find true max logfc?
 #     max_logfc = 2
 #     return max_logfc
 

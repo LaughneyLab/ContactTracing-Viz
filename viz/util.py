@@ -107,10 +107,13 @@ def enhance_plotly_export(fig, height, scaleratio):
 def space_elements(elements, attributes):
     if len(elements) <= 2:
         return elements
-
     # Visually space out high degree nodes
-    sorted_elements = list(sorted(zip(elements, attributes), key=lambda x: x[1], reverse=True))
-    sorted_elements = [x[0] for x in sorted_elements]
+    sorted_elements = []
+    for i, (elem, _) in enumerate(sorted(zip(elements, attributes), key=lambda x: x[1], reverse=True)):
+        if i % 2 == 0:
+            sorted_elements.append(elem)
+        else:
+            sorted_elements.insert(0, elem)
 
     # Approximate positions
     positions = []
@@ -130,24 +133,45 @@ def space_elements(elements, attributes):
 
 
 # Bias node placement based on the initial placement
-def space_elements_from_previous(G, elements, prev_elements):
+def space_elements_from_previous(G, elements, prev_elements, next_elements):
     elem2score = dict()
-    prev2degree = {e: G.degree(e) for e in prev_elements}
-    total_degree = sum(prev2degree.values())
-    for elem in elements:
-        elem2score[elem] = 0
-        for prev_elem in enumerate(prev_elements):
-            if G.has_edge(prev_elem, elem) or G.has_edge(elem, prev_elem):
-                elem2score[elem] += prev2degree[prev_elem] / total_degree
+    # Filter the graph to just the elements we care about
+    G = G.subgraph(elements + prev_elements + (next_elements if next_elements else []))
+    prev2degree = {e: G.out_degree(e) for e in prev_elements}
+    curr2degree = {e: G.degree(e) for e in elements}
+    next2degree = {e: G.in_degree(e) for e in next_elements} if next_elements else dict()
+    total_degree = sum(prev2degree.values()) + sum(curr2degree.values()) + sum(next2degree.values())
 
-    initial_sorted_elements = list(sorted(elements, key=lambda x: elem2score[x], reverse=False))
+    # Visually space out high degree nodes
+    spaced_elements = []
+    for i, elem in enumerate(sorted(elements, key=lambda x: curr2degree[x], reverse=True)):
+        if i % 2 == 0:
+            spaced_elements.append(elem)
+        else:
+            spaced_elements.insert(0, elem)
+
+    for elem in spaced_elements:
+        elem2score[elem] = (curr2degree[elem] / total_degree)
+        for i, prev_elem in enumerate(prev_elements):
+            if G.has_edge(prev_elem, elem) or G.has_edge(elem, prev_elem):
+                elem2score[elem] += (prev2degree[prev_elem] / total_degree) + (i / len(prev_elements))*2
+        if next_elements:
+            for i, next_elem in enumerate(next_elements):
+                if G.has_edge(next_elem, elem) or G.has_edge(elem, next_elem):
+                    elem2score[elem] += ((next2degree[next_elem] / total_degree) + (i / len(next_elements))*2) / 2  # Weigh next layer less
+
+    initial_sorted_elements = list(sorted(spaced_elements, key=lambda x: elem2score[x], reverse=False))
 
     sorted_elements = []
-    for elem in prev_elements:
-        for elem2 in initial_sorted_elements:
-            if (not G.has_edge(elem, elem2) and not G.has_edge(elem2, elem)) or elem2 in sorted_elements:
-                continue
-            sorted_elements.append(elem2)
+    for elem in initial_sorted_elements:
+        if elem in sorted_elements:
+            continue
+        sorted_elements.append(elem)
+
+    if len(sorted_elements) < len(spaced_elements):
+        for elem in initial_sorted_elements:
+            if elem not in sorted_elements:
+                sorted_elements.append(elem)
 
     return sorted_elements
 
@@ -158,7 +182,7 @@ def downstream_degree(G, node):
 
 # Layout nodes to represent a timeline
 def timeline_layout(G, step_attr="step", scaleratio=1.0, scale=30):
-    return multipartite_layout(G, subset_key=step_attr, scale=1, space_mult_x=scale * scaleratio, space_mult_y=scale*2, ordering=list(range(max(nx.get_node_attributes(G, step_attr).values()))))
+    return multipartite_layout(G, subset_key=step_attr, scale=1, space_mult_x=scale * scaleratio, space_mult_y=scale*4, ordering=list(range(max(nx.get_node_attributes(G, step_attr).values()))))
     node2step = nx.get_node_attributes(G, step_attr)
     node2descendent_count = dict()
     for node in G.nodes:
@@ -271,7 +295,7 @@ def multipartite_layout(G, subset_key="subset", align="vertical", scale=1, cente
             if prev_layer is None:
                 layer = space_elements(layer, [downstream_degree(G, n) for n in layer])
             else:
-                layer = space_elements_from_previous(G, layer, prev_layer)
+                layer = space_elements_from_previous(G, layer, prev_layer, layers[i+1][1] if i+1 < len(layers) else None)
             prev_layer = layer
         nodes.extend(layer)
     pos = nx.rescale_layout(pos, scale=scale) + center

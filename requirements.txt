@@ -1,16 +1,14 @@
 dash[compress]
 dash-bio
-dash-cytoscape
 dash-bootstrap-components
 plotly
 pandas
+pyarrow
 networkx
-python-igraph
 scanpy
 numpy==1.23.1
 scipy
 orjson
-humanize
 # Default diskcache queue
 diskcache
 multiprocess

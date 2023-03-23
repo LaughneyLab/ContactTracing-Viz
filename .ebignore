@@ -239,13 +239,17 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
-data/*/*.*sv
-data/*/*.h5ad
-*.feather
-ct_viz_cache/
+data/
 old_data/
+ct_viz_cache/
+*xlsx
 
 # Elastic Beanstalk Files
 .elasticbeanstalk/*
 !.elasticbeanstalk/*.cfg.yml
 !.elasticbeanstalk/*.global.yml
+
+!.ebextensions
+# We don't include this since we are using a Dockerrun.aws.json file
+Dockerfile
+!Dockerrun.aws.json

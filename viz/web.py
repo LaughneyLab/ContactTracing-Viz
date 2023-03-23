@@ -109,21 +109,29 @@ def control_panel(*element_rows: List[dbc.Card]) -> html.Div:
     )
 
 
-def figure_output(title, footer, element, outline=True) -> html.Div:
-    help_button = dbc.Button(html.Div(wrap_icon('fa-circle-question'), className='text-center'), color='link', outline=True, className='float-end')
-    help_modal = dbc.Modal("TODO")  # TODO
+def figure_output(title, footer, element, help_info, outline=True) -> html.Div:
+    help_button = dbc.Button(wrap_icon('fa-circle-question', low_margin='', high_margin='', right=True),
+                             color='primary', outline=True, className='float-end', type='button', n_clicks=0)
+    close_button = dbc.Button("Close", className="ms-auto", n_clicks=0)
+    help_modal = dbc.Modal([
+        dbc.ModalHeader(dbc.ModalTitle(wrap_icon('fa-info-circle', "Plot Information"))),
+        dbc.ModalBody(help_info),
+        dbc.ModalFooter(close_button)
+    ], is_open=False, size='xl', scrollable=True, centered=True)
 
     @callback(
         Output(help_modal, "is_open"),
         Input(help_button, "n_clicks"),
+        Input(close_button, "n_clicks"),
         State(help_modal, "is_open")
     )
-    def toggle_help(n_clicks, is_open):
-        if n_clicks:
+    def toggle_help(open_click, close_click, is_open):
+        if open_click or close_click:
             return not is_open
         return is_open
 
     return html.Div([
+        help_modal,
         dbc.Card([
             dbc.CardHeader(dbc.Row([
                 dbc.Col(title),
@@ -298,7 +306,7 @@ def make_circos_figure(set_progress, progress_offset: int,
         set_progress((4+(progress_offset*7), 7*(progress_offset+1)))
 
     # Next ring for Differential abundance
-    da_colormap = ColorTransformer(-0.5, 0.5, 'RdBu_r')  # FIXME: Extremes appear too dark?
+    da_colormap = ColorTransformer(-0.5, 0.5, 'RdBu_r')
     da_data = []
     for celltype in celltypes:
         id = celltype2id[celltype]
@@ -370,37 +378,38 @@ def make_circos_figure(set_progress, progress_offset: int,
         thickness = smooth_step(inter_row['numSigI1'] / max_receptor_numSigI1, 0.33, 3)
 
         # Allow for overwriting if highlighting
-        if should_highlight and (source_celltype, lig) in text_data and text_data[(source_celltype, lig)]['value'] == '':
+        highlight_chord = (not should_highlight) or (lig in highlighted_genes or rec in highlighted_genes)
+        if should_highlight and highlight_chord and (source_celltype, lig) in text_data:
             del text_data[(source_celltype, lig)]
-        if should_highlight and (target_celltype, rec) in text_data and text_data[(target_celltype, rec)]['value'] == '':
+        if should_highlight and highlight_chord and (target_celltype, rec) in text_data:
             del text_data[(target_celltype, rec)]
 
         text_data[(source_celltype, lig)] = {
             'block_id': celltype2id[source_celltype],
             'position': source_position+.5,
-            'value': lig if (not should_highlight) or (lig in highlighted_genes or rec in highlighted_genes) else ""
+            'value': lig if highlight_chord else ""
         }
         text_data[(target_celltype, rec)] = {
             'block_id': celltype2id[target_celltype],
             'position': target_position+.5,
-            'value': rec if (not should_highlight) or (rec in highlighted_genes or lig in highlighted_genes) else ""
+            'value': rec if highlight_chord else ""
         }
 
         chord_data.append({
             'color': maybe_brighten(log2fc_colormap, inter_row['MAST_log2FC_ligand'], lig, rec),
             'logfc': inter_row['MAST_log2FC_ligand'],
-            'highlighted': (lig in highlighted_genes or rec in highlighted_genes),
+            'highlighted': highlight_chord,
             'source': {
                 'id': celltype2id[source_celltype],
                 'start': source_position - thickness,
                 'end': source_position + thickness,
-                'info': f"{lig}+ {source_celltype}"
+                'info': f"{lig}+ {source_celltype}",
             },
             'target': {
                 'id': celltype2id[target_celltype],
                 'start': target_position - thickness,
                 'end': target_position + thickness,
-                'info': f"{rec}+ {target_celltype}",
+                'info': f"{rec}+ {target_celltype}" if highlight_chord else None,
                 'value_text': f"<br>log2FC: {inter_row['MAST_log2FC_ligand']:.2f}<br>Interactions: {inter_row['numSigI1']}",
             },
         })
