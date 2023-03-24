@@ -138,14 +138,20 @@ def build_interface() -> list:
                                   )),
             control_panel_element("Plot", "You must click submit to update the plot.",
                                   html.Div(
-                                      dbc.Button(
-                                          "Submit",
-                                          id="submit-button-bipartite",
-                                          size="lg",
-                                          color="primary",
-                                          className='me-1',
-                                          n_clicks=0
-                                      ),
+                                      dbc.Row([dbc.Col(
+                                          dbc.Button(
+                                              wrap_icon("fas fa-play", "Submit"),
+                                              id="submit-button-bipartite",
+                                              size="lg",
+                                              color="primary",
+                                              className='me-1',
+                                              n_clicks=0),
+                                          width='auto', align='left'),
+                                          dbc.Col(
+                                              dbc.Button(wrap_icon('fas fa-rotate-left', 'Reset'),
+                                                         id='reset_default_interactions_button', color='secondary', size='lg', className='float-end dark', n_clicks=0),
+                                          align='right', width='auto')
+                                      ]),
                                   className='text-center d-grid gap-2')),
         ]
     )
@@ -264,6 +270,38 @@ def make_help_info():
                "by selecting the \"bidirectional\" Interaction Directionality setting."),
         html.Div(html.Img(src=dash.get_asset_url('pairwise_help2.png'), style={'width': '20%', 'align': 'center'}, alt='Arrows', className='mx-auto'), className='text-center')
     ]
+
+
+@callback(
+    Output('first_celltype', 'value', allow_duplicate=True),
+    Output('second_celltype', 'value', allow_duplicate=True),
+    Output('third_celltype', 'value', allow_duplicate=True),
+    Output('min_logfc_bipartite', 'data', allow_duplicate=True),
+    Output('min_expression_bipartite', 'data', allow_duplicate=True),
+    Output('min_numsigi1_bipartite', 'data', allow_duplicate=True),
+    Output('bipartite_inter_fdr', 'data', allow_duplicate=True),
+    Output('bipartite_logfc_fdr', 'data', allow_duplicate=True),
+    Output('bidirectional_bipartite', 'value', allow_duplicate=True),
+    Output('submit-button-bipartite', 'n_clicks'),
+    Input('reset_default_interactions_button', 'n_clicks'),
+    State('submit-button-bipartite', 'n_clicks'),
+    prevent_initial_call=True
+)
+def reset_to_defaults(n_clicks, submission_button_clicks):
+    from dash.exceptions import PreventUpdate
+    from viz.figures import DEFAULT_INTERACTIONS_ARGS
+    if n_clicks > 0:
+        return DEFAULT_INTERACTIONS_ARGS['first_celltype'], \
+                DEFAULT_INTERACTIONS_ARGS['second_celltype'], \
+                DEFAULT_INTERACTIONS_ARGS['third_celltype'], \
+                DEFAULT_INTERACTIONS_ARGS['min_logfc_bipartite'], \
+                DEFAULT_INTERACTIONS_ARGS['min_expression_bipartite'], \
+                DEFAULT_INTERACTIONS_ARGS['min_numsigi1_bipartite'], \
+                DEFAULT_INTERACTIONS_ARGS['bipartite_inter_fdr'], \
+                DEFAULT_INTERACTIONS_ARGS['bipartite_logfc_fdr'], \
+                DEFAULT_INTERACTIONS_ARGS['bidirectional_bipartite'], \
+                submission_button_clicks+1  # Trigger the plotting callback to run on default values
+    raise PreventUpdate
 
 
 @callback(

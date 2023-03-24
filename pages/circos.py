@@ -80,14 +80,20 @@ def build_interface() -> list:
                                   )),
             control_panel_element("Plot", "You must click submit to update the plot.",
                                   html.Div(
-                                      dbc.Button(
-                                          "Submit",
-                                          id="submit-button-circos",
-                                          size="lg",
-                                          color="primary",
-                                          className='me-1',
-                                          n_clicks=0
-                                      ),
+                                      dbc.Row([dbc.Col(
+                                          dbc.Button(
+                                              wrap_icon("fas fa-play", "Submit"),
+                                              id="submit-button-circos",
+                                              size="lg",
+                                              color="primary",
+                                              className='me-1',
+                                              n_clicks=0),
+                                          width='auto', align='left'),
+                                          dbc.Col(
+                                              dbc.Button(wrap_icon('fas fa-rotate-left', 'Reset'),
+                                                         id='reset_default_circos_button', color='secondary', size='lg', className='float-end dark', n_clicks=0),
+                                          align='right', width='auto')
+                                      ]),
                                       className='text-center d-grid gap-2'))
         ]
     )
@@ -201,6 +207,32 @@ def make_help_info():
                "the aforementioned \"Genes of Interest\" field."),
         html.Div(html.Img(src=dash.get_asset_url('circos_help6.png'), style={'width': '40%', 'align': 'center'}, alt="Ribbons Highlighted", className='mx-auto'), className='text-center')
     ]
+
+
+@callback(
+    Output('inter_circos_fdr', 'data', allow_duplicate=True),
+    Output('logfc_circos_fdr', 'data', allow_duplicate=True),
+    Output('circos_min_numsigi1', 'data', allow_duplicate=True),
+    Output('circos_min_numdeg', 'data', allow_duplicate=True),
+    Output('circos_min_ligand_logfc', 'data', allow_duplicate=True),
+    Output('genes', 'value', allow_duplicate=True),
+    Output('submit-button-circos', 'n_clicks'),
+    Input('reset_default_circos_button', 'n_clicks'),
+    State('submit-button-circos', 'n_clicks'),
+    prevent_initial_call=True
+)
+def reset_to_defaults(n_clicks, submission_button_clicks):
+    from dash.exceptions import PreventUpdate
+    from viz.figures import DEFAULT_CIRCOS_ARGS
+    if n_clicks > 0:
+        return DEFAULT_CIRCOS_ARGS['inter_circos_fdr'], \
+                DEFAULT_CIRCOS_ARGS['logfc_circos_fdr'], \
+                DEFAULT_CIRCOS_ARGS['circos_min_numsigi1'], \
+                DEFAULT_CIRCOS_ARGS['circos_min_numdeg'], \
+                DEFAULT_CIRCOS_ARGS['circos_min_ligand_logfc'], \
+                DEFAULT_CIRCOS_ARGS['genes'], \
+                submission_button_clicks+1  # Trigger the plotting callback to run on default values
+    raise PreventUpdate
 
 
 @callback(

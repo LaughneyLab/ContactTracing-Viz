@@ -17,7 +17,8 @@ def make_fdr_slider(id: str, value) -> html.Div:
     if isinstance(value, str):
         value = float("." + value[3:])
     return make_custom_slider(
-        id, 0.01, 0.25, value, 0.01, lambda x: "fdr" + f"{x:.2f}".split(".")[1]
+        id, 0.01, 0.25, value, 0.01,
+        lambda x: "fdr" + f"{x:.2f}".split(".")[1]
     )
 
 
@@ -54,9 +55,10 @@ def make_custom_slider(id: str, min, max, value, step, transform=None) -> html.D
         Output(input, 'value'),
         Output(slider, 'value'),
         Input(input, 'value'),
-        Input(slider, 'value')
+        Input(slider, 'value'),
+        Input(value_store, 'data')
     )
-    def update_input(text_input, slider_input):
+    def update_input(text_input, slider_input, slider_store):
         if dash.callback_context.triggered_id == id + '-input':
             # Input should always be in range
             if text_input is None or (text_input < min or text_input > max):
@@ -70,6 +72,8 @@ def make_custom_slider(id: str, min, max, value, step, transform=None) -> html.D
         elif dash.callback_context.triggered_id == id + '-slider':
             # Slider should always be in range
             return transform(slider_input) if transform else slider_input, slider_input, slider_input
+        elif dash.callback_context.triggered_id == id:  # Store updated
+            return transform(slider_store) if transform else slider_store, slider_store, slider_store
 
         return transform(value) if transform else value, value, value
 

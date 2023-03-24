@@ -1,4 +1,4 @@
-dash[compress]
+dash[compress]~=2.9.0
 dash-bio
 dash-bootstrap-components
 plotly

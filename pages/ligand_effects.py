@@ -102,15 +102,21 @@ def build_interface() -> list:
                                   )),
             control_panel_element("Plot", "You must click submit to update the plot.",
                                   html.Div(
-                                      dbc.Button(
-                                          "Submit",
-                                          id='submit_button',
-                                          size='lg',
-                                          color="primary",
-                                          className='me-1',
-                                          n_clicks=0
-                                      ),
-                                      className='text-center d-grid gap-2')),
+                                      dbc.Row([dbc.Col(
+                                          dbc.Button(
+                                              wrap_icon("fas fa-play", "Submit"),
+                                              id='submit_button',
+                                              size='lg',
+                                              color="primary",
+                                              className='me-1',
+                                              n_clicks=0),
+                                          width='auto', align='left'),
+                                          dbc.Col(
+                                              dbc.Button(wrap_icon('fas fa-rotate-left', 'Reset'),
+                                                         id='reset_default_ligand_effects_button', color='secondary', size='lg', className='float-end dark', n_clicks=0),
+                                          align='right', width='auto')
+                                      ]),
+                                  className='text-center d-grid gap-2'))
         ]
     )
 
@@ -243,6 +249,34 @@ def make_help_info():
                 " of the node represents whether the gene is a ligand, receptor, or both; and the size of each node is"
                 " relative to the total induced Log2FC from receptor activation to ligands."])
     ]
+
+
+@callback(
+    Output('cell_type', 'value', allow_duplicate=True),
+    Output('ligands', 'value', allow_duplicate=True),
+    Output('interaction_fdr', 'data', allow_duplicate=True),
+    Output('min_logfc', 'data', allow_duplicate=True),
+    Output('min_expression', 'data', allow_duplicate=True),
+    Output('logfc_fdr', 'data', allow_duplicate=True),
+    Output('iterations', 'value', allow_duplicate=True),
+    Output('submit_button', 'n_clicks'),
+    Input('reset_default_ligand_effects_button', 'n_clicks'),
+    State('submit_button', 'n_clicks'),
+    prevent_initial_call=True
+)
+def reset_to_defaults(n_clicks, submission_button_clicks):
+    from dash.exceptions import PreventUpdate
+    from viz.figures import DEFAULT_LIGAND_EFFECT_ARGS
+    if n_clicks > 0:
+        return [DEFAULT_LIGAND_EFFECT_ARGS['cell_type'],
+            DEFAULT_LIGAND_EFFECT_ARGS['ligands'],
+            DEFAULT_LIGAND_EFFECT_ARGS['interaction_fdr'],
+            DEFAULT_LIGAND_EFFECT_ARGS['min_logfc'],
+            DEFAULT_LIGAND_EFFECT_ARGS['min_expression'],
+            DEFAULT_LIGAND_EFFECT_ARGS['logfc_fdr'],
+            DEFAULT_LIGAND_EFFECT_ARGS['iterations'],
+            submission_button_clicks+1]  # Trigger the plotting callback to run on default values
+    raise PreventUpdate
 
 
 @callback(
