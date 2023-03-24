@@ -337,32 +337,30 @@ layout = [
 # If run as a script, compile the default plot
 if __name__ == '__main__':
     from viz.figures import DEFAULT_CIRCOS_ARGS, CIRCOS_SAVE_LOCATION
+    from viz.data import read_circos_file, read_interactions_file
+    from viz.web import make_circos_figure
+    import pickle
 
-    if not os.path.exists(CIRCOS_SAVE_LOCATION):
-        from viz.data import read_circos_file, read_ligand_receptor_file, read_interactions_file
-        from viz.web import make_circos_figure
-        import pickle
-
-        data = read_circos_file('sting', DEFAULT_CIRCOS_ARGS['inter_circos_fdr'])
-        cin_inter_data = read_interactions_file('cin', DEFAULT_CIRCOS_ARGS['inter_circos_fdr'])
-        sting_inter_data = read_interactions_file('sting', DEFAULT_CIRCOS_ARGS['inter_circos_fdr'])
-        cin_fig = make_circos_figure(None, 0,
+    data = read_circos_file('sting', DEFAULT_CIRCOS_ARGS['inter_circos_fdr'])
+    cin_inter_data = read_interactions_file('cin', DEFAULT_CIRCOS_ARGS['inter_circos_fdr'])
+    sting_inter_data = read_interactions_file('sting', DEFAULT_CIRCOS_ARGS['inter_circos_fdr'])
+    cin_fig = make_circos_figure(None, 0,
+                             data,
+                             cin_inter_data,
+                             DEFAULT_CIRCOS_ARGS['logfc_circos_fdr'],
+                             DEFAULT_CIRCOS_ARGS['circos_min_numsigi1'],
+                             DEFAULT_CIRCOS_ARGS['circos_min_numdeg'],
+                             DEFAULT_CIRCOS_ARGS['circos_min_ligand_logfc'],
+                             DEFAULT_CIRCOS_ARGS['genes'])
+    sting_fig = make_circos_figure(None, 1,
                                  data,
-                                 cin_inter_data,
+                                 sting_inter_data,
                                  DEFAULT_CIRCOS_ARGS['logfc_circos_fdr'],
                                  DEFAULT_CIRCOS_ARGS['circos_min_numsigi1'],
                                  DEFAULT_CIRCOS_ARGS['circos_min_numdeg'],
                                  DEFAULT_CIRCOS_ARGS['circos_min_ligand_logfc'],
                                  DEFAULT_CIRCOS_ARGS['genes'])
-        sting_fig = make_circos_figure(None, 1,
-                                     data,
-                                     sting_inter_data,
-                                     DEFAULT_CIRCOS_ARGS['logfc_circos_fdr'],
-                                     DEFAULT_CIRCOS_ARGS['circos_min_numsigi1'],
-                                     DEFAULT_CIRCOS_ARGS['circos_min_numdeg'],
-                                     DEFAULT_CIRCOS_ARGS['circos_min_ligand_logfc'],
-                                     DEFAULT_CIRCOS_ARGS['genes'])
 
-        # Dump the figure to a pickle file
-        with open(CIRCOS_SAVE_LOCATION, 'wb') as f:
-            pickle.dump([cin_fig, sting_fig], f)
+    # Dump the figure to a pickle file
+    with open(CIRCOS_SAVE_LOCATION, 'wb') as f:
+        pickle.dump([cin_fig, sting_fig], f)

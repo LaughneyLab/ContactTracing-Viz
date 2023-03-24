@@ -242,7 +242,7 @@ cython_debug/
 data/
 old_data/
 ct_viz_cache/
-*xlsx
+*.xlsx
 
 # Elastic Beanstalk Files
 .elasticbeanstalk/*
@@ -251,6 +251,19 @@ ct_viz_cache/
 
 !.ebextensions
 # We don't include this since we are using a Dockerrun.aws.json file
-Dockerfile
 !Dockerrun.aws.json
 *.md
+# Don't need to include any source files since we are deploying the built image
+*.py
+assets/
+pages/
+viz/
+.dockerignore
+Dockerfile
+environment.yml
+build_docker.sh
+requirements.txt
+run_docker.sh
+aws.sh
+.idea/
+.github/

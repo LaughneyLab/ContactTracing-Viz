@@ -412,35 +412,34 @@ layout = [
 # If run as a script, compile the default plot
 if __name__ == '__main__':
     from viz.figures import bipartite_graph, DEFAULT_INTERACTIONS_ARGS, INTERACTIONS_SAVE_LOCATION
-    if not os.path.exists(INTERACTIONS_SAVE_LOCATION):
-        from viz.data import read_interactions_file
-        import pickle
-        cin_interactions = read_interactions_file('cin', DEFAULT_INTERACTIONS_ARGS['bipartite_inter_fdr'])
-        sting_interactions = read_interactions_file('max', DEFAULT_INTERACTIONS_ARGS['bipartite_inter_fdr'])
+    from viz.data import read_interactions_file
+    import pickle
+    cin_interactions = read_interactions_file('cin', DEFAULT_INTERACTIONS_ARGS['bipartite_inter_fdr'])
+    sting_interactions = read_interactions_file('max', DEFAULT_INTERACTIONS_ARGS['bipartite_inter_fdr'])
 
-        cin_fig = bipartite_graph(
-            df=cin_interactions,
-            cell1=DEFAULT_INTERACTIONS_ARGS['first_celltype'],
-            cell2=DEFAULT_INTERACTIONS_ARGS['second_celltype'],
-            cell3=DEFAULT_INTERACTIONS_ARGS['third_celltype'],
-            numInteractions=DEFAULT_INTERACTIONS_ARGS['min_numsigi1_bipartite'],
-            min_logfc_bipartite=DEFAULT_INTERACTIONS_ARGS['min_logfc_bipartite'],
-            min_expression_bipartite=DEFAULT_INTERACTIONS_ARGS['min_expression_bipartite'],
-            logfc_fdr_bipartite_cutoff=float(DEFAULT_INTERACTIONS_ARGS['bipartite_logfc_fdr'].replace('fdr', '.')),
-            bidirectional=DEFAULT_INTERACTIONS_ARGS['bidirectional_bipartite']
-        )
+    cin_fig = bipartite_graph(
+        df=cin_interactions,
+        cell1=DEFAULT_INTERACTIONS_ARGS['first_celltype'],
+        cell2=DEFAULT_INTERACTIONS_ARGS['second_celltype'],
+        cell3=DEFAULT_INTERACTIONS_ARGS['third_celltype'],
+        numInteractions=DEFAULT_INTERACTIONS_ARGS['min_numsigi1_bipartite'],
+        min_logfc_bipartite=DEFAULT_INTERACTIONS_ARGS['min_logfc_bipartite'],
+        min_expression_bipartite=DEFAULT_INTERACTIONS_ARGS['min_expression_bipartite'],
+        logfc_fdr_bipartite_cutoff=float(DEFAULT_INTERACTIONS_ARGS['bipartite_logfc_fdr'].replace('fdr', '.')),
+        bidirectional=DEFAULT_INTERACTIONS_ARGS['bidirectional_bipartite']
+    )
 
-        sting_fig = bipartite_graph(
-            df=sting_interactions,
-            cell1=DEFAULT_INTERACTIONS_ARGS['first_celltype'],
-            cell2=DEFAULT_INTERACTIONS_ARGS['second_celltype'],
-            cell3=DEFAULT_INTERACTIONS_ARGS['third_celltype'],
-            numInteractions=DEFAULT_INTERACTIONS_ARGS['min_numsigi1_bipartite'],
-            min_logfc_bipartite=DEFAULT_INTERACTIONS_ARGS['min_logfc_bipartite'],
-            min_expression_bipartite=DEFAULT_INTERACTIONS_ARGS['min_expression_bipartite'],
-            logfc_fdr_bipartite_cutoff=float(DEFAULT_INTERACTIONS_ARGS['bipartite_logfc_fdr'].replace('fdr', '.')),
-            bidirectional=DEFAULT_INTERACTIONS_ARGS['bidirectional_bipartite']
-        )
+    sting_fig = bipartite_graph(
+        df=sting_interactions,
+        cell1=DEFAULT_INTERACTIONS_ARGS['first_celltype'],
+        cell2=DEFAULT_INTERACTIONS_ARGS['second_celltype'],
+        cell3=DEFAULT_INTERACTIONS_ARGS['third_celltype'],
+        numInteractions=DEFAULT_INTERACTIONS_ARGS['min_numsigi1_bipartite'],
+        min_logfc_bipartite=DEFAULT_INTERACTIONS_ARGS['min_logfc_bipartite'],
+        min_expression_bipartite=DEFAULT_INTERACTIONS_ARGS['min_expression_bipartite'],
+        logfc_fdr_bipartite_cutoff=float(DEFAULT_INTERACTIONS_ARGS['bipartite_logfc_fdr'].replace('fdr', '.')),
+        bidirectional=DEFAULT_INTERACTIONS_ARGS['bidirectional_bipartite']
+    )
 
-        with open(INTERACTIONS_SAVE_LOCATION, 'wb') as f:
-            pickle.dump([cin_fig, sting_fig], f)
+    with open(INTERACTIONS_SAVE_LOCATION, 'wb') as f:
+        pickle.dump([cin_fig, sting_fig], f)

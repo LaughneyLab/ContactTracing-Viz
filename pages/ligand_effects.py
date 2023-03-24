@@ -355,21 +355,19 @@ layout = [
 # If run as a script, compile the default plot
 if __name__ == '__main__':
     from viz.figures import pseudotime_interaction_propagation_graph, DEFAULT_LIGAND_EFFECT_ARGS, LIGAND_EFFECT_SAVE_LOCATION
+    import pickle
 
-    if not os.path.exists(LIGAND_EFFECT_SAVE_LOCATION):
-        import pickle
+    fig = pseudotime_interaction_propagation_graph(
+        effect_set=DEFAULT_LIGAND_EFFECT_ARGS['effect_set'],  # Calculate both sets if we decide to implement a selector
+        seed_cell=DEFAULT_LIGAND_EFFECT_ARGS['cell_type'],
+        seed_ligands=DEFAULT_LIGAND_EFFECT_ARGS['ligands'],
+        iterations=int(DEFAULT_LIGAND_EFFECT_ARGS['iterations']),
+        interaction_fdr_cutoff=float(DEFAULT_LIGAND_EFFECT_ARGS['interaction_fdr']),
+        min_logfc=float(DEFAULT_LIGAND_EFFECT_ARGS['min_logfc']),
+        min_expression=float(DEFAULT_LIGAND_EFFECT_ARGS['min_expression']),
+        logfc_fdr_cutoff=float(DEFAULT_LIGAND_EFFECT_ARGS['logfc_fdr']),
+        set_progress_callback=None
+    )
 
-        fig = pseudotime_interaction_propagation_graph(
-            effect_set=DEFAULT_LIGAND_EFFECT_ARGS['effect_set'],  # Calculate both sets if we decide to implement a selector
-            seed_cell=DEFAULT_LIGAND_EFFECT_ARGS['cell_type'],
-            seed_ligands=DEFAULT_LIGAND_EFFECT_ARGS['ligands'],
-            iterations=int(DEFAULT_LIGAND_EFFECT_ARGS['iterations']),
-            interaction_fdr_cutoff=float(DEFAULT_LIGAND_EFFECT_ARGS['interaction_fdr']),
-            min_logfc=float(DEFAULT_LIGAND_EFFECT_ARGS['min_logfc']),
-            min_expression=float(DEFAULT_LIGAND_EFFECT_ARGS['min_expression']),
-            logfc_fdr_cutoff=float(DEFAULT_LIGAND_EFFECT_ARGS['logfc_fdr']),
-            set_progress_callback=None
-        )
-
-        with open(LIGAND_EFFECT_SAVE_LOCATION, 'wb') as f:
-            pickle.dump([fig, None], f)
+    with open(LIGAND_EFFECT_SAVE_LOCATION, 'wb') as f:
+        pickle.dump([fig, None], f)

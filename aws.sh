@@ -4,10 +4,8 @@
 # Make sure ssh is set up with eb ssh --setup
 # Also make sure you have the AWS CLI installed https://aws.amazon.com/cli/
 # The application on EBS is configured to use the following server hardware:
-# 1. t2.micro (2 vCPU, 4GB RAM)
-# 2. t3a.medium (2 vCPU, 4GB RAM)
-# 3. t3.medium (2 vCPU, 4GB RAM)
-# 4. t3a.large (2 vCPU, 8GB RAM)
+# 1. t3a.large (2 vCPU, 8GB RAM)
+# 2. t3.large (2 vCPU, 8GB RAM)
 
 # When datasets are updated and figures are precompiled, you must update the Amazon EFS
 # Use https://us-east-2.console.aws.amazon.com/transfer#/ to create and instance so that you can transfer the data to and from
@@ -18,7 +16,6 @@
 
 # Next, you must update the EFS
 # The .ebextensions script should mount it to my_efs
-# And the Dockerfile will copy the data from my_efs/data/compiled to /app/data/compiled
 # More info here: https://github.com/oreaba/scripts/tree/main/mount_efs_beanstalk
 # Additionally there is a ebextensions script to allow for more time for the docker container to build
 
@@ -31,7 +28,7 @@ aws ecr-public get-login-password --region us-east-1 | docker login --username A
 # Build locally first
 docker build --compress --rm -t ct-site .
 
-# To run locally: docker run -v C:\Users\austi\PycharmProjects\ContactTracing-Viz\data:/app/data -p 8000:8000 ct-site
+# To run locally: docker run -v "$(pwd)/data":/app/data -p 8000:8000 ct-site
 
 # Tag the build
 docker tag ct-site:latest public.ecr.aws/d6q7u0s0/ct-site:latest
@@ -39,11 +36,11 @@ docker tag ct-site:latest public.ecr.aws/d6q7u0s0/ct-site:latest
 # Push the build to ECR
 docker push public.ecr.aws/d6q7u0s0/ct-site:latest
 
-# Clean all local docker data
-docker system prune -a
-
 # Deploy the build to EBS
 eb deploy --timeout 30
+
+# Clean all local docker data
+docker system prune -a
 
 # We can follow the logs with:
 # eb ssh -c "tail -f /var/log/eb-engine.log"
