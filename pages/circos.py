@@ -4,6 +4,8 @@ import dash
 from dash import html, callback, Output, Input, State, dcc
 import dash_bootstrap_components as dbc
 
+from viz.docs import circos_help, interaction_effects_def, diffusion_component_def, differential_abundance_def, \
+    deg_test_def, ligand_log2fc_def, conditions_def
 from viz.web import interactive_panel, wrap_icon, control_panel, figure_output, control_panel_element, \
     make_custom_slider, make_fdr_slider
 
@@ -32,29 +34,53 @@ def build_interface() -> list:
     controls = control_panel("submit-button-circos",
         [
             control_panel_element("Interaction Effect FDR Cutoff",
-                                  "FDR-adjusted requirements for interaction effects.",
+                                  [
+                                      "FDR-adjusted requirements for ",
+                                      *interaction_effects_def("interaction effects"),
+                                      "."
+                                  ],
                                   make_fdr_slider('inter_circos_fdr', DEFAULT_CIRCOS_ARGS['inter_circos_fdr'])),
-            control_panel_element("Ligand Log2FC FDR Cutoff", "FDR-adjusted requirements for interaction effects.",
+            control_panel_element("Ligand Log2FC FDR Cutoff",
+                                  [
+                                      "FDR-adjusted requirements for ",
+                                      *ligand_log2fc_def("ligand differential expression"),
+                                      "."
+                                  ],
                                   make_fdr_slider('logfc_circos_fdr', DEFAULT_CIRCOS_ARGS['logfc_circos_fdr'])),
         ], [
-             control_panel_element('Minimum Interaction Effect', 'Minimum number of significant interactions for a receptor to be included.',
-                                  make_custom_slider(
-                                      id='circos_min_numsigi1',
-                                      min=0,
-                                      max=100,  # Fill in later
-                                      value=DEFAULT_CIRCOS_ARGS['circos_min_numsigi1'],
-                                      step=1
-                                  )),
-            control_panel_element('Minimum Affected Downstream Genes', 'Minimum number of differentially expressed genes conditioned on a target gene.',
-                                  make_custom_slider(
-                                      id='circos_min_numdeg',
-                                      min=0,
-                                      max=100,  # Fill in later
-                                      value=DEFAULT_CIRCOS_ARGS['circos_min_numdeg'],
-                                      step=1
-                                  ))
+             control_panel_element('Minimum Interaction Effect',
+                                   [
+                                       'Minimum number of significant ',
+                                       *interaction_effects_def("interaction effects"),
+                                       ' for a receptor to be included.'
+                                   ],
+                                   make_custom_slider(
+                                       id='circos_min_numsigi1',
+                                       min=0,
+                                       max=100,  # Fill in later
+                                       value=DEFAULT_CIRCOS_ARGS['circos_min_numsigi1'],
+                                       step=1
+                                   )),
+             control_panel_element('Minimum Affected Downstream Genes',
+                                   [
+                                       'Minimum number of ',
+                                       *deg_test_def('differentially expressed genes conditioned on a target gene'),
+                                       '.'
+                                   ],
+                                   make_custom_slider(
+                                       id='circos_min_numdeg',
+                                       min=0,
+                                       max=100,  # Fill in later
+                                       value=DEFAULT_CIRCOS_ARGS['circos_min_numdeg'],
+                                       step=1
+                                   ))
         ], [
-            control_panel_element('Chord Minimum Ligand abs(Log2FC)', 'The minimum ligand log2FC required for a chord to be drawn.',
+            control_panel_element('Chord Minimum Ligand abs(Log2FC)',
+                                  [
+                                      'The minimum ',
+                                       *ligand_log2fc_def('ligand log2FC'),
+                                       ' required for a chord to be drawn.'
+                                  ],
                                   make_custom_slider(
                                       id='circos_min_ligand_logfc',
                                       min=0,
@@ -63,7 +89,7 @@ def build_interface() -> list:
                                       step=0.01
                                   )),
             control_panel_element("Genes of Interest",
-                                  'Comma-separated list of genes to highlight interactions for in the plot.',
+                                  'Comma-separated list of genes to highlight in the plot.',
                                   dbc.Input(
                                       id='genes',
                                       autofocus=True,
@@ -71,11 +97,16 @@ def build_interface() -> list:
                                       placeholder='Example: Ccl2,Apoe'
                                   ))
         ], [
-            control_panel_element("Interaction Set", "Biological condition to compare.",
+            control_panel_element("Interaction Set",
+                                  [
+                                      "The ",
+                                      *conditions_def("biological condition"),
+                                      " to compare."
+                                  ],
                                   dbc.RadioItems(
                                       id='circos_set',
                                       options=[{'label': 'CIN-Dependent Effect', 'value': 'cin'},
-                                               {'label': 'CIN & STING Max Effect', 'value': 'sting'}],
+                                               {'label': 'CIN/STING Max Effect', 'value': 'sting'}],
                                       value=DEFAULT_CIRCOS_ARGS['circos_set'],
                                       persistence=False
                                   )),
@@ -92,7 +123,9 @@ def build_interface() -> list:
                                           width='auto', align='left'),
                                           dbc.Col(
                                               dbc.Button(wrap_icon('fas fa-rotate-left', 'Reset'),
-                                                         id='reset_default_circos_button', color='secondary', size='lg', className='float-end dark', n_clicks=0),
+                                                         id='reset_default_circos_button',
+                                                         color='secondary', size='lg',
+                                                         className='float-end dark', n_clicks=0),
                                           align='right', width='auto')
                                       ]),
                                       className='text-center d-grid gap-2'))
@@ -101,12 +134,20 @@ def build_interface() -> list:
 
     results = figure_output(
         title="Interactive Circos Plot",
-        footer="Layers from outside ring to center: Cell Type, Diffusion Component Value, Differential Abundance, Number of significant interactions, Strongest ligand/receptor interactions",
+        footer=[
+            "Layers from outside ring to center: Cell Type, ",
+            *diffusion_component_def("Diffusion Component 1"),
+            ", ",
+            *differential_abundance_def("Differential Abundance"),
+            ", Number of significant ",
+            *interaction_effects_def("interaction effects"),
+            ", ligand/receptor interactions."
+        ],
         element=html.Div(
             id="circos-graph-holder",
             children=default_plots[1] if default_plots is not None else None
         ),
-        help_info=make_help_info()
+        help_info=circos_help()
     )
 
     return [
@@ -114,99 +155,6 @@ def build_interface() -> list:
         results,
         dcc.Store(id='cin_circos_plot', storage_type='memory', data=[default_plots[0] if default_plots is not None else None]),
         dcc.Store(id='sting_circos_plot', storage_type='memory', data=[default_plots[1] if default_plots is not None else None])
-    ]
-
-
-def make_help_info():
-    return [
-        html.H5(["The ",
-                 html.I('ContactTracing'),
-                 " Circos plot aggregates all relevant interaction information into a single figure."]),
-        html.Hr(),
-        html.P(html.H6(html.Strong("Filter Options"))),
-        html.Ul([
-            html.Li(html.P([
-                "Interaction Effect FDR Cutoff: ",
-                html.I("ContactTracing"),
-                " identifies the downstream genes that have induced expression shifts from the activation of a receptor"
-                " within a given cell of interest; this modulates the threshold for classifying induced expression"
-                " change as significant after a Benjamini-Hochberg FDR correction. The default value of 0.25 reflects"
-                " what was chosen for evaluating the intersection between CIN and STING-dependent effects. A cutoff"
-                " of 0.05 might be more sensible when evaluating CIN-dependent effects on its own."
-            ])),
-            html.Li(html.P([
-                "Ligand Log2FC FDR Cutoff: ",
-                html.I("ContactTracing"),
-                " requires differential availability of a ligand across conditions to identify condition-specific"
-                " effects from the Tumor Microenvironment. This cutoff represents the threshold for identifying whether"
-                " a ligand's differential expression between conditions significantly differs from 0 after a"
-                " Benjamini-Hochberg FDR correction."
-            ])),
-            html.Li(html.P([
-                "Minimum Interaction Effect: As ",
-                html.I("ContactTracing"),
-                " ContactTracing identifies the condition-specific effects of each receptor's activation by evaluating "
-                "all possible genes, this value indicates a filter for the minimum number of condition-specific "
-                "activations of genes by each given receptor using the selected Interaction Effect FDR Cutoff. The "
-                "interaction effect, in part, determines whether a receptor has interactions depicted in the "
-                "\"ribbons\" of the Circos plot."
-            ])),
-            html.Li(html.P([
-                "Minimum Affected Downstream Genes: The number of differentially expressed genes in response to"
-                " receptor activation. This value is similar to the Minimum Interaction Effect parameter, but rather"
-                " than requiring condition-specific responses, this measures the strength of the Log2FC induced by a"
-                " receptor's activation. Note that the FDR-adjusted p-value threshold is the same as the Minimum"
-                " Interaction Effect parameter. "
-            ])),
-            html.Li(html.P([
-                "Chord Minimum Ligand abs(Log2FC): Whereas the Ligand Log2FC FDR Cutoff determines whether genes get "
-                "included in the plot, this parameter only affects whether a ribbon is drawn to indicate strong "
-                "interaction effects within the Circos figure. Increasing this value leads to fewer ribbons drawn "
-                "between ligands and receptors, while the opposite is true if decreased."
-            ])),
-            html.Li(html.P([
-                "Genes of Interest: If specified, the chords drawn corresponding to a ligand or receptor listed will "
-                "be emphasized (below is an example). Multiple genes can be included by separating names with commas. ",
-                html.Em("IMPORTANT: This field is CASE SENSITIVE.")
-            ])),
-            html.Li(html.P([
-                "Interaction Set: We have evaluated both CIN-dependent and CIN & STING-dependent interaction effects. "
-                "This toggle lets users instantly see the plot under both conditions. Note that the CIN & STING "
-                "effects represent the maximum value between shared interactions across both conditions and require "
-                "interaction effects to have the same directionality."
-            ]))
-        ]),
-        html.P(html.H6(html.Strong("How to Interpret the Circos Plot"))),
-        html.P("The final figure is very information-dense, so it can be challenging to interpret initially. "
-               "Thus, we will explore the diagram layer by layer. "),
-        html.P("First, we have sections of the rings grouped by cell type annotation. NOTE: If a cell type name is too "
-               "large, it is excluded. However, it is possible to identify the cell type by hovering over each section "
-               "of the plot in the browser."),
-        html.Div(html.Img(src=dash.get_asset_url('circos_help1.png'), style={'width': '40%', 'align': 'center'}, alt="Cell Types", className='mx-auto'), className='text-center'),
-        html.P("The next layer represents the value of the first Diffusion Component, as calculated by Palantir. This "
-               "value represents the euclidean space embedding of the differential expression score (the Log2FC "
-               "between conditions multiplied by the negative Log10-transformed p-value) of a given gene for a cell "
-               "type. The diffusion component allows for a consistent ordering of genes along the Circos rings."),
-        html.Div(html.Img(src=dash.get_asset_url('circos_help2.png'), style={'width': '40%', 'align': 'center'}, alt="Diffusion Components", className='mx-auto'), className='text-center'),
-        html.P("Following Diffusion Component 1, the next ring represents the gene-wise differential abundance of a "
-               "gene between conditions. The differential abundance is calculated as the Pearson correlation "
-               "coefficient of each gene's imputed expression across cells against the corresponding cell type's "
-               "differential abundance across conditions as calculated by MILO. This value is then normalized to "
-               "range from -1 to 1."),
-        html.Div(html.Img(src=dash.get_asset_url('circos_help3.png'), style={'width': '40%', 'align': 'center'}, alt="Differential Abundance", className='mx-auto'), className='text-center'),
-        html.P("The final ring represents a histogram scaled to the number of significant interaction effects for each "
-               "receptor."),
-        html.Div(html.Img(src=dash.get_asset_url('circos_help4.png'), style={'width': '40%', 'align': 'center'}, alt="Interaction Effects", className='mx-auto'), className='text-center'),
-        html.P("Lastly, all interactions that meet the selected requirements and have the same directionality are "
-               "depicted as ribbons connecting each receptor to its associated ligands across cell types. Depending on "
-               "the number of ribbons, it may be difficult to read some gene labels. Therefore it is possible to hover "
-               "over each ribbon to get precise details. The color of these ribbons reflects a ligand's Log2FC between "
-               "conditions, and the thickness of the ribbon is relative to the number of significant interaction "
-               "effects for the receptor."),
-        html.Div(html.Img(src=dash.get_asset_url('circos_help5.png'), style={'width': '40%', 'align': 'center'}, alt="Ribbons", className='mx-auto'), className='text-center'),
-        html.P("Additionally, the ribbons can be filtered to emphasize specific ligands or receptors of interest using "
-               "the aforementioned \"Genes of Interest\" field."),
-        html.Div(html.Img(src=dash.get_asset_url('circos_help6.png'), style={'width': '40%', 'align': 'center'}, alt="Ribbons Highlighted", className='mx-auto'), className='text-center')
     ]
 
 

@@ -1,4 +1,5 @@
 from typing import List, Tuple, Optional
+from uuid import uuid4
 
 import dash
 import dash_bootstrap_components as dbc
@@ -11,6 +12,19 @@ from dash.exceptions import PreventUpdate
 
 from viz.util import ColorTransformer, celltype_to_colors, saturate_color, smooth_step, \
     brighten_color, brighten_and_saturate_color
+
+
+def make_tooltip(content, tooltip_content):
+    # uuid4 is used to generate a unique id for the tooltip
+    tooltip_id = str(uuid4())
+    content_span = html.Span(content,
+                             id=tooltip_id,
+                             style={'display': 'inline', 'text-decoration': 'underline dotted', 'cursor': 'help'})
+    tooltip = dbc.Tooltip(tooltip_content,
+                          target=tooltip_id,
+                          placement='auto')
+
+    return content_span, tooltip
 
 
 def make_fdr_slider(id: str, value) -> html.Div:
@@ -113,7 +127,7 @@ def control_panel(submit_btn_id: str, *element_rows: List[dbc.Card]) -> html.Div
 
     options_accordion = dbc.Accordion(
         dbc.AccordionItem(dbc.Container(rows[:-1], fluid=True), title="Figure Options", item_id='options'),
-        start_collapsed=False, flush=False
+        start_collapsed=False, flush=False, persistence=False
     )
 
     if submit_btn_id:
