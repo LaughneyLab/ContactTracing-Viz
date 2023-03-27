@@ -250,4 +250,4 @@ old_data/
 !.elasticbeanstalk/*.cfg.yml
 !.elasticbeanstalk/*.global.yml
 
-*.xlsx
+.xlsx

@@ -1,11 +1,10 @@
-import os
-
 import dash
 import dash_bootstrap_components as dbc
-from dash import html, callback, Output, Input, dcc, State
+from dash import html, callback, Output, Input
 from dash.exceptions import PreventUpdate
 
-from viz.web import jumbotron, wrap_icon, make_data_redirect_buttons
+from viz.docs import home_welcome_info, home_dataset_descriptions, home_plot_descriptions, home_misc_info
+from viz.web import jumbotron
 
 dash.register_page(__name__,
                    path='/',
@@ -13,76 +12,44 @@ dash.register_page(__name__,
                    order=0)
 
 
-def make_data_summary(file_path: str, file_name: str, custom=False):
-    return dbc.Container([
-            dbc.Card([
-                dbc.CardHeader(
-                    dbc.Tabs([
-                        dbc.Tab(label='Welcome', tab_id='default', labelClassName="text-muted"),
-                        dbc.Tab(label='Dataset Information', tab_id='dataset', labelClassName="text-muted"),
-                        dbc.Tab(label='Visualization Information', tab_id='plot', labelClassName="text-muted"),
-                        dbc.Tab(label='Miscellaneous', tab_id='misc', labelClassName="text-muted"),
-                    ], id='home-tabs', active_tab='default', persistence=False)
-                ),
-                dbc.CardBody([
-                    html.H4(id='home-tab-title', className='card-title'),
-                    html.P(id='home-tab-content', className='card-text'),
-                ])
-            ], color="information", inverse=False),
-        ])
-
-
-DEFAULT_TAB = [
-    # TODO: Images of example plots
-    html.P(["CIN is a hallmark of human cancer that is associated with metastasis and immune evasion. Through the "
-           "development of ",
-            html.I("ContactTracing"),
-            "– a fundamentally new, systems level approach that exploits inter- and intra-sample variability to infer "
-            "the effect of ligand-receptor-mediated interactions on the tumor microenvironment, we unveil how "
-            "CIN-induced chronic activation of the cGAS-STING innate immune pathway promotes cancer progression in a "
-            "tumor cell non-autonomous manner. Use this dashboard to explore how CIN-induced STING signaling in cancer "
-            "cells shapes the TME. Or run on your own data (",
-            html.A("here", href=""),  # FIXME
-            ")!"
-            ]),
-    html.P(["This interactive web tool for exploring the ContactTracing-generated data is built using the ",
-            html.A("Plotly Dash framework", href="https://dash.plotly.com/"),
-            ". For additional information, please navigate the tabs above."]),
-    html.P([
-        html.H5("Included Visualizations"),
-        make_data_redirect_buttons()
-    ]),
-    html.P([html.H5("Citation"), dbc.Card("TBA", body=True)])
-]
-DATASET_DESCRIPTIONS = [
-    html.P("The included dataset is a mouse model of chromosomally unstable cancer (CIN) as described in our associated "
-           "publication..."),
-]
-PLOT_DESCRIPTIONS = [
-    html.P("The ContactTracing toolkit produces a variety of plots that are used to interpret the results of the "
-              "transcriptional profiling. These plots are described below."),
-    html.H5(html.A("Circos Plot", href="/circos")),
-    html.P("...."),
-    html.H5(html.A("Cell Type Interactions Plot", href="/interactions")),
-    html.P("...."),
-    html.H5(html.A("Downstream Ligand Effects Plot", href="/ligand-effects")),
-    html.P("....")
-]
-MISC_INFO = [
-    html.P("Additional information about ContactTracing, the data presented, and contacts can be found below."),
-    html.H5("Contact Information")
-]
-
-
 layout = [
     jumbotron(
         "ContactTracing Interactive Visualizer",
         "This is a web application that allows for ContactTracing outputs to be easily interpreted.",
         dbc.Row([
-            dbc.Container(make_data_summary('builtin', 'Mouse CIN'), id='main-content-container', fluid=True)
+            dbc.Container(dbc.Container([
+                dbc.Card([
+                    dbc.CardHeader(
+                        dbc.Tabs([
+                            dbc.Tab(label='Welcome', tab_id='default', labelClassName="text-muted"),
+                            dbc.Tab(label='Dataset Information', tab_id='dataset', labelClassName="text-muted"),
+                            dbc.Tab(label='Visualization Information', tab_id='plot', labelClassName="text-muted"),
+                            dbc.Tab(label='Miscellaneous', tab_id='misc', labelClassName="text-muted"),
+                        ], id='home-tabs', active_tab='default', persistence=False)
+                    ),
+                    dbc.CardBody([
+                        html.H4(id='home-tab-title', className='card-title'),
+                        html.Hr(),
+                        html.P(id='home-tab-content', className='card-text'),
+                    ])
+                ], color="information", inverse=False),
+            ]), id='main-content-container', fluid=True)
         ])
     ),
 ]
+
+
+@callback(
+    Output('contact-info', "children"),
+    Input('contact-info-button', "n_clicks")
+)
+def show_contact_info(n_clicks):
+    if n_clicks > 0:
+        return dbc.Card([
+            html.P(['Dr. Ashley Laughney: ',
+                   html.A('Ashley.laughney@gmail.com', href='mailto:Ashley.laughney@gmail.com')]),
+            html.P(["Austin Varela: ", html.A('aav4003@med.cornell.edu', href='mailto:aav4003@med.cornell.edu')])
+        ], body=True)
 
 
 @callback(
@@ -92,12 +59,16 @@ layout = [
 )
 def update_tab_content(active_tab):
     if active_tab == 'default':
-        return [html.I("ContactTracing:"), " the impact of chromosomal instability (CIN) on the tumor ecosystem"], DEFAULT_TAB
+        return [html.I("ContactTracing"), " identifies impact of chromosomal instability (CIN) on the tumor ecosystem."], \
+            home_welcome_info()
     elif active_tab == 'dataset':
-        return 'Included datasets for visualization', DATASET_DESCRIPTIONS
+        return [html.I("ContactTracing"), " is a unique approach for profiling cellular responses to the tumor microenvironment."], \
+            home_dataset_descriptions()
     elif active_tab == 'plot':
-        return 'Interpreting ContactTracing plots', PLOT_DESCRIPTIONS
+        return [html.I("ContactTracing"), " produces information-rich data on condition-specific genetic responses."], \
+            home_plot_descriptions()
     elif active_tab == 'misc':
-        return 'Additional Information', MISC_INFO
+        return ['Additional information on ', html.I("ContactTracing"), ' and this website.'], \
+            home_misc_info()
     else:
         raise PreventUpdate

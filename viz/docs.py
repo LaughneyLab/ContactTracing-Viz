@@ -1,8 +1,143 @@
 import dash
-from dash import html, dcc
+from dash import html, dcc, callback, Output, Input
 import dash_bootstrap_components as dbc
 
-from viz.web import make_tooltip
+from viz.web import make_tooltip, make_data_redirect_buttons, wrap_icon
+
+
+def home_welcome_info():
+    return [
+        html.Img(src=dash.get_asset_url("website_header.png"), style={"width": "50%"}, alt="ContactTracing Header"),
+        html.Br(),
+        html.P(["CIN is a hallmark of human cancer that is associated with metastasis and immune evasion. Through the "
+               "development of ",
+                html.I("ContactTracing"),
+                "– a fundamentally new, systems level approach that exploits inter- and intra-sample variability to infer "
+                "the effect of ligand-receptor-mediated interactions on the tumor microenvironment, we unveil how "
+                "CIN-induced chronic activation of the cGAS-STING innate immune pathway promotes cancer progression in a "
+                "tumor cell non-autonomous manner. Use this dashboard to explore how CIN-induced STING signaling in cancer "
+                "cells shapes the TME. Or run on your own data (",
+                html.A("here", href=""),  # FIXME
+                ")!"
+                ]),
+        html.P([
+            html.H5(html.I("Included Visualizations")),
+            make_data_redirect_buttons()
+        ]),
+        html.P([html.H5(html.I("Citation")),
+                dbc.Card("TBA", body=True)])
+    ]
+
+
+def home_dataset_descriptions():
+    return [
+        html.Div(html.Img(src=dash.get_asset_url("contacttracing_summary.png"), style={"width": "25%"},
+                 alt="ContactTracing Summary"),className='text-center'),
+        html.P(["By incorporating intrinsic cellular heterogeneity, ",
+                html.I("ContactTracing"),
+                " can identify highly specific and biologically meaningful transcriptional responses to conditions in "
+                "the microenvironment. These responses are detected by using a nested set of comparisons to select and "
+                "combine: "]),
+        html.Ol([
+            html.Li("Ligands that are differentially available between conditions."),
+            html.Li("Corresponding receptors selective expressed in a given cell type under a given condition."),
+            html.Li("Induced downstream gene expression changes upon activating these receptors by their ligands within a condition.")
+        ]),
+        html.Div(html.Img(src=dash.get_asset_url("contacttracing_summary2.png"), style={"width": "25%"},
+                 alt="ContactTracing Summary 2"), className='text-center'),
+        html.P([
+            "The ",
+            html.I("ContactTracing"),
+            " approach was applied to the two datasets available for viewing on this website (for a more in-depth description, please refer to our paper):"
+        ]),
+        html.P([
+            html.H5(html.I("Mouse model of chromosomal instability (CIN).")),
+            "10X Chromium scRNA-seq data was collected from a murine model for metastatic breast cancer (seven samples "
+            "were under the high-CIN condition, while the remaining four were under the low-CIN condition)."
+        ]),
+        html.P([
+            html.H5(html.I("Mouse models of chromosomal instability versus STING knockout (STING-KO).")),
+            "In addition to a high-CIN versus low-CIN comparison, we compared the seven high-CIN mice with wild-type "
+            "STING to two mice with a STING knockout. This comparison allows us to identify the effects of the TME "
+            "that are both STING-dependent within the chromosomally unstable tumors."
+        ]),
+        html.P([
+            html.H5(html.I("Intersectional comparison of CIN- and STING-dependent effects (CIN/STING Max Effects).")),
+            "To get a systems-level view of how chromosomal instability and STING both affect the TME, we select the "
+            "interactions that are identified by ",
+            html.I("ContactTracing"),
+            " in both the CIN and STING-KO comparisons. The resultant interaction sets are then further analyzed by "
+            "selecting the maximum value of each respective aggregate statistic across conditions. This dataset "
+            "represents the default interaction set visualized by the Circos and Cell Type Interactions plots."
+        ])
+    ]
+
+
+def home_plot_descriptions():
+    return [
+        html.P(["Similarly to many scRNA-seq cellular communication toolkits, ",
+                html.I("ContactTracing"),
+                " is able to identify specific ligand/receptor pairs that are significantly activated within a "
+                "single-cell experiment. However, ",
+                html.I("ContactTracing"),
+                " can capture more subtle and specific interactions within the TME by comparing experimental "
+                "conditions. Additionally, unlike other cellular crosstalk profilers, ",
+                html.I("ContactTracing"),
+                " can identify how these interactions transcriptionally affect downstream genes. Below is a brief "
+                "overview of the figures that allow researchers to interpret the high dimensional output of ",
+                html.I("ContactTracing"),
+                ":"]),
+        html.H5(html.I(html.A("Circos Plot", href="/circos"))),
+        html.Div(html.Img(src=dash.get_asset_url("circos_help.png"), style={"width": "33%"}, alt="Circos Plot"),className='text-center'),
+        html.P(["The Circos plot summarizes all condition-specific interactions between cells in the TME as identified "
+                "by ",
+                html.I("ContactTracing"),
+                ". The ribbons highlight the strongest ligand/receptor interactions across cell types. The Circos "
+                "diagram can be helpful for rapid hypothesis generation from the data."]),
+        html.H5(html.I(html.A("Cell Type Interactions Plot", href="/interactions"))),
+        html.Div(html.Img(src=dash.get_asset_url("pairwise_help2.png"), style={"width": "15%"}, alt="Cell Type Interactions Plot"),className='text-center'),
+        html.P(["The pairwise cell type interactions plot highlights the condition-specific signals sent by a donor "
+                "cell type (emitting ligands) to a target cell type (expressing receptors). This figure gives a "
+                "focused view of cell-cell interactions of interest."]),
+        html.H5(html.I(html.A("Downstream Ligand Effects Plot", href="/ligand-effects"))),
+        html.Div(html.Img(src=dash.get_asset_url("ligand_effects_help3.png"), style={"width": "15%"}, alt="Downstream Ligand Effects Plot"), className='text-center'),
+        html.P("This figure illustrates the downstream effects of a ligand within the TME. Given a donor cell type and "
+               "ligands of interest, it is possible to visualize each of the receptors that are activated in a "
+               "CIN-dependent manner and how these receptors induce cascading transcriptional responses throughout "
+               "the microenvironment.")
+    ]
+
+
+def home_misc_info():
+    contact_info_button = dbc.Button(wrap_icon("fas fa-envelope", "View Email"), color="info", n_clicks=0, size='lg', id='contact-info-button')
+    contact_div = html.Div([], id="contact-info")
+
+    return [
+        html.P(["Below are some details regarding the implementation of ",
+                html.I("ContactTracing"),
+                " and the dashboards presented on this website. For more details, please refer to our paper."]),
+        html.H5(html.I("ContactTracing Information")),
+        html.P([html.I("ContactTracing"),
+                " uses the ligand/receptor pairing databases from ",
+                html.A("CellTalkDB", href="http://tcm.zju.edu.cn/celltalkdb/download.php"),
+                " and ",
+                html.A("CellphoneDB", href="https://www.cellphonedb.org/database.html"),
+                ". In addition, the interaction tests are implemented using the ",
+                html.A("MAST framework", href="https://rglab.github.io/MAST/"),
+                ", which fits a zero-inflated hurdle model using our model design specifications to the scRNA-seq "
+                "expression counts data. "]),
+        html.H5(html.I("Website Information")),
+        html.P(["The website is implemented using the ",
+                html.A("Plotly Dash framework", href="https://dash.plotly.com/"),
+                ", using the pre-computed ",
+                html.I("ContactTracing"),
+                " analysis data from our corresponding paper. This website aims to emulate a few of the figures "
+                "presented in our work but allows for user interactivity. If any issues are encountered with this "
+                "site, or there are any other concerns, please contact us using the information below!"]),
+        html.H5(html.I("Contact Information")),
+        html.P(contact_info_button),
+        html.P(contact_div)
+    ]
 
 
 def conditions_def(text):
