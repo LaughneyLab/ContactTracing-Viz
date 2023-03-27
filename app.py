@@ -57,13 +57,6 @@ if callback_manager is None:
         shutil.rmtree('./ct_viz_cache')
     callback_manager = DiskcacheManager(Cache('./ct_viz_cache'), cache_by=[lambda: launch_uuid], expire=LONG_CALLBACK_EXPIRY)
 
-"""
-font-family: 'Courier Prime', monospace;
-font-family: 'IBM Plex Mono', monospace;
-font-family: 'Noto Sans', sans-serif;
-font-family: 'Source Code Pro', monospace;
-"""
-
 
 # Custom style made with https://bootstrap.build/ based on FLATLY
 STYLESHEET = "bootstrap.min.css"
@@ -118,7 +111,6 @@ def access_code_page():
     @dash.callback(
         Output('access-wrapper', 'children'),
         Output('access-code-entered', 'data'),
-        Output('access-code', 'value'),
         Input('access-modal-close', 'n_clicks'),
         Input('access-code', 'n_submit'),
         State('access-code', 'value'),
@@ -126,10 +118,10 @@ def access_code_page():
     )
     def access_modal_close(n_clicks, n_submit, code, was_entered):
         if (n_clicks is not None and n_clicks < 1) and (n_submit is not None and n_submit < 1) and not was_entered:
-            return access_modal, False, code
+            return access_modal, False
         if code == CODE or was_entered:
-            return None, True, code
-        return access_modal, False, code
+            return None, True
+        return access_modal, False
 
     return container
 

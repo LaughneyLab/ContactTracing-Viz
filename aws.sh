@@ -11,7 +11,7 @@
 # Use https://us-east-2.console.aws.amazon.com/transfer#/ to create and instance so that you can transfer the data to and from
 # https://docs.aws.amazon.com/transfer/latest/userguide/transfer-file.html#openssh
 # Enter this directory, run the following command:
-# sftp -i s-27f54185507b415fb hello@s-27f54185507b415fb.server.transfer.us-east-2.amazonaws.com
+# sftp -i s-xxxx yyyy@s-xxxxb.server.transfer.us-east-2.amazonaws.com
 # Then run: put -r data
 
 # Next, you must update the EFS
