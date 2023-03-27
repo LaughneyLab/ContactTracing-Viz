@@ -106,9 +106,30 @@ def control_panel_element(title, description, input, footer=None, outline=True) 
                     color='light')
 
 
-def control_panel(*element_rows: List[dbc.Card]) -> html.Div:
-    return html.Div(
-        [dbc.Row(dbc.CardGroup(cols)) for cols in element_rows],
+def control_panel(submit_btn_id: str, *element_rows: List[dbc.Card]) -> html.Div:
+    rows = [dbc.Row(dbc.CardGroup(cols)) for cols in element_rows]
+    # Add all rows to a container that will be within an Accordion except for the
+    # last row (which contains the submit button!)
+
+    options_accordion = dbc.Accordion(
+        dbc.AccordionItem(dbc.Container(rows[:-1], fluid=True), title="Figure Options", item_id='options'),
+        start_collapsed=False, flush=False
+    )
+
+    if submit_btn_id:
+        @callback(
+            Output(options_accordion, 'active_item'),
+            Input(submit_btn_id, 'n_clicks')
+        )
+        def hide_options(n_clicks):
+            if n_clicks and n_clicks > 0:
+                return []
+            raise PreventUpdate
+
+    return html.Div([
+        options_accordion,
+        rows[-1]
+    ],
         className='mb-3'
     )
 

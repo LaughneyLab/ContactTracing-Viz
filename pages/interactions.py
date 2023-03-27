@@ -29,7 +29,7 @@ def build_interface() -> list:
     except:
         pass
 
-    controls = control_panel(
+    controls = control_panel("submit-button-bipartite",
         [
             control_panel_element("Interaction Effect FDR Cutoff", "FDR-adjusted requirements for interaction effects.",
                                   make_fdr_slider('bipartite_inter_fdr',

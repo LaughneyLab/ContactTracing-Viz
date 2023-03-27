@@ -3,6 +3,10 @@ body > div.circos-tooltip {
 }
 
 .slider_text_input {
-    max-width: 19.6% !important;
-    flex: 0 0 19.6% !important;
+    max-width: 20.25% !important;
+    flex: 0 0 20.25% !important;
+}
+
+.accordion-body {
+    padding: 1rem 0 !important;
 }

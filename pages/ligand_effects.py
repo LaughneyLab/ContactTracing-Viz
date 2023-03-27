@@ -29,7 +29,7 @@ def build_interface() -> list:
     except:
         pass
 
-    controls = control_panel(
+    controls = control_panel("submit_button",
         [
             control_panel_element('Emitting Cell Type', 'Select the initial cell type.',
                                   dbc.Select(

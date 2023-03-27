@@ -29,9 +29,10 @@ def build_interface() -> list:
     except:
         pass
 
-    controls = control_panel(
+    controls = control_panel("submit-button-circos",
         [
-            control_panel_element("Interaction Effect FDR Cutoff", "FDR-adjusted requirements for interaction effects.",
+            control_panel_element("Interaction Effect FDR Cutoff",
+                                  "FDR-adjusted requirements for interaction effects.",
                                   make_fdr_slider('inter_circos_fdr', DEFAULT_CIRCOS_ARGS['inter_circos_fdr'])),
             control_panel_element("Ligand Log2FC FDR Cutoff", "FDR-adjusted requirements for interaction effects.",
                                   make_fdr_slider('logfc_circos_fdr', DEFAULT_CIRCOS_ARGS['logfc_circos_fdr'])),
