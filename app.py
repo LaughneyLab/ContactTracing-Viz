@@ -9,7 +9,7 @@ import dash_bootstrap_components as dbc
 from dash.exceptions import PreventUpdate
 
 from data.config import LONG_CALLBACK_EXPIRY
-
+from viz.web import wrap_icon
 
 # Workaround for dill crashes: Ref: https://github.com/uqfoundation/dill/issues/332#issuecomment-908826972
 try:
@@ -139,7 +139,8 @@ layout = html.Div([
                     style={'textDecoration': 'none'}  # Hide hyperlink underline
                 ),
                 dbc.Nav(
-                    [dbc.NavItem(dbc.NavLink(page['name'], href=page['relative_path'])) for page in dash.page_registry.values()],
+                    [dbc.NavItem(dbc.NavLink(page['name'], href=page['relative_path'])) for page in dash.page_registry.values()] +
+                    [dbc.NavItem(dbc.NavLink('GitHub', href='https://github.com/LaughneyLab/ContactTracing_tutorial'))],
                     navbar=True,
                     pills=True
                 )

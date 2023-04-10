@@ -16,9 +16,11 @@ def home_welcome_info():
                 "the effect of ligand-receptor-mediated interactions on the tumor microenvironment, we unveil how "
                 "CIN-induced chronic activation of the cGAS-STING innate immune pathway promotes cancer progression in a "
                 "tumor cell non-autonomous manner. Use this dashboard to explore how CIN-induced STING signaling in cancer "
-                "cells shapes the TME. Or run on your own data (",
-                html.A("here", href=""),  # FIXME
-                ")!"
+                "cells shapes the TME. Or use ",
+                html.I("ContactTracing"),
+                " on your own data by checking out our ",
+                html.A("GitHub repository", href="https://github.com/LaughneyLab/ContactTracing_tutorial"),
+                "!"
                 ]),
         html.P([
             html.H5(html.I("Included Visualizations")),
@@ -32,7 +34,7 @@ def home_welcome_info():
 def home_dataset_descriptions():
     return [
         html.Div(html.Img(src=dash.get_asset_url("contacttracing_summary.png"), style={"width": "25%"},
-                 alt="ContactTracing Summary"),className='text-center'),
+                 alt="ContactTracing Summary"), className='text-center'),
         html.P(["By incorporating intrinsic cellular heterogeneity, ",
                 html.I("ContactTracing"),
                 " can identify highly specific and biologically meaningful transcriptional responses to conditions in "

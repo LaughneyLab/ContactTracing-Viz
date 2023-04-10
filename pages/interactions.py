@@ -86,7 +86,7 @@ def build_interface() -> list:
                                       value=DEFAULT_INTERACTIONS_ARGS['min_logfc_bipartite']
                                   )),
             control_panel_element("Interaction Directionality",
-                                  "Whether to consider ligand/receptor pairs between all cell types, or only display these pairs from the cell types that flow from left to right.",
+                                  "Whether to consider ligand/receptor pairs between all cell types, or only display these pairs from cell types from left to right.",
                                   dbc.RadioItems(
                                       id='bidirectional_bipartite',
                                       options=[{'label': 'Bidirectional Interactions', 'value': True},
