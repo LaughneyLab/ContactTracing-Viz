@@ -31,7 +31,99 @@ def build_interface() -> list:
         pass
 
     controls = control_panel("submit-button-bipartite",
-        [
+         [
+             control_panel_element("Interaction Set",
+                                   [
+                                       "The ",
+                                       *conditions_def("biological condition"),
+                                       " to compare."
+                                   ],
+                                   dbc.RadioItems(
+                                       id='inter_set',
+                                       options=[{'label': 'CIN-Dependent Effect', 'value': 'cin'},
+                                                {'label': 'CIN/STING Max Effect', 'value': 'max'}],
+                                       value=DEFAULT_INTERACTIONS_ARGS['inter_set'],
+                                       persistence=False
+                                   )),
+             control_panel_element("Plot", "You must click submit to update the plot.",
+                                   html.Div(
+                                       dbc.Row([dbc.Col(
+                                           dbc.Button(
+                                               wrap_icon("fas fa-play", "Submit"),
+                                               id="submit-button-bipartite",
+                                               size="lg",
+                                               color="primary",
+                                               className='me-1',
+                                               n_clicks=0),
+                                           width='auto', align='left'),
+                                           dbc.Col(
+                                               dbc.Button(wrap_icon('fas fa-rotate-left', 'Reset'),
+                                                          id='reset_default_interactions_button',
+                                                          color='secondary', size='lg',
+                                                          className='float-end dark', n_clicks=0),
+                                               align='right', width='auto')
+                                       ]),
+                                       className='text-center d-grid gap-2')),
+         ], [
+             control_panel_element("First Cell Type",
+                                   "The first cell type to examine interactions between.",
+                                   dbc.Select(
+                                       id='first_celltype',
+                                       options=[{'label': ct, 'value': ct} for ct in
+                                                ['Tumor cells',
+                                                 'Macrophages/mMDSC',
+                                                 'PMN/gMDSC',
+                                                 'T cells',
+                                                 'B cells',
+                                                 'NK cells',
+                                                 'cDC',
+                                                 'pDC',
+                                                 'Fibroblast cells',
+                                                 'Endothelial cells',
+                                                 'Osteoclasts',
+                                                 'Mast cells']],
+                                       value=DEFAULT_INTERACTIONS_ARGS['first_celltype']
+                                   )),
+             control_panel_element("Second Cell Type",
+                                   "The second cell type to examine interactions between (need not be unique).",
+                                   dbc.Select(
+                                       id='second_celltype',
+                                       options=[{'label': ct, 'value': ct} for ct in
+                                                ['Tumor cells',
+                                                 'Macrophages/mMDSC',
+                                                 'PMN/gMDSC',
+                                                 'T cells',
+                                                 'B cells',
+                                                 'NK cells',
+                                                 'cDC',
+                                                 'pDC',
+                                                 'Fibroblast cells',
+                                                 'Endothelial cells',
+                                                 'Osteoclasts',
+                                                 'Mast cells']],
+                                       value=DEFAULT_INTERACTIONS_ARGS['second_celltype']
+                                   )),
+             control_panel_element("Third Cell Type",
+                                   "If specified, include interactions across a third cell type.",
+                                   dbc.Select(
+                                       id='third_celltype',
+                                       options=[{'label': ct, 'value': ct} for ct in
+                                                ['(None)',
+                                                 'Tumor cells',
+                                                 'Macrophages/mMDSC',
+                                                 'PMN/gMDSC',
+                                                 'T cells',
+                                                 'B cells',
+                                                 'NK cells',
+                                                 'cDC',
+                                                 'pDC',
+                                                 'Fibroblast cells',
+                                                 'Endothelial cells',
+                                                 'Osteoclasts',
+                                                 'Mast cells']],
+                                       value=DEFAULT_INTERACTIONS_ARGS['third_celltype']
+                                   )),
+         ], [
             control_panel_element("Interaction Effect FDR Cutoff",
                                   [
                                       "FDR-adjusted requirements for ",
@@ -94,94 +186,7 @@ def build_interface() -> list:
                                       value=DEFAULT_INTERACTIONS_ARGS['bidirectional_bipartite'],
                                       persistence=False
                                   )),
-        ], [
-            control_panel_element("First Cell Type", "The first cell type to examine interactions between.",
-                                  dbc.Select(
-                                      id='first_celltype',
-                                      options=[{'label': ct, 'value': ct} for ct in
-                                               ['Tumor cells',
-                                                 'Macrophages/mMDSC',
-                                                 'PMN/gMDSC',
-                                                 'T cells',
-                                                 'B cells',
-                                                 'NK cells',
-                                                 'cDC',
-                                                 'pDC',
-                                                 'Fibroblast cells',
-                                                 'Endothelial cells',
-                                                 'Osteoclasts',
-                                                 'Mast cells']],
-                                      value=DEFAULT_INTERACTIONS_ARGS['first_celltype']
-                                  )),
-            control_panel_element("Second Cell Type", "The second cell type to examine interactions between (need not be unique).",
-                                  dbc.Select(
-                                      id='second_celltype',
-                                    options=[{'label': ct, 'value': ct} for ct in
-                                             ['Tumor cells',
-                                             'Macrophages/mMDSC',
-                                             'PMN/gMDSC',
-                                             'T cells',
-                                             'B cells',
-                                             'NK cells',
-                                             'cDC',
-                                             'pDC',
-                                             'Fibroblast cells',
-                                             'Endothelial cells',
-                                             'Osteoclasts',
-                                             'Mast cells']],
-                                    value=DEFAULT_INTERACTIONS_ARGS['second_celltype']
-                                  )),
-            control_panel_element("Third Cell Type", "If specified, include interactions across a third cell type.",
-                                  dbc.Select(
-                                      id='third_celltype',
-                                      options=[{'label': ct, 'value': ct} for ct in
-                                               ['(None)',
-                                                'Tumor cells',
-                                                'Macrophages/mMDSC',
-                                                'PMN/gMDSC',
-                                                'T cells',
-                                                'B cells',
-                                                'NK cells',
-                                                'cDC',
-                                                'pDC',
-                                                'Fibroblast cells',
-                                                'Endothelial cells',
-                                                'Osteoclasts',
-                                                'Mast cells']],
-                                      value=DEFAULT_INTERACTIONS_ARGS['third_celltype']
-                                  )),
-        ], [
-            control_panel_element("Interaction Set",
-                                  [
-                                      "The ",
-                                      *conditions_def("biological condition"),
-                                      " to compare."
-                                  ],
-                                  dbc.RadioItems(
-                                      id='inter_set',
-                                      options=[{'label': 'CIN-Dependent Effect', 'value': 'cin'},
-                                               {'label': 'CIN/STING Max Effect', 'value': 'max'}],
-                                      value=DEFAULT_INTERACTIONS_ARGS['inter_set'],
-                                      persistence=False
-                                  )),
-            control_panel_element("Plot", "You must click submit to update the plot.",
-                                  html.Div(
-                                      dbc.Row([dbc.Col(
-                                          dbc.Button(
-                                              wrap_icon("fas fa-play", "Submit"),
-                                              id="submit-button-bipartite",
-                                              size="lg",
-                                              color="primary",
-                                              className='me-1',
-                                              n_clicks=0),
-                                          width='auto', align='left'),
-                                          dbc.Col(
-                                              dbc.Button(wrap_icon('fas fa-rotate-left', 'Reset'),
-                                                         id='reset_default_interactions_button', color='secondary', size='lg', className='float-end dark', n_clicks=0),
-                                          align='right', width='auto')
-                                      ]),
-                                  className='text-center d-grid gap-2')),
-        ]
+        ],
     )
 
     results = figure_output(
@@ -205,8 +210,11 @@ def build_interface() -> list:
     )
 
     return [
-        controls,
         results,
+        html.Br(),
+        html.Hr(),
+        html.Br(),
+        controls,
         dcc.Store(id='cin_bipartite_plot', data=default_plots[0] if default_plots is not None else {}),
         dcc.Store(id='max_bipartite_plot', data=default_plots[1] if default_plots is not None else {}),
     ]

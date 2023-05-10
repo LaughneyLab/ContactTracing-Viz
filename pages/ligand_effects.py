@@ -31,6 +31,43 @@ def build_interface() -> list:
         pass
 
     controls = control_panel("submit_button",
+         [
+             control_panel_element("Interaction Set",
+                                   [
+                                       "The ",
+                                       *conditions_def("biological condition"),
+                                       " to compare."
+                                   ],
+                                   dbc.RadioItems(
+                                       id='effect_set',
+                                       options=[{'label': 'CIN-Dependent Effect', 'value': 'cin'},
+                                                {'label': 'CIN/STING Max Effect', 'value': 'max',
+                                                 'disabled': True}
+                                                ],
+                                       value=DEFAULT_LIGAND_EFFECT_ARGS['effect_set'],
+                                       persistence=False
+                                   )),
+             control_panel_element("Plot", "You must click submit to update the plot.",
+                                   html.Div(
+                                       dbc.Row([dbc.Col(
+                                           dbc.Button(
+                                               wrap_icon("fas fa-play", "Submit"),
+                                               id='submit_button',
+                                               size='lg',
+                                               color="primary",
+                                               className='me-1',
+                                               n_clicks=0),
+                                           width='auto', align='left'),
+                                           dbc.Col(
+                                               dbc.Button(wrap_icon('fas fa-rotate-left', 'Reset'),
+                                                          id='reset_default_ligand_effects_button',
+                                                          color='secondary',
+                                                          size='lg', className='float-end dark',
+                                                          n_clicks=0),
+                                               align='right', width='auto')
+                                       ]),
+                                       className='text-center d-grid gap-2'))
+         ],
         [
             control_panel_element('Emitting Cell Type', 'Select the initial cell type.',
                                   dbc.Select(
@@ -107,39 +144,6 @@ def build_interface() -> list:
                                       step=0.01,
                                       value=DEFAULT_LIGAND_EFFECT_ARGS['min_logfc']
                                   )),
-        ], [
-            control_panel_element("Interaction Set",
-                                  [
-                                      "The ",
-                                      *conditions_def("biological condition"),
-                                      " to compare."
-                                  ],
-                                  dbc.RadioItems(
-                                      id='effect_set',
-                                      options=[{'label': 'CIN-Dependent Effect', 'value': 'cin'},
-                                               {'label': 'CIN/STING Max Effect', 'value': 'max', 'disabled': True}
-                                               ],
-                                      value=DEFAULT_LIGAND_EFFECT_ARGS['effect_set'],
-                                      persistence=False
-                                  )),
-            control_panel_element("Plot", "You must click submit to update the plot.",
-                                  html.Div(
-                                      dbc.Row([dbc.Col(
-                                          dbc.Button(
-                                              wrap_icon("fas fa-play", "Submit"),
-                                              id='submit_button',
-                                              size='lg',
-                                              color="primary",
-                                              className='me-1',
-                                              n_clicks=0),
-                                          width='auto', align='left'),
-                                          dbc.Col(
-                                              dbc.Button(wrap_icon('fas fa-rotate-left', 'Reset'),
-                                                         id='reset_default_ligand_effects_button', color='secondary',
-                                                         size='lg', className='float-end dark', n_clicks=0),
-                                          align='right', width='auto')
-                                      ]),
-                                  className='text-center d-grid gap-2'))
         ]
     )
 
@@ -164,8 +168,11 @@ def build_interface() -> list:
     )
 
     return [
-        controls,
         results,
+        html.Br(),
+        html.Hr(),
+        html.Br(),
+        controls,
         dcc.Store(id='cin_network_plot', storage_type='memory', data=default_plots[0] if default_plots is not None else {}),
         dcc.Store(id='sting_network_plot', storage_type='memory', data=default_plots[1] if default_plots is not None else {})
     ]

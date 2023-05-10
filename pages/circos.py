@@ -32,7 +32,41 @@ def build_interface() -> list:
         pass
 
     controls = control_panel("submit-button-circos",
-        [
+         [
+             control_panel_element("Interaction Set",
+                                   [
+                                       "The ",
+                                       *conditions_def("biological condition"),
+                                       " to compare."
+                                   ],
+                                   dbc.RadioItems(
+                                       id='circos_set',
+                                       options=[{'label': 'CIN-Dependent Effect', 'value': 'cin'},
+                                                {'label': 'CIN/STING Max Effect',
+                                                 'value': 'sting'}],
+                                       value=DEFAULT_CIRCOS_ARGS['circos_set'],
+                                       persistence=False
+                                   )),
+             control_panel_element("Plot", "You must click submit to update the plot.",
+                                   html.Div(
+                                       dbc.Row([dbc.Col(
+                                           dbc.Button(
+                                               wrap_icon("fas fa-play", "Submit"),
+                                               id="submit-button-circos",
+                                               size="lg",
+                                               color="primary",
+                                               className='me-1',
+                                               n_clicks=0),
+                                           width='auto', align='left'),
+                                           dbc.Col(
+                                               dbc.Button(wrap_icon('fas fa-rotate-left', 'Reset'),
+                                                          id='reset_default_circos_button',
+                                                          color='secondary', size='lg',
+                                                          className='float-end dark', n_clicks=0),
+                                               align='right', width='auto')
+                                       ]),
+                                       className='text-center d-grid gap-2'))
+         ], [
             control_panel_element("Interaction Effect FDR Cutoff",
                                   [
                                       "FDR-adjusted requirements for ",
@@ -96,39 +130,6 @@ def build_interface() -> list:
                                       value=DEFAULT_CIRCOS_ARGS['genes'],
                                       placeholder='Example: Ccl2,Apoe'
                                   ))
-        ], [
-            control_panel_element("Interaction Set",
-                                  [
-                                      "The ",
-                                      *conditions_def("biological condition"),
-                                      " to compare."
-                                  ],
-                                  dbc.RadioItems(
-                                      id='circos_set',
-                                      options=[{'label': 'CIN-Dependent Effect', 'value': 'cin'},
-                                               {'label': 'CIN/STING Max Effect', 'value': 'sting'}],
-                                      value=DEFAULT_CIRCOS_ARGS['circos_set'],
-                                      persistence=False
-                                  )),
-            control_panel_element("Plot", "You must click submit to update the plot.",
-                                  html.Div(
-                                      dbc.Row([dbc.Col(
-                                          dbc.Button(
-                                              wrap_icon("fas fa-play", "Submit"),
-                                              id="submit-button-circos",
-                                              size="lg",
-                                              color="primary",
-                                              className='me-1',
-                                              n_clicks=0),
-                                          width='auto', align='left'),
-                                          dbc.Col(
-                                              dbc.Button(wrap_icon('fas fa-rotate-left', 'Reset'),
-                                                         id='reset_default_circos_button',
-                                                         color='secondary', size='lg',
-                                                         className='float-end dark', n_clicks=0),
-                                          align='right', width='auto')
-                                      ]),
-                                      className='text-center d-grid gap-2'))
         ]
     )
 
@@ -151,8 +152,11 @@ def build_interface() -> list:
     )
 
     return [
-        controls,
         results,
+        html.Br(),
+        html.Hr(),
+        html.Br(),
+        controls,
         dcc.Store(id='cin_circos_plot', storage_type='memory', data=[default_plots[0] if default_plots is not None else None]),
         dcc.Store(id='sting_circos_plot', storage_type='memory', data=[default_plots[1] if default_plots is not None else None])
     ]

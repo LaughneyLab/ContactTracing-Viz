@@ -123,10 +123,10 @@ def control_panel_element(title, description, input, footer=None, outline=True) 
 def control_panel(submit_btn_id: str, *element_rows: List[dbc.Card]) -> html.Div:
     rows = [dbc.Row(dbc.CardGroup(cols)) for cols in element_rows]
     # Add all rows to a container that will be within an Accordion except for the
-    # last row (which contains the submit button!)
+    # first row (which contains the submit button!)
 
     options_accordion = dbc.Accordion(
-        dbc.AccordionItem(dbc.Container(rows[:-1], fluid=True), title="Figure Options", item_id='options'),
+        dbc.AccordionItem(dbc.Container(rows[1:], fluid=True), title="Figure Options", item_id='options'),
         start_collapsed=False, flush=False, persistence=False
     )
 
@@ -141,8 +141,8 @@ def control_panel(submit_btn_id: str, *element_rows: List[dbc.Card]) -> html.Div
             raise PreventUpdate
 
     return html.Div([
-        options_accordion,
-        rows[-1]
+        rows[0],
+        options_accordion
     ],
         className='mb-3'
     )
