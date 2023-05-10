@@ -10,3 +10,7 @@ body > div.circos-tooltip {
 .accordion-body {
     padding: 1rem 0 !important;
 }
+
+.offcanvas {
+    width: 50% !important;
+}

@@ -7,13 +7,13 @@ from viz.web import make_tooltip, make_data_redirect_buttons, wrap_icon
 
 def home_welcome_info():
     return [
-        html.Img(src=dash.get_asset_url("website_header.png"), style={"width": "50%"}, alt="ContactTracing Header"),
+        html.Img(src=dash.get_asset_url("website_header.png"), style={"width": "55%"}, alt="ContactTracing Header"),
         html.Br(),
-        html.P(["CIN is a hallmark of human cancer that is associated with metastasis and immune evasion. Through the "
+        html.P(["Chromosomal Instability (CIN) is a hallmark of human cancer that is associated with metastasis and immune evasion. Through the "
                "development of ",
                 html.I("ContactTracing"),
                 "– a fundamentally new, systems level approach that exploits inter- and intra-sample variability to infer "
-                "the effect of ligand-receptor-mediated interactions on the tumor microenvironment, we unveil how "
+                "the effect of ligand-receptor-mediated interactions on the tumor microenvironment (TME), we unveil how "
                 "CIN-induced chronic activation of the cGAS-STING innate immune pathway promotes cancer progression in a "
                 "tumor cell non-autonomous manner. Use this dashboard to explore how CIN-induced STING signaling in cancer "
                 "cells shapes the TME. Or use ",
@@ -22,6 +22,14 @@ def home_welcome_info():
                 html.A("GitHub repository", href="https://github.com/LaughneyLab/ContactTracing_tutorial"),
                 "!"
                 ]),
+        html.P([
+            html.H5(html.I("Key Features of ContactTracing")),
+            html.Ul([
+                html.Li("Identifies condition-specific ligand/receptor interactions."),
+                html.Li("Examines the induced transcriptional response of downstream genes to ligand/receptor interactions."),
+                html.Li("Exploits intrinsic cellular heterogeneity to identify cell-type specific responses."),
+            ])
+        ]),
         html.P([
             html.H5(html.I("Included Visualizations")),
             make_data_redirect_buttons()
@@ -33,7 +41,7 @@ def home_welcome_info():
 
 def home_dataset_descriptions():
     return [
-        html.Div(html.Img(src=dash.get_asset_url("contacttracing_summary.png"), style={"width": "25%"},
+        html.Div(html.Img(src=dash.get_asset_url("contacttracing_summary.png"), style={"width": "40%"},
                  alt="ContactTracing Summary"), className='text-center'),
         html.P(["By incorporating intrinsic cellular heterogeneity, ",
                 html.I("ContactTracing"),
@@ -45,7 +53,7 @@ def home_dataset_descriptions():
             html.Li("Corresponding receptors selective expressed in a given cell type under a given condition."),
             html.Li("Induced downstream gene expression changes upon activating these receptors by their ligands within a condition.")
         ]),
-        html.Div(html.Img(src=dash.get_asset_url("contacttracing_summary2.png"), style={"width": "25%"},
+        html.Div(html.Img(src=dash.get_asset_url("contacttracing_summary2.png"), style={"width": "40%"},
                  alt="ContactTracing Summary 2"), className='text-center'),
         html.P([
             "The ",
@@ -54,13 +62,12 @@ def home_dataset_descriptions():
         ]),
         html.P([
             html.H5(html.I("Mouse model of chromosomal instability (CIN).")),
-            "10X Chromium scRNA-seq data was collected from a murine model for metastatic breast cancer (seven samples "
-            "were under the high-CIN condition, while the remaining four were under the low-CIN condition)."
+            "10X Chromium scRNA-seq data was collected from a murine model for metastatic breast cancer (TODO citation)."  #FIXME
         ]),
         html.P([
             html.H5(html.I("Mouse models of chromosomal instability versus STING knockout (STING-KO).")),
-            "In addition to a high-CIN versus low-CIN comparison, we compared the seven high-CIN mice with wild-type "
-            "STING to two mice with a STING knockout. This comparison allows us to identify the effects of the TME "
+            "In addition to a high-CIN versus low-CIN comparison, we compared the high-CIN mice with wild-type "
+            "STING to mice with a STING knockout (TODO CITATION). This comparison allows us to identify the effects of the TME "  # FIXME
             "that are both STING-dependent within the chromosomally unstable tumors."
         ]),
         html.P([
@@ -68,15 +75,53 @@ def home_dataset_descriptions():
             "To get a systems-level view of how chromosomal instability and STING both affect the TME, we select the "
             "interactions that are identified by ",
             html.I("ContactTracing"),
-            " in both the CIN and STING-KO comparisons. The resultant interaction sets are then further analyzed by "
+            " in both the CIN and STING-KO comparisons (TODO CITATION). The resultant interaction sets are then further analyzed by "  # FIXME
             "selecting the maximum value of each respective aggregate statistic across conditions. This dataset "
             "represents the default interaction set visualized by the Circos and Cell Type Interactions plots."
+        ]),
+        html.P([
+            html.H5(html.I("Data Availability")),
+            "The single-cell data used in this study is described in our study (TODO citaiton) and can be accessed "
+            "through the Gene Expression Omnibus (GEO) under accession number ... (TODO LINK)."  # FIXME
         ])
     ]
 
 
 def home_plot_descriptions():
+    circos_plot_help_button = dbc.Button(wrap_icon("fa-circle-dot", "More Info"), color="info", n_clicks=0, size='md', id='full-circos-help-button')
+    cell_type_plot_help_button = dbc.Button(wrap_icon("fa-arrows-left-right-to-line", "More Info"), color="info", n_clicks=0, size='md', id='full-cell-type-help-button')
+    ligand_effect_plot_help_button = dbc.Button(wrap_icon("fa-maximize", "More Info"), color="info", n_clicks=0, size='md', id='full-ligand-effect-help-button')
+
+    circos_plot_offcanvas = dbc.Offcanvas(
+        circos_help(),
+        id="circos-plot-help-offcanvas",
+        title="Circos Plot Information",
+        is_open=False,
+        placement="end",
+        backdrop=True,
+        keyboard=True
+    )
+    cell_type_plot_offcanvas = dbc.Offcanvas(
+        interactions_help(),
+        id="cell-type-plot-help-offcanvas",
+        title="Cell Type Interactions Plot Information",
+        is_open=False,
+        placement="end",
+        backdrop=True,
+        keyboard=True
+    )
+    ligand_effect_plot_offcanvas = dbc.Offcanvas(
+        ligand_effects_help(),
+        id="ligand-effect-plot-help-offcanvas",
+        title="Ligand Effect Plot Information",
+        is_open=False,
+        placement="end",
+        backdrop=True,
+        keyboard=True
+    )
+
     return [
+        circos_plot_offcanvas, cell_type_plot_offcanvas, ligand_effect_plot_offcanvas,
         html.P(["Similarly to many scRNA-seq cellular communication toolkits, ",
                 html.I("ContactTracing"),
                 " is able to identify specific ligand/receptor pairs that are significantly activated within a "
@@ -89,20 +134,35 @@ def home_plot_descriptions():
                 "overview of the figures that allow researchers to interpret the high dimensional output of ",
                 html.I("ContactTracing"),
                 ":"]),
-        html.H5(html.I(html.A("Circos Plot", href="/circos"))),
-        html.Div(html.Img(src=dash.get_asset_url("circos_help.png"), style={"width": "33%"}, alt="Circos Plot"),className='text-center'),
+        html.H5([
+            dbc.Row([
+                dbc.Col(html.I(html.A("Circos Plot", href="/circos"))),
+                dbc.Col(circos_plot_help_button, width=2)
+            ])
+        ]),
+        html.Div(html.Img(src=dash.get_asset_url("circos_help.png"), style={"width": "50%"}, alt="Circos Plot"), className='text-center'),
         html.P(["The Circos plot summarizes all condition-specific interactions between cells in the TME as identified "
                 "by ",
                 html.I("ContactTracing"),
                 ". The ribbons highlight the strongest ligand/receptor interactions across cell types. The Circos "
                 "diagram can be helpful for rapid hypothesis generation from the data."]),
-        html.H5(html.I(html.A("Cell Type Interactions Plot", href="/interactions"))),
-        html.Div(html.Img(src=dash.get_asset_url("pairwise_help2.png"), style={"width": "15%"}, alt="Cell Type Interactions Plot"),className='text-center'),
+        html.H5([
+            dbc.Row([
+                dbc.Col(html.I(html.A("Cell Type Interactions Plot", href="/interactions"))),
+                dbc.Col(cell_type_plot_help_button, width=2)
+            ])
+        ]),
+        html.Div(html.Img(src=dash.get_asset_url("pairwise_help2.png"), style={"width": "30%"}, alt="Cell Type Interactions Plot"), className='text-center'),
         html.P(["The pairwise cell type interactions plot highlights the condition-specific signals sent by a donor "
                 "cell type (emitting ligands) to a target cell type (expressing receptors). This figure gives a "
                 "focused view of cell-cell interactions of interest."]),
-        html.H5(html.I(html.A("Downstream Ligand Effects Plot", href="/ligand-effects"))),
-        html.Div(html.Img(src=dash.get_asset_url("ligand_effects_help3.png"), style={"width": "15%"}, alt="Downstream Ligand Effects Plot"), className='text-center'),
+        html.H5([
+            dbc.Row([
+                dbc.Col(html.I(html.A("Downstream Ligand Effects Plot", href="/ligand-effects"))),
+                dbc.Col(ligand_effect_plot_help_button, width=2)
+            ])
+        ]),
+        html.Div(html.Img(src=dash.get_asset_url("ligand_effects_help3.png"), style={"width": "25%", 'height': '60%'}, alt="Downstream Ligand Effects Plot"), className='text-center'),
         html.P("This figure illustrates the downstream effects of a ligand within the TME. Given a donor cell type and "
                "ligands of interest, it is possible to visualize each of the receptors that are activated in a "
                "CIN-dependent manner and how these receptors induce cascading transcriptional responses throughout "
@@ -111,7 +171,7 @@ def home_plot_descriptions():
 
 
 def home_misc_info():
-    contact_info_button = dbc.Button(wrap_icon("fas fa-envelope", "View Email"), color="info", n_clicks=0, size='lg', id='contact-info-button')
+    contact_info_button = dbc.Button(wrap_icon("fa-envelope", "View Email"), color="info", n_clicks=0, size='lg', id='contact-info-button')
     contact_div = html.Div([], id="contact-info")
 
     return [

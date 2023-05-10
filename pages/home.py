@@ -53,13 +53,33 @@ def show_contact_info(n_clicks):
 
 
 @callback(
+    Output("circos-plot-help-offcanvas", "is_open"),
+    Output("cell-type-plot-help-offcanvas", "is_open"),
+    Output("ligand-effect-plot-help-offcanvas", "is_open"),
+    Input("full-circos-help-button", "n_clicks"),
+    Input("full-cell-type-help-button", "n_clicks"),
+    Input("full-ligand-effect-help-button", "n_clicks"),
+)
+def show_offcanvas_content(circos_n_clicks, celltype_n_clicks, ligand_effect_n_clicks):
+    triggered = dash.callback_context.triggered_id
+    if triggered == "full-circos-help-button":
+        return circos_n_clicks > 0, False, False
+    elif triggered == "full-cell-type-help-button":
+        return False, celltype_n_clicks > 0, False
+    elif triggered == "full-ligand-effect-help-button":
+        return False, False, ligand_effect_n_clicks > 0
+    else:
+        raise PreventUpdate
+
+
+@callback(
     Output('home-tab-title', 'children'),
     Output('home-tab-content', 'children'),
     Input('home-tabs', 'active_tab')
 )
 def update_tab_content(active_tab):
     if active_tab == 'default':
-        return [html.I("ContactTracing"), " identifies impact of chromosomal instability (CIN) on the tumor ecosystem."], \
+        return [html.I("ContactTracing"), ", studying the impact of chromosomal instability (CIN) & STING on the tumor ecosystem."], \
             home_welcome_info()
     elif active_tab == 'dataset':
         return [html.I("ContactTracing"), " is a unique approach for profiling cellular responses to the tumor microenvironment."], \
