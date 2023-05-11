@@ -4,9 +4,10 @@ import sys
 from uuid import uuid4
 
 import dash
-from dash import Dash, html, dcc, Output, Input, State
+from dash_extensions.enrich import html, dcc, Output, Input, State
 import dash_bootstrap_components as dbc
 from dash.exceptions import PreventUpdate
+from dash_extensions.enrich import DashProxy, BlockingCallbackTransform, MultiplexerTransform
 
 from data.config import LONG_CALLBACK_EXPIRY
 from viz.web import wrap_icon
@@ -38,7 +39,6 @@ except:
 # Each server instance gets a unique cache
 launch_uuid = uuid4()
 
-
 callback_manager = None
 if 'REDIS_URL' in os.environ:
     try:
@@ -49,6 +49,7 @@ if 'REDIS_URL' in os.environ:
     except:
         callback_manager = None
 if callback_manager is None:
+    celery_app = None
     print("WARNING: Celery not available, falling back to diskcache", file=sys.stderr)
     from dash import DiskcacheManager
     from diskcache import Cache
@@ -61,7 +62,9 @@ if callback_manager is None:
 # Custom style made with https://bootstrap.build/ based on FLATLY
 STYLESHEET = "bootstrap.min.css"
 
-app = Dash(__name__,
+debug = len(sys.argv) > 1 and sys.argv[1] == 'debug'
+
+app = DashProxy(__name__,
            suppress_callback_exceptions=True,
            compress=True,
            meta_tags=[
@@ -86,11 +89,18 @@ app = Dash(__name__,
                STYLESHEET,
                "custom.css"  # Custom overrides
            ],
+           transforms=[
+               # BlockingCallbackTransform()  # Allows for preventing multiple callbacks from running
+               MultiplexerTransform(),  # Allow for multiple callbacks to use the same output
+           ],
            use_pages=True,
-           background_callback_manager=callback_manager
+           background_callback_manager=callback_manager,
+           show_undo_redo=debug
            )
 server = app.server
 
+if celery_app is not None:
+    app.register_celery_tasks()
 
 def access_code_page():
     #page_container = dash.page_container
@@ -165,7 +175,6 @@ app.layout = dbc.Container(fluid=True,
 
 
 if __name__ == '__main__':
-    debug = len(sys.argv) > 1 and sys.argv[1] == 'debug'
    # debug = False
     app.run(port=8000,
             debug=debug,

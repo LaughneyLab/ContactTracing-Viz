@@ -1,5 +1,5 @@
 import dash
-from dash import html, dcc, callback, Output, Input
+from dash_extensions.enrich import html
 import dash_bootstrap_components as dbc
 
 from viz.web import make_tooltip, make_data_redirect_buttons, wrap_icon

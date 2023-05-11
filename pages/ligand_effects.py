@@ -2,7 +2,7 @@ import os.path
 
 import dash
 import dash_bootstrap_components as dbc
-from dash import callback, Output, Input, dcc, State, html
+from dash_extensions.enrich import callback, Output, Input, dcc, State, html
 
 from viz.docs import ligand_effects_help, interaction_test_def, conditions_def, deg_test_def
 from viz.web import interactive_panel, wrap_icon, control_panel, control_panel_element, figure_output, \
@@ -232,7 +232,7 @@ def update_network_figure(effect_set, cin_network_plot, sting_network_plot):
     State('logfc_fdr', 'data'),
     State('iterations', 'value'),
     interval=500,
-    cache_args_to_ignore=['submit_button', 'n_clicks'],
+    cache_args_to_ignore=[0, 1],
     background=True,  # Run in background
     prevent_initial_call=True,
     running=[  # Disable the button while the callback is running

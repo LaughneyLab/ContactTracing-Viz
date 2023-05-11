@@ -6,7 +6,7 @@ import dash_bootstrap_components as dbc
 import numpy as np
 import plotly.graph_objects as go
 import pandas as pd
-from dash import html, Output, Input, dcc, callback, State
+from dash_extensions.enrich import html, Output, Input, dcc, callback, State
 import dash_bio as dashbio
 from dash.exceptions import PreventUpdate
 
@@ -27,12 +27,22 @@ def make_tooltip(content, tooltip_content):
     return content_span, tooltip
 
 
+def _slider_transform(x):
+    if isinstance(x, str):
+        if 'fdr' in x:
+            return x
+        else:
+            return f"fdr{x.split('.')[1]}"
+    else:
+        return "fdr" + f"{x:.2f}".split(".")[1]
+
+
 def make_fdr_slider(id: str, value) -> html.Div:
     if isinstance(value, str):
         value = float("." + value[3:])
     return make_custom_slider(
         id, 0.01, 0.25, value, 0.01,
-        lambda x: "fdr" + f"{x:.2f}".split(".")[1]
+        _slider_transform
     )
 
 
@@ -87,7 +97,7 @@ def make_custom_slider(id: str, min, max, value, step, transform=None) -> html.D
             # Slider should always be in range
             return transform(slider_input) if transform else slider_input, slider_input, slider_input
         elif dash.callback_context.triggered_id == id:  # Store updated
-            return transform(slider_store) if transform else slider_store, slider_store, slider_store
+            return transform(slider_store) if transform else slider_store, slider_input, slider_input
 
         return transform(value) if transform else value, value, value
 

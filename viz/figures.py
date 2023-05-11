@@ -3,15 +3,11 @@ import itertools
 import math
 from dataclasses import dataclass, field
 from functools import total_ordering
-from io import BytesIO
-from typing import List, Tuple, Optional, Set, Dict
+from typing import List
 
-import anndata as ad
 import networkx as nx
 import numpy as np
-from matplotlib import cm, colors
 import pandas as pd
-from PIL import Image
 import plotly.graph_objects as go
 
 from viz.data import read_ligand_receptor_file, read_ligand_effect_for

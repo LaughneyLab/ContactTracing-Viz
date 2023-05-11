@@ -1,6 +1,6 @@
 import dash
 import dash_bootstrap_components as dbc
-from dash import html, callback, Output, Input
+from dash_extensions.enrich import html, callback, Output, Input
 from dash.exceptions import PreventUpdate
 
 from viz.docs import home_welcome_info, home_dataset_descriptions, home_plot_descriptions, home_misc_info

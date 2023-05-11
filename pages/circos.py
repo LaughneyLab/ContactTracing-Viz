@@ -1,7 +1,5 @@
-import os
-
 import dash
-from dash import html, callback, Output, Input, State, dcc
+from dash_extensions.enrich import html, callback, Output, Input, State, dcc
 import dash_bootstrap_components as dbc
 
 from viz.docs import circos_help, interaction_effects_def, diffusion_component_def, differential_abundance_def, \
@@ -215,7 +213,7 @@ def update_circos_plot(circos_set, cin_circos_plot, sting_circos_plot):
     background=True,
     prevent_initial_call=True,
     interval=500,
-    cache_args_to_ignore=['submit-button-circos', 'n_clicks'],
+    cache_args_to_ignore=[0, 1],
     running=[
         (Output('submit-button-circos', 'disabled'), True, False),
         (Output('progress-bar', 'style'), {'visibility': 'visible'}, {'visibility': 'hidden'}),
@@ -224,7 +222,7 @@ def update_circos_plot(circos_set, cin_circos_plot, sting_circos_plot):
         Output('progress-bar', 'value'),
         Output('progress-bar', 'max'),
     ]
-)
+)  # TODO: Partial updates for highlighting?
 def make_circos_plot(set_progress, n_clicks,
                      inter_circos_fdr, logfc_circos_fdr,
                      min_numsigi1, min_numdeg, min_chord_ligand_logfc, gene_list):

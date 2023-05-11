@@ -1,7 +1,7 @@
 import os.path
 
 import dash
-from dash import dcc, callback, Output, Input, State, html
+from dash_extensions.enrich import dcc, callback, Output, Input, State, html
 import dash_bootstrap_components as dbc
 
 from viz.docs import interactions_help, interaction_effects_def, ligand_log2fc_def, conditions_def
@@ -280,7 +280,7 @@ def update_bipartite_plot(inter_set, cin_bipartite_plot, max_bipartite_plot):
     State('bipartite_logfc_fdr', 'data'),
     State('bidirectional_bipartite', 'value'),
     interval=500,
-    cache_args_to_ignore=['submit-button-bipartite', 'n_clicks'],
+    cache_args_to_ignore=[0, 1],
     background=True,  # Run in background
     prevent_initial_call=True,
     running=[  # Disable the button while the callback is running

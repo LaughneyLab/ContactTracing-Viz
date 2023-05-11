@@ -7,6 +7,7 @@ dependencies:
   - pip
   - dash=2.9.1
   - flask-compress=1.13
+  - dash-extensions=0.1.13
   - orjson=3.8.2
   - dash-bio=1.0.2
   - pandas=1.5.2
