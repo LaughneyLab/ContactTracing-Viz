@@ -237,6 +237,7 @@ def bipartite_graph(df,
         x=[],
         y=[],
         text=[],
+        showlegend=False,
         mode='markers',
         hoverinfo='text',
         marker=dict(
@@ -246,12 +247,14 @@ def bipartite_graph(df,
             color=[],
             colorbar=dict(
                 title="Ligand LogFC",
-                xanchor='left',
+                xanchor='right',
                 yanchor='top',
                 thickness=25,
                 titleside='right',
-                x=1.15,
-                y=1
+                x=1.,
+                y=1,
+                lenmode="fraction",
+                len=0.25,
             ),
             colorscale=colorscale.make_plotly_colorscale()
         )
@@ -303,6 +306,7 @@ def bipartite_graph(df,
             x=arrow_xs, y=arrow_ys,
             fill="toself",
             fillcolor=color,
+            showlegend=False,
             line=dict(
                 width=arrow_width,
                 color=color
@@ -341,11 +345,13 @@ def bipartite_graph(df,
     node_y = []
     symbols = []
     layer_anchors = dict()
+    celltypes = set()
     for node in G.nodes():
         if node not in pos:
             continue
         column = G.nodes[node]['column']
         celltype = G.nodes[node]['celltype']
+        celltypes.add(celltype)
         ligand = G.nodes[node]['ligand']
         receptor = G.nodes[node]['receptor']
         x, y = pos[node]
@@ -375,6 +381,7 @@ def bipartite_graph(df,
         xrange = 0
     else:
         xrange = (max(node_x) - min(node_x) if len(node_x) > 0 else 0) / len(layer_anchors)
+    celltype2colors = celltype_to_colors(celltypes)
     for column, (anchor_x, anchor_y, layer_size, celltype) in layer_anchors.items():
         annotations.append(dict(
             x=anchor_x,
@@ -391,7 +398,7 @@ def bipartite_graph(df,
             bordercolor="black",
             borderwidth=2,
             borderpad=4,
-            bgcolor="grey"
+            bgcolor=celltype2colors.get(celltype, "grey")
         ))
 
         celltype_background_points += [
@@ -406,8 +413,9 @@ def bipartite_graph(df,
     celltype_bg_trace = go.Scatter(
         x=[c[0] for c in celltype_background_points],
         y=[c[1] for c in celltype_background_points],
+        showlegend=False,
         fill="toself",
-        fillcolor='#f8f3dd',
+        fillcolor='#fffff2',
         line=dict(
             width=2,
             color='grey'
@@ -467,6 +475,7 @@ def bipartite_graph(df,
         marker_symbol=symbols,
         mode='markers',
         hoverinfo='text',
+        showlegend=False,
         marker=dict(
             showscale=True,
             colorscale='gray',
@@ -478,8 +487,13 @@ def bipartite_graph(df,
             colorbar=dict(
                 thickness=25,
                 title="Expression",
-                xanchor='left',
-                titleside='right'
+                yanchor='top',
+                xanchor='right',
+                x=.93,
+                y=1,
+                titleside='right',
+                lenmode="fraction",
+                len=0.25,
             )
         )
     )
@@ -525,11 +539,62 @@ def bipartite_graph(df,
             align="center"
         ))
 
-    fig = go.Figure(data=[celltype_bg_trace] + edge_traces + [node_trace, interpolation_trace],
+    legend_traces = [
+        go.Scatter(
+            name="Ligand",
+            x=[None], y=[None],
+            marker_symbol="circle",
+            mode='markers',
+            showlegend=True,
+            legendgroup="genetypes",
+            legendgrouptitle=dict(
+                text="Gene"
+            ),
+            marker=dict(
+                color='white',
+                size=15,
+                line=dict(width=1, color='black')
+            )
+        ),
+        go.Scatter(
+            name="Receptor",
+            x=[None], y=[None],
+            marker_symbol="square",
+            mode='markers',
+            showlegend=True,
+            legendgroup="genetypes",
+            legendgrouptitle=dict(
+                text="Gene"
+            ),
+            marker=dict(
+                color='white',
+                size=15,
+                line=dict(width=1, color='black')
+            )
+        ),
+        go.Scatter(
+            name="Ligand/Receptor",
+            x=[None], y=[None],
+            marker_symbol="diamond-dot",
+            mode='markers',
+            showlegend=True,
+            legendgroup="genetypes",
+            legendgrouptitle=dict(
+                text="Gene"
+            ),
+            marker=dict(
+                color='white',
+                size=15,
+                line=dict(width=1, color='black')
+            )
+        ),
+    ]
+
+    fig = go.Figure(data=[celltype_bg_trace] + edge_traces + [node_trace, interpolation_trace] + legend_traces,
                     layout=go.Layout(
                         title='&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Detected Interactions',
                         titlefont_size=16,
-                        showlegend=False,
+                        showlegend=True,
                         hovermode='closest',
                         margin=dict(b=40, l=5, r=5, t=40),
                         autosize=False,
@@ -537,6 +602,12 @@ def bipartite_graph(df,
                         height=height,
                         plot_bgcolor='white',
                         annotations=annotations,
+                        legend=dict(
+                            yanchor="top",
+                            xanchor="right",
+                            x=.985,
+                            y=.75
+                        ),
                         xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
                         yaxis=dict(showgrid=False, zeroline=False, showticklabels=False, scaleratio=scaleratio,
                                    scaleanchor="x"))
@@ -653,8 +724,10 @@ def make_plot_from_graph(G: nx.DiGraph, celltypes, layout="planar", colormap=Non
                 yanchor='top',
                 thickness=25,
                 titleside='right',
-                x=1,
-                y=1
+                x=1.425,
+                y=1,
+                lenmode='fraction',
+                len=0.21
             ),
             colorscale=colorscale.make_plotly_colorscale()
         )

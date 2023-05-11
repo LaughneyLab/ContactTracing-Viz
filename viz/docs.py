@@ -162,7 +162,7 @@ def home_plot_descriptions():
                 dbc.Col(ligand_effect_plot_help_button, width=2)
             ])
         ]),
-        html.Div(html.Img(src=dash.get_asset_url("ligand_effects_help3.png"), style={"width": "25%", 'height': '60%'}, alt="Downstream Ligand Effects Plot"), className='text-center'),
+        html.Div(html.Img(src=dash.get_asset_url("ligand_effects_help3.png"), style={"width": "25%"}, alt="Downstream Ligand Effects Plot"), className='text-center'),
         html.P("This figure illustrates the downstream effects of a ligand within the TME. Given a donor cell type and "
                "ligands of interest, it is possible to visualize each of the receptors that are activated in a "
                "CIN-dependent manner and how these receptors induce cascading transcriptional responses throughout "
