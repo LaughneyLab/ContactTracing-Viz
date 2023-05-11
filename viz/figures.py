@@ -52,6 +52,7 @@ CIRCOS_SAVE_LOCATION = 'data/compiled/default_circos.pkl'
 
 
 def bipartite_graph(df,
+                    cin_only,
                     cell1,
                     cell2,
                     cell3=None,
@@ -247,10 +248,13 @@ def bipartite_graph(df,
                 yanchor='top',
                 thickness=25,
                 titleside='right',
-                x=1.,
+                x=1.02,
                 y=1,
                 lenmode="fraction",
                 len=0.25,
+                tickmode='array',
+                tickvals=[min_color_threshold, max_color_threshold],
+                ticktext=["CIN<sup>low</sup>", "CIN<sup>high</sup>" + ("" if cin_only else "/<br>STING<sup>KO</sup>")]
             ),
             colorscale=colorscale.make_plotly_colorscale()
         )
@@ -479,17 +483,22 @@ def bipartite_graph(df,
             color=[],
             #color='grey',
             size=15,
+            cmin=0.0,
+            cmax=1.0,
             line=dict(width=1, color='black'),
             colorbar=dict(
                 thickness=25,
                 title="Expression",
                 yanchor='top',
                 xanchor='right',
-                x=.93,
+                x=.92,
                 y=1,
                 titleside='right',
                 lenmode="fraction",
                 len=0.25,
+                tickmode='array',
+                tickvals=[0.0, 1.0],
+                ticktext=["0%", "100%"]
             )
         )
     )
@@ -953,7 +962,7 @@ def make_plot_from_graph(G: nx.DiGraph, celltypes, layout="planar", colormap=Non
         ))
     # legend for node size
     legends.append(go.Scatter(
-        name="{0:.2g}".format(max_node_logfc),
+        name="High",
         x=[None], y=[None],
         marker_symbol='circle',
         mode='markers',
@@ -970,7 +979,7 @@ def make_plot_from_graph(G: nx.DiGraph, celltypes, layout="planar", colormap=Non
         )
     ))
     legends.append(go.Scatter(
-        name="{0:.2g}".format(min_node_logfc),
+        name="Low",
         x=[None], y=[None],
         marker_symbol='circle',
         mode='markers',

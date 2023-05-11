@@ -236,6 +236,7 @@ def make_data_redirect_buttons():
 def make_circos_figure(set_progress, progress_offset: int,
                        outer_data: pd.DataFrame,
                        inter_data: pd.DataFrame,
+                       cin_only: bool,
                        logfc_fdr: str,
                        min_numsigi1: int,
                        min_numdeg: int,
@@ -470,6 +471,7 @@ def make_circos_figure(set_progress, progress_offset: int,
     ring_width = 15
 
     legend_group = make_circos_legend(min_receptor_numSigI1, max_receptor_numSigI1,
+                                      cin_only,
                                       log2fc_colormap, da_colormap, dc1_colormap)
 
     return dbc.Row([
@@ -585,6 +587,7 @@ def make_circos_figure(set_progress, progress_offset: int,
 
 
 def make_circos_legend(min_numSigI1, max_numSigI1,
+                       cin_only: bool,
                        logfc_transformer: ColorTransformer,
                        da_transformer: ColorTransformer,
                        dc1_transformer: ColorTransformer) -> go.Figure:
@@ -608,7 +611,7 @@ def make_circos_legend(min_numSigI1, max_numSigI1,
         mode='lines',
         showlegend=True,
         legendgroup='numSigI1',
-        legendgrouptitle=dict(text='Receptor Interactions'),
+        legendgrouptitle=dict(text='Receptor<br>Interactions'),
         line=dict(
             color='black',
             width=6,
@@ -628,7 +631,7 @@ def make_circos_legend(min_numSigI1, max_numSigI1,
             cmax=logfc_transformer.max,
             color=[],
             colorbar=dict(
-                title="Ligand LogFC",
+                title="Ligand<br>LogFC",
                 thickness=25,
                 titleside='right',
                 bgcolor='rgba(0,0,0,0)',
@@ -636,8 +639,11 @@ def make_circos_legend(min_numSigI1, max_numSigI1,
                 lenmode='fraction',
                 xanchor='right',
                 yanchor='top',
-                x=1.75,
-                y=0
+                x=1.25,
+                y=0,
+                tickmode='array',
+                tickvals=[logfc_transformer.min, logfc_transformer.max],
+                ticktext=["CIN<sup>low</sup>", "CIN<sup>high</sup>" + ("" if cin_only else "/<br>STING<sup>KO</sup>")],
             ),
             colorscale=logfc_transformer.make_plotly_colorscale()
         )
@@ -655,7 +661,7 @@ def make_circos_legend(min_numSigI1, max_numSigI1,
             cmax=da_transformer.max,
             color=[],
             colorbar=dict(
-                title="Differential Abundance",
+                title="Differential<br>Abundance",
                 thickness=25,
                 titleside='right',
                 bgcolor='rgba(0,0,0,0)',
@@ -663,8 +669,11 @@ def make_circos_legend(min_numSigI1, max_numSigI1,
                 lenmode='fraction',
                 xanchor='right',
                 yanchor='top',
-                x=1.75,
-                y=1.5
+                x=1.25,
+                y=1.5,
+                tickmode='array',
+                tickvals=[da_transformer.min, da_transformer.max],
+                ticktext=["CIN<sup>low</sup>", "CIN<sup>high</sup>"]
             ),
             colorscale=da_transformer.make_plotly_colorscale()
         )
@@ -682,7 +691,7 @@ def make_circos_legend(min_numSigI1, max_numSigI1,
             cmax=dc1_transformer.max,
             color=[],
             colorbar=dict(
-                title="Diffusion Component 1",
+                title="Diffusion<br>Component 1",
                 thickness=25,
                 titleside='right',
                 bgcolor='rgba(0,0,0,0)',
@@ -690,8 +699,11 @@ def make_circos_legend(min_numSigI1, max_numSigI1,
                 lenmode='fraction',
                 xanchor='right',
                 yanchor='top',
-                x=1.75,
-                y=3
+                x=1.25,
+                y=3,
+                tickmode='array',
+                tickvals=[],
+                ticktext=[]
             ),
             colorscale=dc1_transformer.make_plotly_colorscale()
         )
@@ -712,7 +724,7 @@ def make_circos_legend(min_numSigI1, max_numSigI1,
             legend=dict(
                 xanchor='right',
                 yanchor='bottom',
-                x=-2,
+                x=-1.6,
                 y=-.5
             ),
             xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),

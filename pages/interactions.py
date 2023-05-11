@@ -328,6 +328,7 @@ def make_graph(set_progress, n_clicks,
 
     cin_fig = bipartite_graph(
         df=cin_interactions,
+        cin_only=True,
         cell1=first_ct,
         cell2=second_ct,
         cell3=third_ct,
@@ -342,6 +343,7 @@ def make_graph(set_progress, n_clicks,
 
     sting_fig = bipartite_graph(
         df=sting_interactions,
+        cin_only=False,
         cell1=first_ct,
         cell2=second_ct,
         cell3=third_ct,
@@ -405,6 +407,7 @@ if __name__ == '__main__':
 
     cin_fig = bipartite_graph(
         df=cin_interactions,
+        cin_only=True,
         cell1=DEFAULT_INTERACTIONS_ARGS['first_celltype'],
         cell2=DEFAULT_INTERACTIONS_ARGS['second_celltype'],
         cell3=DEFAULT_INTERACTIONS_ARGS['third_celltype'],
@@ -417,6 +420,7 @@ if __name__ == '__main__':
 
     sting_fig = bipartite_graph(
         df=sting_interactions,
+        cin_only=False,
         cell1=DEFAULT_INTERACTIONS_ARGS['first_celltype'],
         cell2=DEFAULT_INTERACTIONS_ARGS['second_celltype'],
         cell3=DEFAULT_INTERACTIONS_ARGS['third_celltype'],

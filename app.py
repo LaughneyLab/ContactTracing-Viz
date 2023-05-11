@@ -67,6 +67,7 @@ debug = len(sys.argv) > 1 and sys.argv[1] == 'debug'
 app = DashProxy(__name__,
            suppress_callback_exceptions=True,
            compress=True,
+           update_title="Please wait...",
            meta_tags=[
                 {'name': 'description', 'content': 'An interactive dashboard to visualize transcriptional responses identified by ContactTracing.'},
                 {'name': 'viewport', 'content': 'width=device-width, initial-scale=1'},
