@@ -80,6 +80,8 @@ ADD . .
 
 #RUN mv my_efs/data/compiled data/ || true
 
+ADD data/compiled/default_*.pkl .
+
 VOLUME /app/data
 
 ENTRYPOINT redis-server --daemonize yes --maxmemory 4g --latency-tracking no && \

@@ -23,7 +23,7 @@ DEFAULT_LIGAND_EFFECT_ARGS = {
     'logfc_fdr': 0.05,
     'iterations': 2
 }
-LIGAND_EFFECT_SAVE_LOCATION = "data/compiled/default_ligand_effects.pkl"
+LIGAND_EFFECT_SAVE_LOCATION = "compiled_figs/default_ligand_effects.pkl"
 
 DEFAULT_INTERACTIONS_ARGS = {
     'inter_set': 'max',
@@ -37,7 +37,7 @@ DEFAULT_INTERACTIONS_ARGS = {
     'third_celltype':  '(None)',
     'bidirectional_bipartite': False,
 }
-INTERACTIONS_SAVE_LOCATION = 'data/compiled/default_interactions.pkl'
+INTERACTIONS_SAVE_LOCATION = 'compiled_figs/default_interactions.pkl'
 
 DEFAULT_CIRCOS_ARGS = {
     'inter_circos_fdr': 'fdr25',  # Default from fig 4
@@ -48,7 +48,7 @@ DEFAULT_CIRCOS_ARGS = {
     'circos_min_ligand_logfc': 0.12,  # Default from fig 4
     'genes': None
 }
-CIRCOS_SAVE_LOCATION = 'data/compiled/default_circos.pkl'
+CIRCOS_SAVE_LOCATION = 'compiled_figs/default_circos.pkl'
 
 
 def bipartite_graph(df,

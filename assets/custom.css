@@ -14,3 +14,16 @@ body > div.circos-tooltip {
 .offcanvas {
     width: 50% !important;
 }
+
+/*Grab indicator for circos, on drag switch to grabbing*/
+#Circos-container:hover {
+    cursor: move;
+    cursor: grab;
+    cursor: -moz-grab;
+    cursor: -webkit-grab;
+}
+#Circos-container:active {
+    cursor: grabbing;
+    cursor: -moz-grabbing;
+    cursor: -webkit-grabbing;
+}
