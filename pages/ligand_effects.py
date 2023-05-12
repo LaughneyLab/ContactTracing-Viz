@@ -40,8 +40,8 @@ def build_interface() -> list:
                                    ],
                                    dbc.RadioItems(
                                        id='effect_set',
-                                       options=[{'label': 'CIN-Dependent Effect', 'value': 'cin'},
-                                                {'label': 'CIN/STING Max Effect', 'value': 'max',
+                                       options=[{'label': 'CIN-Dependent Interactions', 'value': 'cin'},
+                                                {'label': 'CIN/STING-Dependent Interactions', 'value': 'max',
                                                  'disabled': True}
                                                 ],
                                        value=DEFAULT_LIGAND_EFFECT_ARGS['effect_set'],

@@ -39,8 +39,8 @@ def build_interface() -> list:
                                    ],
                                    dbc.RadioItems(
                                        id='circos_set',
-                                       options=[{'label': 'CIN-Dependent Effect', 'value': 'cin'},
-                                                {'label': 'CIN/STING Max Effect',
+                                       options=[{'label': 'CIN-Dependent Interactions', 'value': 'cin'},
+                                                {'label': 'CIN/STING-Dependent Interactions',
                                                  'value': 'sting'}],
                                        value=DEFAULT_CIRCOS_ARGS['circos_set'],
                                        persistence=False
