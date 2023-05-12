@@ -1,5 +1,6 @@
 import dash
-from dash_extensions.enrich import html, callback, Output, Input, State, dcc
+from dash_extensions import DeferScript
+from dash_extensions.enrich import html, callback, Output, Input, State, dcc, clientside_callback, Serverside
 import dash_bootstrap_components as dbc
 
 from viz.docs import circos_help, interaction_effects_def, diffusion_component_def, differential_abundance_def, \
@@ -142,10 +143,13 @@ def build_interface() -> list:
             *interaction_effects_def("interaction effects"),
             ", ligand/receptor interactions."
         ],
-        element=html.Div(
-            id="circos-graph-holder",
-            children=default_plots[1] if default_plots is not None else None
-        ),
+        element=html.Div([
+            circos_toolbar(),
+            html.Div(
+                id="circos-graph-holder",
+                children=default_plots[1] if default_plots is not None else None
+            )
+        ]),
         help_info=circos_help()
     )
 
@@ -156,8 +160,62 @@ def build_interface() -> list:
         html.Br(),
         controls,
         dcc.Store(id='cin_circos_plot', storage_type='memory', data=[default_plots[0] if default_plots is not None else None]),
-        dcc.Store(id='sting_circos_plot', storage_type='memory', data=[default_plots[1] if default_plots is not None else None])
+        dcc.Store(id='sting_circos_plot', storage_type='memory', data=[default_plots[1] if default_plots is not None else None]),
+        DeferScript(src=dash.get_asset_url('circos_hooks.js'))
     ]
+
+
+def circos_toolbar():
+    reset_button = dbc.Button(wrap_icon('fas fa-undo', 'Reset'), outline=True, color='dark', id='circos-reset-button')
+    zoom_in_button = dbc.Button(wrap_icon('fas fa-search-plus', 'Zoom In'), outline=True, color='dark', id='circos-zoom-in-button')
+    zoom_out_button = dbc.Button(wrap_icon('fas fa-search-minus', 'Zoom Out'), outline=True, color='dark', id='circos-zoom-out-button')
+    download_button = dbc.Button(wrap_icon('fas fa-download', 'Download'), outline=True, color='dark', id='circos-download-button')
+    return html.Div(
+        dbc.ButtonGroup(
+            [reset_button, zoom_in_button, zoom_out_button, download_button],
+            size='sm'
+        ), id='circos-toolbar'
+    )
+
+
+# When the graph is updated, inject custom hooks
+clientside_callback("""
+function(_) {
+    circosInjection();
+}
+""", Input('circos-graph-holder', 'children'))
+
+clientside_callback("""
+function(n_clicks) {
+    if (n_clicks > 0) {
+        downloadCircosSvg();
+    }
+}
+""", Input('circos-download-button', 'n_clicks'), prevent_initial_call=True)
+
+clientside_callback("""
+function(n_clicks) {
+    if (n_clicks > 0) {
+        resetCircosTransform();
+    }
+}
+""", Input('circos-reset-button', 'n_clicks'), prevent_initial_call=True)
+
+clientside_callback("""
+function(n_clicks) {
+    if (n_clicks > 0) {
+        zoomInCircos();
+    }
+}
+""", Input('circos-zoom-in-button', 'n_clicks'), prevent_initial_call=True)
+
+clientside_callback("""
+function(n_clicks) {
+    if (n_clicks > 0) {
+        zoomOutCircos();
+    }
+}
+""", Input('circos-zoom-out-button', 'n_clicks'), prevent_initial_call=True)
 
 
 @callback(
@@ -248,7 +306,7 @@ def make_circos_plot(set_progress, n_clicks,
         import pickle
         try:
             with open(CIRCOS_SAVE_LOCATION, 'rb') as f:
-                return pickle.load(f)
+                return [(Serverside(p) if p is not None else None) for p in pickle.load(f)]
         except:
             pass
 
@@ -279,7 +337,7 @@ def make_circos_plot(set_progress, n_clicks,
 
     set_progress((14, 14))
 
-    return [cin_circos, sting_circos]
+    return [Serverside(cin_circos), Serverside(sting_circos)]
 
 
 # @callback(

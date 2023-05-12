@@ -477,7 +477,7 @@ def make_circos_figure(set_progress, progress_offset: int,
     return dbc.Row([
         dbc.Col(dbc.Container(html.Div(
             dashbio.Circos(
-                enableDownloadSVG=True,
+                enableDownloadSVG=False,
                 enableZoomPan=True,
                 layout=layout,
                 selectEvent={

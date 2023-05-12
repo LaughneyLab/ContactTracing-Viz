@@ -2,7 +2,7 @@ import os.path
 
 import dash
 import dash_bootstrap_components as dbc
-from dash_extensions.enrich import callback, Output, Input, dcc, State, html
+from dash_extensions.enrich import callback, Output, Input, dcc, State, html, Serverside
 
 from viz.docs import ligand_effects_help, interaction_test_def, conditions_def, deg_test_def
 from viz.web import interactive_panel, wrap_icon, control_panel, control_panel_element, figure_output, \
@@ -267,7 +267,7 @@ def make_graph(set_progress, n_clicks,
         import pickle
         try:
             with open(LIGAND_EFFECT_SAVE_LOCATION, 'rb') as f:
-                return pickle.load(f)
+                return [(Serverside(p) if p is not None else None) for p in pickle.load(f)]
         except:
             pass
 
@@ -283,7 +283,7 @@ def make_graph(set_progress, n_clicks,
         set_progress_callback=set_progress
     )
 
-    return [fig, None]
+    return [Serverside(fig), None]
 
 
 # @callback(

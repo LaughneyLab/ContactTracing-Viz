@@ -4,7 +4,8 @@ import sys
 from uuid import uuid4
 
 import dash
-from dash_extensions.enrich import html, dcc, Output, Input, State
+from dash_extensions.enrich import html, dcc, Output, Input, State, NoOutputTransform, ServersideOutputTransform, \
+    FileSystemBackend
 import dash_bootstrap_components as dbc
 from dash.exceptions import PreventUpdate
 from dash_extensions.enrich import DashProxy, BlockingCallbackTransform, MultiplexerTransform
@@ -43,9 +44,11 @@ callback_manager = None
 if 'REDIS_URL' in os.environ:
     try:
         from dash import CeleryManager
+        from dash_extensions.enrich import RedisBackend
         from celery import Celery
         celery_app = Celery(__name__, broker=os.environ['REDIS_URL'] + "/0", backend=os.environ['REDIS_URL'] + "/1")
         callback_manager = CeleryManager(celery_app, cache_by=[lambda: launch_uuid], expire=LONG_CALLBACK_EXPIRY)
+        serverside_backend = RedisBackend(host=os.environ['REDIS_URL'], port=6379, db=2, key_prefix="serverside_cache_")
     except:
         callback_manager = None
 if callback_manager is None:
@@ -57,6 +60,7 @@ if callback_manager is None:
     if __name__ == "__main__" and os.path.exists('./ct_viz_cache'):
         shutil.rmtree('./ct_viz_cache')
     callback_manager = DiskcacheManager(Cache('./ct_viz_cache'), cache_by=[lambda: launch_uuid], expire=LONG_CALLBACK_EXPIRY)
+    serverside_backend = FileSystemBackend("./ct_viz_cache")
 
 
 # Custom style made with https://bootstrap.build/ based on FLATLY
@@ -74,6 +78,7 @@ app = DashProxy(__name__,
                 {'name': 'robots', 'content': 'index,follow'},
            ],
            title='ContactTracing',
+           external_scripts=['https://sharonchoong.github.io/svg-exportJS/svg-export.min.js'],
            external_stylesheets=[
                # Fonts
                dict(rel="preconnect",
@@ -93,6 +98,8 @@ app = DashProxy(__name__,
            transforms=[
                # BlockingCallbackTransform()  # Allows for preventing multiple callbacks from running
                MultiplexerTransform(),  # Allow for multiple callbacks to use the same output
+               NoOutputTransform(),  # Allow for callbacks to not have an output
+               ServersideOutputTransform(backends=[serverside_backend])  # Allow for callbacks to return a ServersideOutput
            ],
            use_pages=True,
            background_callback_manager=callback_manager,
@@ -176,7 +183,7 @@ app.layout = dbc.Container(fluid=True,
 
 
 if __name__ == '__main__':
-   # debug = False
+    # debug = False
     app.run(port=8000,
             debug=debug,
             dev_tools_ui=debug,

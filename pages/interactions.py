@@ -1,7 +1,7 @@
 import os.path
 
 import dash
-from dash_extensions.enrich import dcc, callback, Output, Input, State, html
+from dash_extensions.enrich import dcc, callback, Output, Input, State, html, Serverside
 import dash_bootstrap_components as dbc
 
 from viz.docs import interactions_help, interaction_effects_def, ligand_log2fc_def, conditions_def
@@ -318,7 +318,7 @@ def make_graph(set_progress, n_clicks,
         import pickle
         try:
             with open(INTERACTIONS_SAVE_LOCATION, 'rb') as f:
-                return pickle.load(f)
+                return [(Serverside(p) if p is not None else None) for p in pickle.load(f)]
         except:
             pass
 
@@ -356,7 +356,7 @@ def make_graph(set_progress, n_clicks,
 
     set_progress((2, 2))
 
-    return [cin_fig, sting_fig]
+    return [Serverside(cin_fig), Serverside(sting_fig)]
 
 
 # @callback(
