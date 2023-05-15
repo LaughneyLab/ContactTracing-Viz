@@ -592,7 +592,7 @@ def make_circos_legend(min_numSigI1, max_numSigI1,
                        da_transformer: ColorTransformer,
                        dc1_transformer: ColorTransformer) -> go.Figure:
     line_size_min_legend = go.Scatter(
-        name=str(min_numSigI1),
+        name="Few",
         x=[None], y=[None],
         mode='lines',
         showlegend=True,
@@ -606,7 +606,7 @@ def make_circos_legend(min_numSigI1, max_numSigI1,
     )
 
     line_size_max_legend = go.Scatter(
-        name=str(max_numSigI1),
+        name="Many",
         x=[None], y=[None],
         mode='lines',
         showlegend=True,
