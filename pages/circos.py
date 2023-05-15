@@ -141,7 +141,7 @@ def build_interface() -> list:
             *differential_abundance_def("Differential Abundance"),
             ", Number of significant ",
             *interaction_effects_def("interaction effects"),
-            ", ligand/receptor interactions."
+            ", ligand/receptor interactions. Tip: You can copy the information you are hovering over by hitting Ctrl+C."
         ],
         element=html.Div([
             circos_toolbar(),
@@ -161,7 +161,7 @@ def build_interface() -> list:
         controls,
         dcc.Store(id='cin_circos_plot', storage_type='memory', data=[default_plots[0] if default_plots is not None else None]),
         dcc.Store(id='sting_circos_plot', storage_type='memory', data=[default_plots[1] if default_plots is not None else None]),
-        DeferScript(src=dash.get_asset_url('circos_hooks.js'))
+        # DeferScript(src=dash.get_asset_url('circos_hooks.js'))
     ]
 
 

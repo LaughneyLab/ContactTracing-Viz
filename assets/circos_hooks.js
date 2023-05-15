@@ -1,5 +1,16 @@
 // We can't import d3 directly, so we have to use the global variable
-d3 = window.d3;
+
+window.past_circos_transform = getCircosTransform();
+
+// Use mutation observer
+window.circos_observer = new MutationObserver(function (mutations) {
+    if (mutations.length > 0) {
+        mutation = mutations[mutations.length - 1];
+        if (mutation.type === "attributes") {
+            past_circos_transform = getCircosTransform();
+        }
+    }
+});
 
 // Retrieve the circos transform from the DOM
 function getCircosSvgElement() {
@@ -28,25 +39,21 @@ function getCircosTransform() {
     return { translate: translate, scale: scale };
 }
 
-past_circos_transform = getCircosTransform();
-
-// Use mutation observer
-circos_observer = new MutationObserver(function (mutations) {
-    if (mutations.length > 0) {
-        if (mutation.type === "attributes") {
-            mutation = mutations[mutations.length - 1];
-            past_circos_transform = getCircosTransform();
-        }
-    }
-});
 
 function setCircosTransform(transform) {
     // See for more info: https://github.com/nicgirault/circosJS/commit/2f651f5c92ae737c2d036c3b0f14f9441e39fc25
     const circos_top_level = getCircosSvgElement();
     if (circos_top_level !== null) {
-        // Use d3 to zoom and transform
-        d3.select(circos_top_level)
-            .attr("transform", "translate(" + transform.translate + ") scale(" + transform.scale + ")");
+        updated = d3.select(circos_top_level)
+            .attr("transform", "translate(" + transform.translate + ") scale(" + transform.scale + ")")
+
+        zoom = updated.node().parentNode.__zoom;
+        if (zoom !== undefined) {
+            zoom.x = transform.translate[0];
+            zoom.y = transform.translate[1];
+            zoom.k = transform.scale;
+        }
+
         past_circos_transform = transform;
     }
 }
@@ -87,12 +94,17 @@ function zoomCircos(zoom) {
     setCircosTransform(transform);
 }
 
-CIRCOS_ZOOM_FACTOR = 1.1;
-
 function zoomInCircos() {
-    zoomCircos(CIRCOS_ZOOM_FACTOR);
+    zoomCircos(1.1);
 }
 
 function zoomOutCircos() {
-    zoomCircos(1 / CIRCOS_ZOOM_FACTOR);
+    zoomCircos(1 / 1.1);
 }
+
+// Expose the functions globally
+window.circosInjection = circosInjection;
+window.downloadCircosSvg = downloadCircosSvg;
+window.resetCircosTransform = resetCircosTransform;
+window.zoomInCircos = zoomInCircos;
+window.zoomOutCircos = zoomOutCircos;

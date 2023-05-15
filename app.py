@@ -4,6 +4,7 @@ import sys
 from uuid import uuid4
 
 import dash
+from dash_extensions import DeferScript
 from dash_extensions.enrich import html, dcc, Output, Input, State, NoOutputTransform, ServersideOutputTransform, \
     FileSystemBackend
 import dash_bootstrap_components as dbc
@@ -78,7 +79,8 @@ app = DashProxy(__name__,
                 {'name': 'robots', 'content': 'index,follow'},
            ],
            title='ContactTracing',
-           external_scripts=['https://sharonchoong.github.io/svg-exportJS/svg-export.min.js'],
+           external_scripts=['https://sharonchoong.github.io/svg-exportJS/svg-export.min.js',
+                             "/assets/circos_hooks.js"],
            external_stylesheets=[
                # Fonts
                dict(rel="preconnect",
