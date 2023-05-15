@@ -67,9 +67,6 @@ function resetCircosTransform() {
 function circosInjection() {
     circos_observer.disconnect();
 
-    // Global variable to store previous transformation
-    setCircosTransform(past_circos_transform);
-
     // Add listener for when the transform attribute changes
     const circos_top_level = getCircosSvgElement();
     if (circos_top_level !== null) {

@@ -271,7 +271,7 @@ def update_circos_plot(circos_set, cin_circos_plot, sting_circos_plot):
     background=True,
     prevent_initial_call=True,
     interval=500,
-    cache_args_to_ignore=[0, 1],
+    cache_args_to_ignore=[0],
     running=[
         (Output('submit-button-circos', 'disabled'), True, False),
         (Output('progress-bar', 'style'), {'visibility': 'visible'}, {'visibility': 'hidden'}),

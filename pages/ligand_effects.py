@@ -232,7 +232,7 @@ def update_network_figure(effect_set, cin_network_plot, sting_network_plot):
     State('logfc_fdr', 'data'),
     State('iterations', 'value'),
     interval=500,
-    cache_args_to_ignore=[0, 1],
+    cache_args_to_ignore=[0],
     background=True,  # Run in background
     prevent_initial_call=True,
     running=[  # Disable the button while the callback is running

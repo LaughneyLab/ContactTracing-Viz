@@ -280,7 +280,7 @@ def update_bipartite_plot(inter_set, cin_bipartite_plot, max_bipartite_plot):
     State('bipartite_logfc_fdr', 'data'),
     State('bidirectional_bipartite', 'value'),
     interval=500,
-    cache_args_to_ignore=[0, 1],
+    cache_args_to_ignore=[0],
     background=True,  # Run in background
     prevent_initial_call=True,
     running=[  # Disable the button while the callback is running
