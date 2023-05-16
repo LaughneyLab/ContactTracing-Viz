@@ -279,14 +279,10 @@ def update_circos_plot(circos_set, cin_circos_plot, sting_circos_plot):
         Output('progress-bar', 'value'),
         Output('progress-bar', 'max'),
     ]
-)  # TODO: Partial updates for highlighting?
+)
 def make_circos_plot(set_progress, n_clicks,
                      inter_circos_fdr, logfc_circos_fdr,
                      min_numsigi1, min_numdeg, min_chord_ligand_logfc, gene_list):
-    if n_clicks == 0:
-        from dash.exceptions import PreventUpdate
-        raise PreventUpdate
-
     if gene_list is not None and len(gene_list.strip()) == 0:
         gene_list = None
 
@@ -305,7 +301,8 @@ def make_circos_plot(set_progress, n_clicks,
         import pickle
         try:
             with open(CIRCOS_SAVE_LOCATION, 'rb') as f:
-                return [(Serverside(p) if p is not None else None) for p in pickle.load(f)]
+                # return [(Serverside(p) if p is not None else None) for p in pickle.load(f)]  FIXME
+                return pickle.load(f)
         except:
             pass
 
@@ -336,7 +333,8 @@ def make_circos_plot(set_progress, n_clicks,
 
     set_progress((14, 14))
 
-    return [Serverside(cin_circos), Serverside(sting_circos)]
+    # return [Serverside(cin_circos), Serverside(sting_circos)]  FIXME
+    return [cin_circos, sting_circos]
 
 
 # @callback(

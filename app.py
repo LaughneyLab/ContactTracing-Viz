@@ -4,15 +4,12 @@ import sys
 from uuid import uuid4
 
 import dash
-from dash_extensions import DeferScript
 from dash_extensions.enrich import html, dcc, Output, Input, State, NoOutputTransform, ServersideOutputTransform, \
     FileSystemBackend
 import dash_bootstrap_components as dbc
-from dash.exceptions import PreventUpdate
-from dash_extensions.enrich import DashProxy, BlockingCallbackTransform, MultiplexerTransform
+from dash_extensions.enrich import DashProxy, MultiplexerTransform
 
-from data.config import LONG_CALLBACK_EXPIRY
-from viz.web import wrap_icon
+from viz.config import LONG_CALLBACK_EXPIRY
 
 # Workaround for dill crashes: Ref: https://github.com/uqfoundation/dill/issues/332#issuecomment-908826972
 try:
@@ -49,7 +46,8 @@ if 'REDIS_URL' in os.environ:
         from celery import Celery
         celery_app = Celery(__name__, broker=os.environ['REDIS_URL'] + "/0", backend=os.environ['REDIS_URL'] + "/1")
         callback_manager = CeleryManager(celery_app, cache_by=[lambda: launch_uuid], expire=LONG_CALLBACK_EXPIRY)
-        serverside_backend = RedisBackend(host=os.environ['REDIS_URL'], port=6379, db=2, key_prefix="serverside_cache_")
+        # FIXME: Serverside is broken in long callbacks with the redis backend, see: https://github.com/thedirtyfew/dash-extensions/issues/207
+        # serverside_backend = RedisBackend(host=os.environ['REDIS_URL'], port=6379, db=2, key_prefix="serverside_cache_")
     except:
         callback_manager = None
 if callback_manager is None:
@@ -101,7 +99,7 @@ app = DashProxy(__name__,
                # BlockingCallbackTransform()  # Allows for preventing multiple callbacks from running
                MultiplexerTransform(),  # Allow for multiple callbacks to use the same output
                NoOutputTransform(),  # Allow for callbacks to not have an output
-               ServersideOutputTransform(backends=[serverside_backend])  # Allow for callbacks to return a ServersideOutput
+               # ServersideOutputTransform(backends=[serverside_backend])  # Allow for callbacks to return a ServersideOutput  FIXME
            ],
            use_pages=True,
            background_callback_manager=callback_manager,
@@ -110,7 +108,7 @@ app = DashProxy(__name__,
 server = app.server
 
 if celery_app is not None:
-    app.register_celery_tasks()
+    app.register_callbacks()
 
 def access_code_page():
     #page_container = dash.page_container

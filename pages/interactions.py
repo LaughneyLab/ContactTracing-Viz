@@ -296,10 +296,6 @@ def make_graph(set_progress, n_clicks,
                first_ct, second_ct, third_ct,
                min_logfc, min_expression, min_numSigI1,
                inter_fdr, logfc_fdr, bidirectional):
-    if n_clicks == 0:
-        from dash.exceptions import PreventUpdate
-        raise PreventUpdate
-
     from viz.data import read_interactions_file
     from viz.figures import bipartite_graph, DEFAULT_INTERACTIONS_ARGS, INTERACTIONS_SAVE_LOCATION
 
@@ -318,7 +314,8 @@ def make_graph(set_progress, n_clicks,
         import pickle
         try:
             with open(INTERACTIONS_SAVE_LOCATION, 'rb') as f:
-                return [(Serverside(p) if p is not None else None) for p in pickle.load(f)]
+                # return [(Serverside(p) if p is not None else None) for p in pickle.load(f)]  FIXME
+                return pickle.load(f)
         except:
             pass
 
@@ -356,7 +353,8 @@ def make_graph(set_progress, n_clicks,
 
     set_progress((2, 2))
 
-    return [Serverside(cin_fig), Serverside(sting_fig)]
+    # return [Serverside(cin_fig), Serverside(sting_fig)]  FIXME
+    return [cin_fig, sting_fig]
 
 
 # @callback(

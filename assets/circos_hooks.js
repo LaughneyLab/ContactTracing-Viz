@@ -78,140 +78,135 @@ function moveCircosTooltip() {
 function injectHoverEffects() {
     // Highlight relevant connections on hover
     let svg = d3.select("#svg-child");
-    // Check if the svg is already hooked using our property
-    if (svg.property("hover-hooked") !== true) {
-        // Add effects by applying the not-hovered class to all non-hovered elements
-        svg.selectAll(".chord").on("mouseover", function (d) {  // Connections
-            svg.classed("moused-over", true);
-            // Get the properties of the hovered chord
-            let source = d.source_celltype;
-            let target = d.target_celltype;
-            let ligand = d.ligand;
-            let receptor = d.receptor;
+    // Add effects by applying the not-hovered class to all non-hovered elements
+    svg.selectAll(".chord").on("mouseover", function (d) {  // Connections
+        svg.classed("moused-over", true);
+        // Get the properties of the hovered chord
+        let source = d.source_celltype;
+        let target = d.target_celltype;
+        let ligand = d.ligand;
+        let receptor = d.receptor;
 
-            svg.selectAll("path").filter(function (d) {  // Select tracks that don't contain the hovered chord properties
-                // Ignore elements with undefined properties
-                if (d.celltype === undefined || d.target === undefined) {
-                    return false;
-                }
-                return !((d.celltype === source && d.target === ligand) || (d.celltype === target && d.target === receptor));
-            }).classed("not-hovered", true);  // Apply the not-hovered class
+        svg.selectAll("path").filter(function (d) {  // Select tracks that don't contain the hovered chord properties
+            // Ignore elements with undefined properties
+            if (d.celltype === undefined || d.target === undefined) {
+                return false;
+            }
+            return !((d.celltype === source && d.target === ligand) || (d.celltype === target && d.target === receptor));
+        }).classed("not-hovered", true);  // Apply the not-hovered class
 
-            svg.selectAll(".cs-layout > *").filter(function (d) {  // Select cell type labels that don't contain the hovered chord properties
-                return d.celltype !== source && d.celltype !== target;
-            }).classed("not-hovered", true);  // Apply the not-hovered class
+        svg.selectAll(".cs-layout > *").filter(function (d) {  // Select cell type labels that don't contain the hovered chord properties
+            return d.celltype !== source && d.celltype !== target;
+        }).classed("not-hovered", true);  // Apply the not-hovered class
 
-            svg.selectAll(".chord").filter(function (d) {  // Select chords that don't contain the hovered chord properties
-                return !(d.source_celltype === source && d.ligand === ligand && d.target_celltype === target && d.receptor === receptor);
-            }).classed("not-hovered", true);  // Apply the not-hovered class
+        svg.selectAll(".chord").filter(function (d) {  // Select chords that don't contain the hovered chord properties
+            return !(d.source_celltype === source && d.ligand === ligand && d.target_celltype === target && d.receptor === receptor);
+        }).classed("not-hovered", true);  // Apply the not-hovered class
 
-            svg.selectAll(".block > g > text").filter(function (d) {  // Select cell type labels that don't contain the hovered chord properties
-                return !((d.celltype === source && d.value === ligand) || (d.celltype === target && d.value === receptor));
-            }).classed("not-hovered", true);  // Apply the not-hovered class
-        }).on("mouseout", function (d) {
-            svg.selectAll(".not-hovered").classed("not-hovered", false);  // Remove the not-hovered class
-            svg.classed("moused-over", false);
-        });
+        svg.selectAll(".block > g > text").filter(function (d) {  // Select cell type labels that don't contain the hovered chord properties
+            return !((d.celltype === source && d.value === ligand) || (d.celltype === target && d.value === receptor));
+        }).classed("not-hovered", true);  // Apply the not-hovered class
+    }).on("mouseout", function (d) {
+        svg.selectAll(".not-hovered").classed("not-hovered", false);  // Remove the not-hovered class
+        svg.classed("moused-over", false);
+    });
 
-        svg.selectAll("path").filter(function(d) {
-            return d.celltype !== undefined && d.target !== undefined;
-        }).on("mouseover", function (d) {  // Tracks
-            svg.classed("moused-over", true);
-            // Get the properties of the hovered chord
-            let celltype = d.celltype;
-            let target = d.target;
+    svg.selectAll("path").filter(function(d) {
+        return d.celltype !== undefined && d.target !== undefined;
+    }).on("mouseover", function (d) {  // Tracks
+        svg.classed("moused-over", true);
+        // Get the properties of the hovered chord
+        let celltype = d.celltype;
+        let target = d.target;
 
-            svg.selectAll("path").filter(function (d) {  // Select tracks that don't contain the hovered chord properties
-                // Ignore elements with undefined properties
-                if (d.celltype === undefined || d.target === undefined) {
-                    return false;
-                }
-                return !(d.celltype === celltype && d.target === target);
-            }).classed("not-hovered", true);  // Apply the not-hovered class
+        svg.selectAll("path").filter(function (d) {  // Select tracks that don't contain the hovered chord properties
+            // Ignore elements with undefined properties
+            if (d.celltype === undefined || d.target === undefined) {
+                return false;
+            }
+            return !(d.celltype === celltype && d.target === target);
+        }).classed("not-hovered", true);  // Apply the not-hovered class
 
-            svg.selectAll(".cs-layout > *").filter(function (d) {  // Select cell type labels that don't contain the hovered chord properties
-                return d.celltype !== celltype;
-            }).classed("not-hovered", true);  // Apply the not-hovered class
+        svg.selectAll(".cs-layout > *").filter(function (d) {  // Select cell type labels that don't contain the hovered chord properties
+            return d.celltype !== celltype;
+        }).classed("not-hovered", true);  // Apply the not-hovered class
 
-            svg.selectAll(".chord").filter(function (d) {  // Select chords that don't contain the hovered chord properties
-                return !((d.source_celltype === celltype && d.ligand === target) || (d.target_celltype === celltype && d.receptor === target));
-            }).classed("not-hovered", true);  // Apply the not-hovered class
+        svg.selectAll(".chord").filter(function (d) {  // Select chords that don't contain the hovered chord properties
+            return !((d.source_celltype === celltype && d.ligand === target) || (d.target_celltype === celltype && d.receptor === target));
+        }).classed("not-hovered", true);  // Apply the not-hovered class
 
-            svg.selectAll(".block > g > text").filter(function (d) {  // Select cell type labels that don't contain the hovered chord properties
-                return !(d.celltype === celltype && d.value === target);
-            }).classed("not-hovered", true);  // Apply the not-hovered class
-        }).on("mouseout", function (d) {
-            svg.selectAll(".not-hovered").classed("not-hovered", false);  // Remove the not-hovered class
-            svg.classed("moused-over", false);
-        });
+        svg.selectAll(".block > g > text").filter(function (d) {  // Select cell type labels that don't contain the hovered chord properties
+            return !(d.celltype === celltype && d.value === target);
+        }).classed("not-hovered", true);  // Apply the not-hovered class
+    }).on("mouseout", function (d) {
+        svg.selectAll(".not-hovered").classed("not-hovered", false);  // Remove the not-hovered class
+        svg.classed("moused-over", false);
+    });
 
-        svg.selectAll(".cs-layout > *").on("mouseover", function (d) {  // Cell type labels
-            svg.classed("moused-over", true);
-            // Get the properties of the hovered chord
-            let celltype = d.celltype;
+    svg.selectAll(".cs-layout > *").on("mouseover", function (d) {  // Cell type labels
+        svg.classed("moused-over", true);
+        // Get the properties of the hovered chord
+        let celltype = d.celltype;
 
-            svg.selectAll("path").filter(function (d) {  // Select tracks that don't contain the hovered chord properties
-                // Ignore elements with undefined properties
-                if (d.celltype === undefined || d.target === undefined) {
-                    return false;
-                }
-                return d.celltype !== celltype;
-            }).classed("not-hovered", true);  // Apply the not-hovered class
+        svg.selectAll("path").filter(function (d) {  // Select tracks that don't contain the hovered chord properties
+            // Ignore elements with undefined properties
+            if (d.celltype === undefined || d.target === undefined) {
+                return false;
+            }
+            return d.celltype !== celltype;
+        }).classed("not-hovered", true);  // Apply the not-hovered class
 
-            svg.selectAll(".cs-layout > *").filter(function (d) {  // Select cell type labels that don't contain the hovered chord properties
-                return d.celltype !== celltype;
-            }).classed("not-hovered", true);  // Apply the not-hovered class
+        svg.selectAll(".cs-layout > *").filter(function (d) {  // Select cell type labels that don't contain the hovered chord properties
+            return d.celltype !== celltype;
+        }).classed("not-hovered", true);  // Apply the not-hovered class
 
-            svg.selectAll(".chord").filter(function (d) {  // Select chords that don't contain the hovered chord properties
-                return !((d.source_celltype === celltype) || (d.target_celltype === celltype));
-            }).classed("not-hovered", true);  // Apply the not-hovered class
+        svg.selectAll(".chord").filter(function (d) {  // Select chords that don't contain the hovered chord properties
+            return !((d.source_celltype === celltype) || (d.target_celltype === celltype));
+        }).classed("not-hovered", true);  // Apply the not-hovered class
 
-            svg.selectAll(".block > g > text").filter(function (d) {  // Select cell type labels that don't contain the hovered chord properties
-                return d.celltype !== celltype;
-            }).classed("not-hovered", true);  // Apply the not-hovered class
-        }).on("mouseout", function (d) {
-            svg.selectAll(".not-hovered").classed("not-hovered", false);  // Remove the not-hovered class
-            svg.classed("moused-over", false);
-        });
+        svg.selectAll(".block > g > text").filter(function (d) {  // Select cell type labels that don't contain the hovered chord properties
+            return d.celltype !== celltype;
+        }).classed("not-hovered", true);  // Apply the not-hovered class
+    }).on("mouseout", function (d) {
+        svg.selectAll(".not-hovered").classed("not-hovered", false);  // Remove the not-hovered class
+        svg.classed("moused-over", false);
+    });
 
-        svg.selectAll(".block > g > text").on("mouseover", function (d) {  // Cell type labels
-            svg.classed("moused-over", true);
-            // Get the properties of the hovered chord
-            let celltype = d.celltype;
-            let target = d.value;
+    svg.selectAll(".block > g > text").on("mouseover", function (d) {  // Cell type labels
+        svg.classed("moused-over", true);
+        // Get the properties of the hovered chord
+        let celltype = d.celltype;
+        let target = d.value;
 
-            svg.selectAll("path").filter(function (d) {  // Select tracks that don't contain the hovered chord properties
-                // Ignore elements with undefined properties
-                if (d.celltype === undefined || d.target === undefined) {
-                    return false;
-                }
-                return !(d.celltype === celltype && d.target === target);
-            }).classed("not-hovered", true);  // Apply the not-hovered class
+        svg.selectAll("path").filter(function (d) {  // Select tracks that don't contain the hovered chord properties
+            // Ignore elements with undefined properties
+            if (d.celltype === undefined || d.target === undefined) {
+                return false;
+            }
+            return !(d.celltype === celltype && d.target === target);
+        }).classed("not-hovered", true);  // Apply the not-hovered class
 
-            svg.selectAll(".cs-layout > *").filter(function (d) {  // Select cell type labels that don't contain the hovered chord properties
-                return d.celltype !== celltype;
-            }).classed("not-hovered", true);  // Apply the not-hovered class
+        svg.selectAll(".cs-layout > *").filter(function (d) {  // Select cell type labels that don't contain the hovered chord properties
+            return d.celltype !== celltype;
+        }).classed("not-hovered", true);  // Apply the not-hovered class
 
-            svg.selectAll(".chord").filter(function (d) {  // Select chords that don't contain the hovered chord properties
-                return !((d.source_celltype === celltype && d.ligand === target) || (d.target_celltype === celltype && d.receptor === target));
-            }).classed("not-hovered", true);  // Apply the not-hovered class
+        svg.selectAll(".chord").filter(function (d) {  // Select chords that don't contain the hovered chord properties
+            return !((d.source_celltype === celltype && d.ligand === target) || (d.target_celltype === celltype && d.receptor === target));
+        }).classed("not-hovered", true);  // Apply the not-hovered class
 
-            svg.selectAll(".block > g > text").filter(function (d) {  // Select cell type labels that don't contain the hovered chord properties
-                return !(d.celltype === celltype && d.value === target);
-            }).classed("not-hovered", true);  // Apply the not-hovered class
-        }).on("mouseout", function (d) {
-            svg.selectAll(".not-hovered").classed("not-hovered", false);  // Remove the not-hovered class
-            svg.classed("moused-over", false);
-        });
+        svg.selectAll(".block > g > text").filter(function (d) {  // Select cell type labels that don't contain the hovered chord properties
+            return !(d.celltype === celltype && d.value === target);
+        }).classed("not-hovered", true);  // Apply the not-hovered class
+    }).on("mouseout", function (d) {
+        svg.selectAll(".not-hovered").classed("not-hovered", false);  // Remove the not-hovered class
+        svg.classed("moused-over", false);
+    });
 
-        // On double click, undo highlighting
-        svg.on("dblclick", function (d) {
-            svg.selectAll('.not-hovered').classed("not-hovered", false)
-            svg.classed("moused-over", false);
-        });
-
-        svg.property("hover-hooked", true);
-    }
+    // On double click, undo highlighting
+    svg.on("dblclick", function (d) {
+        svg.selectAll('.not-hovered').classed("not-hovered", false)
+        svg.classed("moused-over", false);
+    });
 }
 
 function circosInjection() {

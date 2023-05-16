@@ -248,10 +248,6 @@ def make_graph(set_progress, n_clicks,
                cell_type, ligands,
                interaction_fdr, min_logfc, min_expression,
                logfc_fdr, iterations):
-    if n_clicks == 0:
-        from dash.exceptions import PreventUpdate
-        raise PreventUpdate
-
     from viz.figures import pseudotime_interaction_propagation_graph, DEFAULT_LIGAND_EFFECT_ARGS, LIGAND_EFFECT_SAVE_LOCATION
 
     set_progress((0, iterations))
@@ -267,7 +263,8 @@ def make_graph(set_progress, n_clicks,
         import pickle
         try:
             with open(LIGAND_EFFECT_SAVE_LOCATION, 'rb') as f:
-                return [(Serverside(p) if p is not None else None) for p in pickle.load(f)]
+                # return [(Serverside(p) if p is not None else None) for p in pickle.load(f)]  FIXME
+                return pickle.load(f)
         except:
             pass
 
@@ -283,7 +280,8 @@ def make_graph(set_progress, n_clicks,
         set_progress_callback=set_progress
     )
 
-    return [Serverside(fig), None]
+    # return [Serverside(fig), None] FIXME
+    return [fig, None]
 
 
 # @callback(
