@@ -248,8 +248,7 @@ def reset_to_defaults(n_clicks, submission_button_clicks):
     Output('circos-graph-holder', 'children'),
     Input('circos_set', 'value'),
     Input('cin_circos_plot', 'data'),
-    Input('sting_circos_plot', 'data'),
-    prevent_initial_call=True
+    Input('sting_circos_plot', 'data')
 )
 def update_circos_plot(circos_set, cin_circos_plot, sting_circos_plot):
     if circos_set == 'cin':
