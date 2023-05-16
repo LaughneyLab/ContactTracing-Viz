@@ -365,6 +365,7 @@ def make_circos_figure(set_progress, progress_offset: int,
                 'value': dc1,
                 'value_text': f"<h4>Cell Type: {celltype}<br>Target ({gene_type}): {t}<br>DC1: {dc1:.2f}</h4>",
                 'color': dc1_colormap(dc1),
+                'celltype': celltype,
                 'target': t
             })
     if set_progress is not None:
@@ -385,6 +386,7 @@ def make_circos_figure(set_progress, progress_offset: int,
                 'value': da,
                 'value_text': f"<h4>Cell Type: {celltype}<br>Target ({gene_type}): {t}<br>DA: {da:.2f}</h4>",
                 'color': da_colormap(da),
+                'celltype': celltype,
                 'target': t
             })
     if set_progress is not None:
@@ -409,6 +411,7 @@ def make_circos_figure(set_progress, progress_offset: int,
                     'value': 0,
                     'value_text': "",
                     'color': color,
+                    'celltype': celltype,
                     'target': t
                 })
             else:
@@ -422,6 +425,7 @@ def make_circos_figure(set_progress, progress_offset: int,
                     'value': max(lig_effect, 0),
                     'value_text': f"<h4>Cell Type: {celltype}<br>Target (Receptor): {t}<br>numSigI: {numSigI1:d}</h4>",
                     'color': color,
+                    'celltype': celltype,
                     'target': t
                 })
     if set_progress is not None:
@@ -452,18 +456,24 @@ def make_circos_figure(set_progress, progress_offset: int,
         text_data[(source_celltype, lig)] = {
             'block_id': celltype2id[source_celltype],
             'position': source_position+.5,
-            'value': lig if highlight_chord else ""
+            'value': lig if highlight_chord else "",
+            "celltype": source_celltype,
         }
         text_data[(target_celltype, rec)] = {
             'block_id': celltype2id[target_celltype],
             'position': target_position+.5,
-            'value': rec if highlight_chord else ""
+            'value': rec if highlight_chord else "",
+            "celltype": target_celltype,
         }
 
         chord_data.append({
             'color': maybe_brighten(log2fc_colormap, inter_row['MAST_log2FC_ligand'], lig, rec),
             'logfc': inter_row['MAST_log2FC_ligand'],
             'highlighted': highlight_chord,
+            'source_celltype': source_celltype,
+            'target_celltype': target_celltype,
+            'ligand': lig,
+            'receptor': rec,
             'value_text': f"<h4>Source: {source_celltype}<br>Ligand: {lig}<br>Target: {target_celltype}<br>Receptor: {rec}<br>Ligand log2FC: {inter_row['MAST_log2FC_ligand']:.2f}<br>Interactions: {inter_row['numSigI1']}</h4>",
             'source': {
                 'id': celltype2id[source_celltype],
@@ -576,8 +586,8 @@ def make_circos_figure(set_progress, progress_offset: int,
                     'size': 800
                     #"cornerRadius": 4,
                 }
-            )
-        , style={'height': 800, 'width': 800})), width=9), dbc.Col(
+            ),
+        style={'height': 800, 'width': 800})), width=9), dbc.Col(
                 dcc.Graph(
                     figure=legend_group,
                     config={

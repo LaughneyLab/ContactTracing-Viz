@@ -6,10 +6,25 @@
     left: 0 !important;
 }
 .circos-tooltip > h3 {
-    font-size: 12pt;
+    font-size: 9pt;
 }
 .circos-tooltip > h4 {
-    font-size: 12pt;
+    font-size: 9pt;
+}
+
+/* Apply on all elements except track 0 (text labels) */
+.not-hovered {
+    /* Make elements saturated */
+    opacity: 0.05;
+    /* Hide text */
+    font-size: 0;
+}
+
+/* Emphasize mouse-over text */
+#svg-child.moused-over > g > g > g > g > text:not(.not-hovered) {
+    font-size: 10pt !important;
+    font-weight: bold !important;
+    z-index: 1000;
 }
 
 .slider_text_input {
