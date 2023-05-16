@@ -335,6 +335,19 @@ def make_circos_figure(set_progress, progress_offset: int,
     if set_progress is not None:
         set_progress((3+(progress_offset*7), 7*(progress_offset+1)))
 
+    def get_data(df, celltype, target, field):
+        dat = df[(df['cell_type'] == celltype) & (df['target'] == target)]
+        ligand = dat['ligand'].values[0]
+        receptor = dat['receptor'].values[0]
+        gene_type = 'Gene'
+        if ligand and receptor:
+            gene_type = 'Ligand/Receptor'
+        elif ligand:
+            gene_type = 'Ligand'
+        elif receptor:
+            gene_type = 'Receptor'
+        return dat[field].values[0], gene_type
+
     # Build next ring for DC1 heatmap
     dc1_colormap = ColorTransformer(-1, 1, 'cividis')
     diffusion_data = []
@@ -342,7 +355,7 @@ def make_circos_figure(set_progress, progress_offset: int,
         id = celltype2id[celltype]
         targets = celltype2targets[celltype]
         for i, t in enumerate(targets):
-            dc1 = outer_data[(outer_data['cell_type'] == celltype) & (outer_data['target'] == t)]['cell_type_dc1'].values[0]
+            dc1, gene_type = get_data(outer_data, celltype, t, 'cell_type_dc1')
             # Normalize to 0-1
             #dc1 = (dc1 - min_dc1) / (max_dc1 - min_dc1)
             diffusion_data.append({
@@ -350,7 +363,7 @@ def make_circos_figure(set_progress, progress_offset: int,
                 'start': i,
                 'end': (i + 1),
                 'value': dc1,
-                'value_text': f"<h3>{celltype}<br>{t} DC1: {dc1:.2f}</h3>",
+                'value_text': f"<h4>Cell Type: {celltype}<br>Target ({gene_type}): {t}<br>DC1: {dc1:.2f}</h4>",
                 'color': dc1_colormap(dc1),
                 'target': t
             })
@@ -364,13 +377,13 @@ def make_circos_figure(set_progress, progress_offset: int,
         id = celltype2id[celltype]
         targets = celltype2targets[celltype]
         for i, t in enumerate(targets):
-            da = outer_data[(outer_data['cell_type'] == celltype) & (outer_data['target'] == t)]['DA_score'].values[0]
+            da, gene_type = get_data(outer_data, celltype, t, 'DA_score')
             da_data.append({
                 'block_id': id,
                 'start': i,
                 'end': (i + 1),
                 'value': da,
-                'value_text': f"<h3>{celltype}<br>{t} DA: {da:.2f}</h3>",
+                'value_text': f"<h4>Cell Type: {celltype}<br>Target ({gene_type}): {t}<br>DA: {da:.2f}</h4>",
                 'color': da_colormap(da),
                 'target': t
             })
@@ -399,15 +412,15 @@ def make_circos_figure(set_progress, progress_offset: int,
                     'target': t
                 })
             else:
-                lig_effect = receptor_info[(receptor_info['receptor'] == t) & (receptor_info['cell_type_receptor'] == celltype)]['numSigI1'].values[0]
+                numSigI1 = receptor_info[(receptor_info['receptor'] == t) & (receptor_info['cell_type_receptor'] == celltype)]['numSigI1'].values[0]
                 # Normalize to 0 minimum
-                lig_effect -= min_receptor_numSigI1
+                lig_effect = numSigI1 - min_receptor_numSigI1
                 numSigI1_data.append({
                     'block_id': id,
                     'start': i,
                     'end': (i + 1),
                     'value': max(lig_effect, 0),
-                    'value_text': f"<h3>{celltype}<br>{t} numSigI: {lig_effect:d}</h3>",
+                    'value_text': f"<h4>Cell Type: {celltype}<br>Target (Receptor): {t}<br>numSigI: {numSigI1:d}</h4>",
                     'color': color,
                     'target': t
                 })
@@ -451,18 +464,16 @@ def make_circos_figure(set_progress, progress_offset: int,
             'color': maybe_brighten(log2fc_colormap, inter_row['MAST_log2FC_ligand'], lig, rec),
             'logfc': inter_row['MAST_log2FC_ligand'],
             'highlighted': highlight_chord,
+            'value_text': f"<h4>Source: {source_celltype}<br>Ligand: {lig}<br>Target: {target_celltype}<br>Receptor: {rec}<br>Ligand log2FC: {inter_row['MAST_log2FC_ligand']:.2f}<br>Interactions: {inter_row['numSigI1']}</h4>",
             'source': {
                 'id': celltype2id[source_celltype],
                 'start': source_position - thickness,
                 'end': source_position + thickness,
-                'info': f"{lig}+ {source_celltype}",
             },
             'target': {
                 'id': celltype2id[target_celltype],
                 'start': target_position - thickness,
                 'end': target_position + thickness,
-                'info': f"{rec}+ {target_celltype}" if highlight_chord else None,
-                'value_text': f"<br>log2FC: {inter_row['MAST_log2FC_ligand']:.2f}<br>Interactions: {inter_row['numSigI1']}",
             },
         })
     # Sort to place red chords on top
@@ -507,11 +518,7 @@ def make_circos_figure(set_progress, progress_offset: int,
                         'opacity': 0.9,
                         'radius': 17*ring_width,
                         'tooltipContent': {
-                            'source': 'source',
-                            'sourceID': 'info',
-                            'target': 'target',
-                            'targetID': 'info',
-                            'targetEnd': 'value_text'
+                            'name': 'value_text'
                         }
                     }
                 }, {

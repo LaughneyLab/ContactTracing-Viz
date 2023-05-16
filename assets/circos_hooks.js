@@ -64,7 +64,20 @@ function resetCircosTransform() {
 }
 
 // Hook the circos plot
+function moveCircosTooltip() {
+    let tooltip = window.document.querySelector(".circos-tooltip");
+    const circos_top_level = getCircosSvgElement();
+    if (tooltip !== null && circos_top_level !== null) {
+        // Move the tooltip to be a child of the circos div
+        circos_container = circos_top_level.parentElement.parentElement;
+        tooltip.parentElement.removeChild(tooltip);
+        circos_container.appendChild(tooltip);
+    }
+}
+
 function circosInjection() {
+    moveCircosTooltip();
+
     circos_observer.disconnect();
 
     // Add listener for when the transform attribute changes
@@ -105,3 +118,4 @@ window.downloadCircosSvg = downloadCircosSvg;
 window.resetCircosTransform = resetCircosTransform;
 window.zoomInCircos = zoomInCircos;
 window.zoomOutCircos = zoomOutCircos;
+window.moveCircosTooltip = moveCircosTooltip;

@@ -1,5 +1,15 @@
-body > div.circos-tooltip {
+.circos-tooltip {
+    /*Place in top left corner*/
     position: absolute !important;
+    text-align: left !important;
+    top: 0 !important;
+    left: 0 !important;
+}
+.circos-tooltip > h3 {
+    font-size: 12pt;
+}
+.circos-tooltip > h4 {
+    font-size: 12pt;
 }
 
 .slider_text_input {
