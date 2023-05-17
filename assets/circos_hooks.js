@@ -75,6 +75,17 @@ function moveCircosTooltip() {
     }
 }
 
+function checkPartners(partnersObj, celltype, target) {
+    if (partnersObj === undefined) {
+        return false;
+    }
+    let partners = partnersObj[celltype];
+    if (partners === undefined) {
+        return false;
+    }
+    return partners.includes(target);
+}
+
 function injectHoverEffects() {
     // Highlight relevant connections on hover
     let svg = d3.select("#svg-child");
@@ -118,17 +129,18 @@ function injectHoverEffects() {
         // Get the properties of the hovered chord
         let celltype = d.celltype;
         let target = d.target;
+        let partners = d.partners;
 
         svg.selectAll("path").filter(function (d) {  // Select tracks that don't contain the hovered chord properties
             // Ignore elements with undefined properties
             if (d.celltype === undefined || d.target === undefined) {
                 return false;
             }
-            return !(d.celltype === celltype && d.target === target);
+            return !((d.celltype === celltype && d.target === target) || checkPartners(partners, d.celltype, d.target));
         }).classed("not-hovered", true);  // Apply the not-hovered class
 
         svg.selectAll(".cs-layout > *").filter(function (d) {  // Select cell type labels that don't contain the hovered chord properties
-            return d.celltype !== celltype;
+            return d.celltype !== celltype && partners[d.celltype] === undefined;
         }).classed("not-hovered", true);  // Apply the not-hovered class
 
         svg.selectAll(".chord").filter(function (d) {  // Select chords that don't contain the hovered chord properties
@@ -136,7 +148,7 @@ function injectHoverEffects() {
         }).classed("not-hovered", true);  // Apply the not-hovered class
 
         svg.selectAll(".block > g > text").filter(function (d) {  // Select cell type labels that don't contain the hovered chord properties
-            return !(d.celltype === celltype && d.value === target);
+            return !((d.celltype === celltype && d.value === target) || checkPartners(partners, d.celltype, d.value));
         }).classed("not-hovered", true);  // Apply the not-hovered class
     }).on("mouseout", function (d) {
         svg.selectAll(".not-hovered").classed("not-hovered", false);  // Remove the not-hovered class
@@ -147,17 +159,19 @@ function injectHoverEffects() {
         svg.classed("moused-over", true);
         // Get the properties of the hovered chord
         let celltype = d.celltype;
+        let receiving_celltypes = d.receiving_celltypes;
+        let sending_celltypes = d.sending_celltypes;
 
         svg.selectAll("path").filter(function (d) {  // Select tracks that don't contain the hovered chord properties
             // Ignore elements with undefined properties
             if (d.celltype === undefined || d.target === undefined) {
                 return false;
             }
-            return d.celltype !== celltype;
+            return d.celltype !== celltype && !receiving_celltypes.includes(d.celltype) && !sending_celltypes.includes(d.celltype);
         }).classed("not-hovered", true);  // Apply the not-hovered class
 
         svg.selectAll(".cs-layout > *").filter(function (d) {  // Select cell type labels that don't contain the hovered chord properties
-            return d.celltype !== celltype;
+            return d.celltype !== celltype && !receiving_celltypes.includes(d.celltype) && !sending_celltypes.includes(d.celltype);
         }).classed("not-hovered", true);  // Apply the not-hovered class
 
         svg.selectAll(".chord").filter(function (d) {  // Select chords that don't contain the hovered chord properties
@@ -165,7 +179,7 @@ function injectHoverEffects() {
         }).classed("not-hovered", true);  // Apply the not-hovered class
 
         svg.selectAll(".block > g > text").filter(function (d) {  // Select cell type labels that don't contain the hovered chord properties
-            return d.celltype !== celltype;
+            return d.celltype !== celltype && d.partners[celltype] === undefined && d.partners[celltype] === undefined;
         }).classed("not-hovered", true);  // Apply the not-hovered class
     }).on("mouseout", function (d) {
         svg.selectAll(".not-hovered").classed("not-hovered", false);  // Remove the not-hovered class
@@ -177,17 +191,18 @@ function injectHoverEffects() {
         // Get the properties of the hovered chord
         let celltype = d.celltype;
         let target = d.value;
+        let partners = d.partners;
 
         svg.selectAll("path").filter(function (d) {  // Select tracks that don't contain the hovered chord properties
             // Ignore elements with undefined properties
             if (d.celltype === undefined || d.target === undefined) {
                 return false;
             }
-            return !(d.celltype === celltype && d.target === target);
+            return !((d.celltype === celltype && d.target === target) || checkPartners(partners, d.celltype, d.target));
         }).classed("not-hovered", true);  // Apply the not-hovered class
 
         svg.selectAll(".cs-layout > *").filter(function (d) {  // Select cell type labels that don't contain the hovered chord properties
-            return d.celltype !== celltype;
+            return d.celltype !== celltype && partners[d.celltype] === undefined;
         }).classed("not-hovered", true);  // Apply the not-hovered class
 
         svg.selectAll(".chord").filter(function (d) {  // Select chords that don't contain the hovered chord properties
@@ -195,7 +210,7 @@ function injectHoverEffects() {
         }).classed("not-hovered", true);  // Apply the not-hovered class
 
         svg.selectAll(".block > g > text").filter(function (d) {  // Select cell type labels that don't contain the hovered chord properties
-            return !(d.celltype === celltype && d.value === target);
+            return !((d.celltype === celltype && d.value === target) || checkPartners(partners, d.celltype, d.value));
         }).classed("not-hovered", true);  // Apply the not-hovered class
     }).on("mouseout", function (d) {
         svg.selectAll(".not-hovered").classed("not-hovered", false);  // Remove the not-hovered class

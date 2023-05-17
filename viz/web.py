@@ -317,7 +317,9 @@ def make_circos_figure(set_progress, progress_offset: int,
             'label': label if target_count > len(label)*2 else "",
             'color': color,
             'len': target_count,
-            'celltype': celltype
+            'celltype': celltype,
+            'receiving_celltypes': inter_data[inter_data['cell_type_ligand'] == celltype].cell_type_receptor.unique().tolist(),
+            'sending_celltypes': inter_data[inter_data['cell_type_receptor'] == celltype].cell_type_ligand.unique().tolist(),
         })
     # Hard coded ordering according to the paper
     ct2order = {
@@ -342,11 +344,25 @@ def make_circos_figure(set_progress, progress_offset: int,
         gene_type = 'Gene'
         if ligand and receptor:
             gene_type = 'Ligand/Receptor'
+            ligand_partners_df = inter_data[(inter_data['cell_type_ligand'] == celltype) & (inter_data['ligand'] == target)]
+            receptor_partners_df = inter_data[(inter_data['cell_type_receptor'] == celltype) & (inter_data['receptor'] == target)]
+            ligand_partners = list(zip(ligand_partners_df['cell_type_receptor'].tolist(), ligand_partners_df['receptor'].tolist()))
+            receptor_partners = list(zip(receptor_partners_df['cell_type_ligand'].tolist(), receptor_partners_df['ligand'].tolist()))
+            partners = ligand_partners + receptor_partners
         elif ligand:
             gene_type = 'Ligand'
+            partners_df = inter_data[(inter_data['cell_type_ligand'] == celltype) & (inter_data['ligand'] == target)]
+            partners = list(zip(partners_df['cell_type_receptor'].tolist(), partners_df['receptor'].tolist()))
         elif receptor:
             gene_type = 'Receptor'
-        return dat[field].values[0], gene_type
+            partners_df = inter_data[(inter_data['cell_type_receptor'] == celltype) & (inter_data['receptor'] == target)]
+            partners = list(zip(partners_df['cell_type_ligand'].tolist(), partners_df['ligand'].tolist()))
+        partners_dict = dict()
+        for ct, g in partners:
+            if ct not in partners_dict:
+                partners_dict[ct] = []
+            partners_dict[ct].append(g)
+        return dat[field].values[0], partners_dict, gene_type
 
     # Build next ring for DC1 heatmap
     dc1_colormap = ColorTransformer(-1, 1, 'cividis')
@@ -355,7 +371,7 @@ def make_circos_figure(set_progress, progress_offset: int,
         id = celltype2id[celltype]
         targets = celltype2targets[celltype]
         for i, t in enumerate(targets):
-            dc1, gene_type = get_data(outer_data, celltype, t, 'cell_type_dc1')
+            dc1, partners, gene_type = get_data(outer_data, celltype, t, 'cell_type_dc1')
             # Normalize to 0-1
             #dc1 = (dc1 - min_dc1) / (max_dc1 - min_dc1)
             diffusion_data.append({
@@ -366,7 +382,8 @@ def make_circos_figure(set_progress, progress_offset: int,
                 'value_text': f"<h4>Cell Type: {celltype}<br>Target ({gene_type}): {t}<br>DC1: {dc1:.2f}</h4>",
                 'color': dc1_colormap(dc1),
                 'celltype': celltype,
-                'target': t
+                'target': t,
+                'partners': partners
             })
     if set_progress is not None:
         set_progress((4+(progress_offset*7), 7*(progress_offset+1)))
@@ -378,7 +395,7 @@ def make_circos_figure(set_progress, progress_offset: int,
         id = celltype2id[celltype]
         targets = celltype2targets[celltype]
         for i, t in enumerate(targets):
-            da, gene_type = get_data(outer_data, celltype, t, 'DA_score')
+            da, partners, gene_type = get_data(outer_data, celltype, t, 'DA_score')
             da_data.append({
                 'block_id': id,
                 'start': i,
@@ -387,7 +404,8 @@ def make_circos_figure(set_progress, progress_offset: int,
                 'value_text': f"<h4>Cell Type: {celltype}<br>Target ({gene_type}): {t}<br>DA: {da:.2f}</h4>",
                 'color': da_colormap(da),
                 'celltype': celltype,
-                'target': t
+                'target': t,
+                'partners': partners
             })
     if set_progress is not None:
         set_progress((5+(progress_offset*7), 7*(progress_offset+1)))
@@ -412,10 +430,13 @@ def make_circos_figure(set_progress, progress_offset: int,
                     'value_text': "",
                     'color': color,
                     'celltype': celltype,
-                    'target': t
+                    'target': t,
+                    'partners': dict()
                 })
             else:
                 numSigI1 = receptor_info[(receptor_info['receptor'] == t) & (receptor_info['cell_type_receptor'] == celltype)]['numSigI1'].values[0]
+                partners_df = inter_data[(inter_data['cell_type_receptor'] == celltype) & (inter_data['receptor'] == t)]
+                partners = list(zip(partners_df['cell_type_ligand'].tolist(), partners_df['ligand'].tolist()))
                 # Normalize to 0 minimum
                 lig_effect = numSigI1 - min_receptor_numSigI1
                 numSigI1_data.append({
@@ -426,7 +447,8 @@ def make_circos_figure(set_progress, progress_offset: int,
                     'value_text': f"<h4>Cell Type: {celltype}<br>Target (Receptor): {t}<br>numSigI: {numSigI1:d}</h4>",
                     'color': color,
                     'celltype': celltype,
-                    'target': t
+                    'target': t,
+                    'partners': partners
                 })
     if set_progress is not None:
         set_progress((6+(progress_offset*7), 7*(progress_offset+1)))
@@ -453,18 +475,33 @@ def make_circos_figure(set_progress, progress_offset: int,
         if should_highlight and highlight_chord and (target_celltype, rec) in text_data:
             del text_data[(target_celltype, rec)]
 
-        text_data[(source_celltype, lig)] = {
-            'block_id': celltype2id[source_celltype],
-            'position': source_position+.5,
-            'value': lig if highlight_chord else "",
-            "celltype": source_celltype,
-        }
-        text_data[(target_celltype, rec)] = {
-            'block_id': celltype2id[target_celltype],
-            'position': target_position+.5,
-            'value': rec if highlight_chord else "",
-            "celltype": target_celltype,
-        }
+        if (source_celltype, lig) not in text_data:
+            text_data[(source_celltype, lig)] = {
+                'block_id': celltype2id[source_celltype],
+                'position': source_position+.5,
+                'value': lig if highlight_chord else "",
+                "celltype": source_celltype,
+                'partners': {target_celltype: [rec]},
+            }
+        else:
+            if target_celltype not in text_data[(source_celltype, lig)]['partners']:
+                text_data[(source_celltype, lig)]['partners'][target_celltype] = [rec]
+            else:
+                text_data[(source_celltype, lig)]['partners'][target_celltype].append(rec)
+
+        if (target_celltype, rec) not in text_data:
+            text_data[(target_celltype, rec)] = {
+                'block_id': celltype2id[target_celltype],
+                'position': target_position+.5,
+                'value': rec if highlight_chord else "",
+                "celltype": target_celltype,
+                'partners': {source_celltype: [lig]},
+            }
+        else:
+            if source_celltype not in text_data[(target_celltype, rec)]['partners']:
+                text_data[(target_celltype, rec)]['partners'][source_celltype] = [lig]
+            else:
+                text_data[(target_celltype, rec)]['partners'][source_celltype].append(lig)
 
         chord_data.append({
             'color': maybe_brighten(log2fc_colormap, inter_row['MAST_log2FC_ligand'], lig, rec),
