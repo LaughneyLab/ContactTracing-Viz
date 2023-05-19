@@ -164,7 +164,8 @@ def build_interface() -> list:
                              },
                              'watermark': False
                           }),
-        help_info=ligand_effects_help()
+        help_info=ligand_effects_help(),
+        download_btn_id=None
     )
 
     return [
@@ -174,7 +175,7 @@ def build_interface() -> list:
         html.Br(),
         controls,
         dcc.Store(id='cin_network_plot', storage_type='memory', data=default_plots[0] if default_plots is not None else {}),
-        dcc.Store(id='sting_network_plot', storage_type='memory', data=default_plots[1] if default_plots is not None else {})
+        dcc.Store(id='sting_network_plot', storage_type='memory', data=default_plots[1] if default_plots is not None else {}),
     ]
 
 

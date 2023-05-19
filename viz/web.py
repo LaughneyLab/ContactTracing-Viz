@@ -158,7 +158,12 @@ def control_panel(submit_btn_id: str, *element_rows: List[dbc.Card]) -> html.Div
     )
 
 
-def figure_output(title, footer, element, help_info, outline=True) -> html.Div:
+def figure_output(title, footer, element, help_info, download_btn_id, outline=True) -> html.Div:
+    if download_btn_id:
+        download_button = dbc.Button(wrap_icon('fa-file-csv', '   ', low_margin='', high_margin='', right=False), id=download_btn_id,
+                                     color='primary', outline=True, className='float-end', type='button', n_clicks=0)
+    else:
+        download_button = None
     help_button = dbc.Button(wrap_icon('fa-circle-question', low_margin='', high_margin='', right=True),
                              color='primary', outline=True, className='float-end', type='button', n_clicks=0)
     close_button = dbc.Button("Close", className="ms-auto", n_clicks=0)
@@ -183,8 +188,10 @@ def figure_output(title, footer, element, help_info, outline=True) -> html.Div:
         help_modal,
         dbc.Card([
             dbc.CardHeader(dbc.Row([
-                dbc.Col(title),
-                dbc.Col(help_button, width=1)
+                dbc.Col(html.H5(title, className='card-title')),
+                dbc.Col(dbc.ButtonGroup(
+                    ([download_button] if download_button else []) + [help_button],
+                ), width=1)
             ])),
             dbc.CardBody([
                 html.P([

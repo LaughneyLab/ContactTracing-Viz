@@ -206,7 +206,8 @@ def build_interface() -> list:
                               },
                               'watermark': False
                           }),
-        help_info=interactions_help()
+        help_info=interactions_help(),
+        download_btn_id="download-bipartite-interactions-btn",
     )
 
     return [
@@ -217,6 +218,7 @@ def build_interface() -> list:
         controls,
         dcc.Store(id='cin_bipartite_plot', data=default_plots[0] if default_plots is not None else {}),
         dcc.Store(id='max_bipartite_plot', data=default_plots[1] if default_plots is not None else {}),
+        dcc.Download(id="download-bipartite-interactions"),
     ]
 
 
@@ -264,6 +266,62 @@ def update_bipartite_plot(inter_set, cin_bipartite_plot, max_bipartite_plot):
         return cin_bipartite_plot
     else:
         return max_bipartite_plot
+
+@callback(
+    Output('download-bipartite-interactions', 'data'),
+    Input('download-bipartite-interactions-btn', 'n_clicks'),
+    State('inter_set', 'value'),
+    State('first_celltype', 'value'),
+    State('second_celltype', 'value'),
+    State('third_celltype', 'value'),
+    State('min_logfc_bipartite', 'data'),
+    State('min_expression_bipartite', 'data'),
+    State('min_numsigi1_bipartite', 'data'),
+    State('bipartite_inter_fdr', 'data'),
+    State('bipartite_logfc_fdr', 'data'),
+    State('bidirectional_bipartite', 'value'),
+    prevent_initial_call=True
+)
+def download_data(n_clicks,
+                  inter_set,
+                  cell1, cell2, cell3,
+                  min_logfc, min_expression, min_numSigI1,
+                  inter_fdr, logfc_fdr, bidirectional
+                  ):
+    from viz.data import read_interactions_file
+    df = read_interactions_file('cin' if inter_set == 'cin' else 'sting', inter_fdr)
+    logfc_fdr_cutoff = float(logfc_fdr.replace('fdr', '.'))
+
+    if cell3 is not None and 'none' in str(cell3).lower():
+        cell3 = None
+
+    if cell3 is None:
+        selected = df[((df.cell_type_ligand == cell1) & (df.cell_type_receptor == cell2)) |
+                      (bidirectional and (df.cell_type_ligand == cell2) & (df.cell_type_receptor == cell1))]
+    else:
+        selected = df[((df.cell_type_ligand == cell1) & (df.cell_type_receptor == cell2)) |
+                      (bidirectional and (df.cell_type_ligand == cell2) & (df.cell_type_receptor == cell1)) |
+                      ((df.cell_type_ligand == cell2) & (df.cell_type_receptor == cell3)) |
+                      (bidirectional and (df.cell_type_ligand == cell3) & (df.cell_type_receptor == cell2)) |
+                      (bidirectional & (df.cell_type_ligand == cell1) & (df.cell_type_receptor == cell3)) |
+                      (bidirectional & (df.cell_type_ligand == cell3) & (df.cell_type_receptor == cell1))]
+
+    import numpy as np
+    selected = selected[(selected.numSigI1 >= min_numSigI1) &
+                        (selected.expression_ligand >= min_expression) &
+                        (selected.expression_receptor >= min_expression) &
+                        (selected["MAST_fdr_ligand"] < logfc_fdr_cutoff) &
+                        (selected["MAST_fdr_receptor"] < logfc_fdr_cutoff) &
+                        (np.abs(selected["MAST_log2FC_ligand"]) > min_logfc)
+                        ].sort_values(
+        by="numSigI1", ascending=False)
+
+    # Only keep the columns we want to download
+    selected = selected[["cell_type_ligand", "cell_type_receptor", "ligand", "receptor", "numSigI1", "numDEG",
+                            "expression_ligand", "expression_receptor", "MAST_log2FC_ligand", "MAST_log2FC_receptor",
+                            "MAST_fdr_ligand", "MAST_fdr_receptor"]].reset_index(drop=True)
+
+    return dcc.send_data_frame(selected.to_csv, f"{inter_set}_interactions.csv")
 
 
 @callback(

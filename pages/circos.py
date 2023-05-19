@@ -150,7 +150,8 @@ def build_interface() -> list:
                 children=default_plots[1] if default_plots is not None else None
             )
         ]),
-        help_info=circos_help()
+        help_info=circos_help(),
+        download_btn_id='circos_data_download_btn'
     )
 
     return [
@@ -161,6 +162,7 @@ def build_interface() -> list:
         controls,
         dcc.Store(id='cin_circos_plot', storage_type='memory', data=[default_plots[0] if default_plots is not None else None]),
         dcc.Store(id='sting_circos_plot', storage_type='memory', data=[default_plots[1] if default_plots is not None else None]),
+        dcc.Download(id="interactions_download"),
         # DeferScript(src=dash.get_asset_url('circos_hooks.js'))
     ]
 
@@ -169,7 +171,7 @@ def circos_toolbar():
     reset_button = dbc.Button(wrap_icon('fas fa-undo', 'Reset'), outline=True, color='dark', id='circos-reset-button')
     zoom_in_button = dbc.Button(wrap_icon('fas fa-search-plus', 'Zoom In'), outline=True, color='dark', id='circos-zoom-in-button')
     zoom_out_button = dbc.Button(wrap_icon('fas fa-search-minus', 'Zoom Out'), outline=True, color='dark', id='circos-zoom-out-button')
-    download_button = dbc.Button(wrap_icon('fas fa-download', 'Download'), outline=True, color='dark', id='circos-download-button')
+    download_button = dbc.Button(wrap_icon('fas fa-download', 'Save'), outline=True, color='dark', id='circos-download-button')
     return html.Div(
         dbc.ButtonGroup(
             [reset_button, zoom_in_button, zoom_out_button, download_button],
@@ -260,6 +262,52 @@ def update_circos_plot(circos_set, cin_circos_plot, sting_circos_plot):
         return cin_circos_plot
     else:
         return sting_circos_plot
+
+
+@callback(
+    Output('interactions_download', 'data'),
+    Input('circos_data_download_btn', 'n_clicks'),
+    State('circos_set', 'value'),
+    State('inter_circos_fdr', 'data'),
+    State('logfc_circos_fdr', 'data'),
+    State('circos_min_numsigi1', 'data'),
+    State('circos_min_numdeg', 'data'),
+    State('circos_min_ligand_logfc', 'data'),
+    State('genes', 'value'),
+    prevent_initial_call=True
+)
+def download_data(n_clicks,
+                  circos_set,
+                  inter_circos_fdr,
+                  logfc_circos_fdr,
+                  min_numsigi1,
+                  min_numdeg,
+                  min_chord_ligand_logfc,
+                  gene_list):
+    from viz.data import read_interactions_file
+    inter_data = read_interactions_file('cin' if circos_set == 'cin' else 'sting', inter_circos_fdr)
+    if gene_list is None or gene_list == '':
+        gene_list = []
+    else:
+        gene_list = [g.strip().lower() for g in gene_list.split(',')]
+
+    logfc_pval_cutoff = float('0.' + logfc_circos_fdr.replace('fdr', ''))
+    inter_data = inter_data[(inter_data['numSigI1'] >= min_numsigi1) &
+                            (inter_data['numDEG'] >= min_numdeg) &
+                            (inter_data['MAST_fdr_ligand'] <= logfc_pval_cutoff) &
+                            (inter_data['MAST_log2FC_ligand'].abs() > min_chord_ligand_logfc)]
+
+    if len(gene_list) > 0:
+        inter_data = inter_data[(inter_data['ligand'].str.lower().isin(gene_list)) |
+                                (inter_data['receptor'].str.lower().isin(gene_list))]\
+
+    # Select only the columns we want to download
+    inter_data = inter_data[["cell_type_ligand", "cell_type_receptor", "ligand", "receptor", "numSigI1", "numDEG",
+                            "expression_ligand", "expression_receptor", "MAST_log2FC_ligand", "MAST_log2FC_receptor",
+                            "MAST_fdr_ligand", "MAST_fdr_receptor", "DA_ligand", "DA_receptor", "cell_type_ligand_dc1",
+                             "cell_type_receptor_dc1"]].reset_index(drop=True)
+
+    return dcc.send_data_frame(inter_data.to_csv, f"circos_{circos_set}_interactions.csv")
 
 
 @callback(
