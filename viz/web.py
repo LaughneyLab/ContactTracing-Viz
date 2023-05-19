@@ -320,6 +320,7 @@ def make_circos_figure(set_progress, progress_offset: int,
             'celltype': celltype,
             'receiving_celltypes': inter_data[inter_data['cell_type_ligand'] == celltype].cell_type_receptor.unique().tolist(),
             'sending_celltypes': inter_data[inter_data['cell_type_receptor'] == celltype].cell_type_ligand.unique().tolist(),
+            'direct_indirect_targets': list(set(inter_data[inter_data['cell_type_ligand'] == celltype].ligand.str.lower().tolist() + inter_data[inter_data['cell_type_receptor'] == celltype].receptor.str.lower().tolist())),
         })
     # Hard coded ordering according to the paper
     ct2order = {
@@ -346,17 +347,17 @@ def make_circos_figure(set_progress, progress_offset: int,
             gene_type = 'Ligand/Receptor'
             ligand_partners_df = inter_data[(inter_data['cell_type_ligand'] == celltype) & (inter_data['ligand'] == target)]
             receptor_partners_df = inter_data[(inter_data['cell_type_receptor'] == celltype) & (inter_data['receptor'] == target)]
-            ligand_partners = list(zip(ligand_partners_df['cell_type_receptor'].tolist(), ligand_partners_df['receptor'].tolist()))
-            receptor_partners = list(zip(receptor_partners_df['cell_type_ligand'].tolist(), receptor_partners_df['ligand'].tolist()))
+            ligand_partners = list(zip(ligand_partners_df['cell_type_receptor'].tolist(), ligand_partners_df['receptor'].str.lower().tolist()))
+            receptor_partners = list(zip(receptor_partners_df['cell_type_ligand'].tolist(), receptor_partners_df['ligand'].str.lower().tolist()))
             partners = ligand_partners + receptor_partners
         elif ligand:
             gene_type = 'Ligand'
             partners_df = inter_data[(inter_data['cell_type_ligand'] == celltype) & (inter_data['ligand'] == target)]
-            partners = list(zip(partners_df['cell_type_receptor'].tolist(), partners_df['receptor'].tolist()))
+            partners = list(zip(partners_df['cell_type_receptor'].tolist(), partners_df['receptor'].str.lower().tolist()))
         elif receptor:
             gene_type = 'Receptor'
             partners_df = inter_data[(inter_data['cell_type_receptor'] == celltype) & (inter_data['receptor'] == target)]
-            partners = list(zip(partners_df['cell_type_ligand'].tolist(), partners_df['ligand'].tolist()))
+            partners = list(zip(partners_df['cell_type_ligand'].tolist(), partners_df['ligand'].str.lower().tolist()))
         partners_dict = dict()
         for ct, g in partners:
             if ct not in partners_dict:
@@ -436,7 +437,7 @@ def make_circos_figure(set_progress, progress_offset: int,
             else:
                 numSigI1 = receptor_info[(receptor_info['receptor'] == t) & (receptor_info['cell_type_receptor'] == celltype)]['numSigI1'].values[0]
                 partners_df = inter_data[(inter_data['cell_type_receptor'] == celltype) & (inter_data['receptor'] == t)]
-                partners = list(zip(partners_df['cell_type_ligand'].tolist(), partners_df['ligand'].tolist()))
+                partners = list(zip(partners_df['cell_type_ligand'].tolist(), partners_df['ligand'].str.lower().tolist()))
                 # Normalize to 0 minimum
                 lig_effect = numSigI1 - min_receptor_numSigI1
                 numSigI1_data.append({
@@ -481,13 +482,13 @@ def make_circos_figure(set_progress, progress_offset: int,
                 'position': source_position+.5,
                 'value': lig if highlight_chord else "",
                 "celltype": source_celltype,
-                'partners': {target_celltype: [rec]},
+                'partners': {target_celltype: [rec.lower()]},
             }
         else:
             if target_celltype not in text_data[(source_celltype, lig)]['partners']:
-                text_data[(source_celltype, lig)]['partners'][target_celltype] = [rec]
+                text_data[(source_celltype, lig)]['partners'][target_celltype] = [rec.lower()]
             else:
-                text_data[(source_celltype, lig)]['partners'][target_celltype].append(rec)
+                text_data[(source_celltype, lig)]['partners'][target_celltype].append(rec.lower())
 
         if (target_celltype, rec) not in text_data:
             text_data[(target_celltype, rec)] = {
@@ -495,13 +496,13 @@ def make_circos_figure(set_progress, progress_offset: int,
                 'position': target_position+.5,
                 'value': rec if highlight_chord else "",
                 "celltype": target_celltype,
-                'partners': {source_celltype: [lig]},
+                'partners': {source_celltype: [lig.lower()]},
             }
         else:
             if source_celltype not in text_data[(target_celltype, rec)]['partners']:
-                text_data[(target_celltype, rec)]['partners'][source_celltype] = [lig]
+                text_data[(target_celltype, rec)]['partners'][source_celltype] = [lig.lower()]
             else:
-                text_data[(target_celltype, rec)]['partners'][source_celltype].append(lig)
+                text_data[(target_celltype, rec)]['partners'][source_celltype].append(lig.lower())
 
         chord_data.append({
             'color': maybe_brighten(log2fc_colormap, inter_row['MAST_log2FC_ligand'], lig, rec),

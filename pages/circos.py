@@ -46,6 +46,14 @@ def build_interface() -> list:
                                        value=DEFAULT_CIRCOS_ARGS['circos_set'],
                                        persistence=False
                                    )),
+            control_panel_element("Genes of Interest",
+                                  'Comma-separated list of genes to highlight in the plot.',
+                                  dbc.Input(
+                                      id='genes',
+                                      autofocus=False,
+                                      value=DEFAULT_CIRCOS_ARGS['genes'],
+                                      placeholder='Example: Ccl2,Apoe',
+                                  )),
              control_panel_element("Plot", "You must click submit to update the plot.",
                                    html.Div(
                                        dbc.Row([dbc.Col(
@@ -120,14 +128,6 @@ def build_interface() -> list:
                                       max=2,  # Fill in
                                       value=DEFAULT_CIRCOS_ARGS['circos_min_ligand_logfc'],
                                       step=0.01
-                                  )),
-            control_panel_element("Genes of Interest",
-                                  'Comma-separated list of genes to highlight in the plot.',
-                                  dbc.Input(
-                                      id='genes',
-                                      autofocus=True,
-                                      value=DEFAULT_CIRCOS_ARGS['genes'],
-                                      placeholder='Example: Ccl2,Apoe'
                                   ))
         ]
     )
@@ -217,6 +217,11 @@ function(n_clicks) {
 }
 """, Input('circos-zoom-out-button', 'n_clicks'), prevent_initial_call=True)
 
+clientside_callback("""
+function(genes, circos_set) {
+    highlightGenes(genes);
+}""", Input('genes', 'value'), Input('circos-graph-holder', 'children'), prevent_initial_call=True)
+
 
 @callback(
     Output('inter_circos_fdr', 'data', allow_duplicate=True),
@@ -266,7 +271,7 @@ def update_circos_plot(circos_set, cin_circos_plot, sting_circos_plot):
     State('circos_min_numsigi1', 'data'),
     State('circos_min_numdeg', 'data'),
     State('circos_min_ligand_logfc', 'data'),
-    State('genes', 'value'),
+    # State('genes', 'value'),
     background=True,
     prevent_initial_call=True,
     interval=500,
@@ -282,9 +287,11 @@ def update_circos_plot(circos_set, cin_circos_plot, sting_circos_plot):
 )
 def make_circos_plot(set_progress, n_clicks,
                      inter_circos_fdr, logfc_circos_fdr,
-                     min_numsigi1, min_numdeg, min_chord_ligand_logfc, gene_list):
-    if gene_list is not None and len(gene_list.strip()) == 0:
-        gene_list = None
+                     min_numsigi1, min_numdeg, min_chord_ligand_logfc #, gene_list
+                     ):
+    #if gene_list is not None and len(gene_list.strip()) == 0:
+    #    gene_list = None
+    gene_list = None  # TODO: Remove, gene list is now implemented client-side
 
     set_progress((0, 14))
     from viz.data import read_circos_file, read_interactions_file

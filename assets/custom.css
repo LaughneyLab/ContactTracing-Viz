@@ -20,8 +20,20 @@
     font-size: 0;
 }
 
+.not-highlighted {
+    /* Make elements saturated */
+    opacity: 0.05;
+    /* Hide text */
+    font-size: 0;
+}
+
 /* Emphasize mouse-over text */
 #svg-child.moused-over > g > g > g > g > text:not(.not-hovered) {
+    font-size: 10pt !important;
+    font-weight: bold !important;
+    z-index: 1000;
+}
+#svg-child.searched > g > g > g > g > text:not(.not-highlighted) {
     font-size: 10pt !important;
     font-weight: bold !important;
     z-index: 1000;

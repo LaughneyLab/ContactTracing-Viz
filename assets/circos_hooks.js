@@ -76,14 +76,77 @@ function moveCircosTooltip() {
 }
 
 function checkPartners(partnersObj, celltype, target) {
-    if (partnersObj === undefined) {
+    if (partnersObj === undefined || partnersObj === null) {
         return false;
     }
-    let partners = partnersObj[celltype];
-    if (partners === undefined) {
+    let partners;
+    if (celltype !== undefined && celltype !== null) {
+        partners = partnersObj[celltype];
+    } else {
+        partners = Object.values(partnersObj).flat();
+    }
+    if (partners === undefined || partners === null) {
         return false;
     }
-    return partners.includes(target);
+    return (target === undefined || target === null) || partners.includes(target.toLowerCase());
+}
+
+function highlightGenes(genes) {
+    let svg = d3.select("#svg-child");
+
+    if (svg === undefined || svg === null) {
+        return;
+    }
+
+    svg.selectAll(".not-highlighted").classed("not-highlighted", false).classed("searched", false);
+
+    if (genes === undefined || genes === null || genes.length === 0) {
+        return;
+    }
+
+    // Split gene string by comma into array
+    genes = genes.split(",");
+    // Remove whitespace from each gene
+    genes = genes.map(function (x) {
+        return x.trim().toLowerCase();
+    });
+    // Remove empty genes
+    genes = genes.filter(function (x) {
+        return x !== "";
+    });
+
+    if (genes.length === 0) {
+        return;
+    }
+
+    // Highlight genes
+    svg.selectAll("path").filter(function(d) {
+        if (d.celltype === undefined || d.target === undefined) {
+            return false;
+        }
+        target = d.target.toLowerCase();
+        partners = d.partners;
+        return !(genes.includes(target) || genes.filter(function (x) {
+            return checkPartners(partners, null, x);
+        }).length > 0);
+    }).classed("not-highlighted", true);  // Apply the not-hovered class
+    svg.selectAll(".cs-layout > *").filter(function(d) {
+        return !(d.direct_indirect_targets.filter(function(x) {
+            // Get intersection
+            return genes.filter(function(y) {
+                return x.includes(y);
+            }).length > 0;
+        }).length > 0);
+    }).classed("not-highlighted", true);  // Apply the not-hovered class
+    svg.selectAll(".chord").filter(function(d) {
+        return !(genes.includes(d.ligand.toLowerCase()) || genes.includes(d.receptor.toLowerCase()));
+    }).classed("not-highlighted", true);  // Apply the not-hovered class
+    svg.selectAll(".block > g > text").filter(function(d) {
+        return !(genes.includes(d.value.toLowerCase()) || genes.filter(function (x) {
+            return checkPartners(d.partners, null, x);
+        }).length > 0);
+    }).classed("not-highlighted", true);  // Apply the not-hovered class
+    svg.classed("searched", true);
 }
 
 function injectHoverEffects() {
