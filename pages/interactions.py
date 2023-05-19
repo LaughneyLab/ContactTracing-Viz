@@ -280,7 +280,7 @@ def update_bipartite_plot(inter_set, cin_bipartite_plot, max_bipartite_plot):
     State('bipartite_inter_fdr', 'data'),
     State('bipartite_logfc_fdr', 'data'),
     State('bidirectional_bipartite', 'value'),
-    prevent_initial_call=True
+    prevent_initial_call=True,
 )
 def download_data(n_clicks,
                   inter_set,
@@ -288,6 +288,10 @@ def download_data(n_clicks,
                   min_logfc, min_expression, min_numSigI1,
                   inter_fdr, logfc_fdr, bidirectional
                   ):
+    if n_clicks <= 0:
+        from dash.exceptions import PreventUpdate
+        raise PreventUpdate
+
     from viz.data import read_interactions_file
     df = read_interactions_file('cin' if inter_set == 'cin' else 'sting', inter_fdr)
     logfc_fdr_cutoff = float(logfc_fdr.replace('fdr', '.'))

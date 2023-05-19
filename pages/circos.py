@@ -274,7 +274,7 @@ def update_circos_plot(circos_set, cin_circos_plot, sting_circos_plot):
     State('circos_min_numdeg', 'data'),
     State('circos_min_ligand_logfc', 'data'),
     State('genes', 'value'),
-    prevent_initial_call=True
+    prevent_initial_call=True,
 )
 def download_data(n_clicks,
                   circos_set,
@@ -284,6 +284,10 @@ def download_data(n_clicks,
                   min_numdeg,
                   min_chord_ligand_logfc,
                   gene_list):
+    if n_clicks <= 0:
+        from dash.exceptions import PreventUpdate
+        raise PreventUpdate
+
     from viz.data import read_interactions_file
     inter_data = read_interactions_file('cin' if circos_set == 'cin' else 'sting', inter_circos_fdr)
     if gene_list is None or gene_list == '':

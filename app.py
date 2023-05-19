@@ -5,7 +5,7 @@ from uuid import uuid4
 
 import dash
 from dash_extensions.enrich import html, dcc, Output, Input, State, NoOutputTransform, ServersideOutputTransform, \
-    FileSystemBackend
+    FileSystemBackend, BlockingCallbackTransform
 import dash_bootstrap_components as dbc
 from dash_extensions.enrich import DashProxy, MultiplexerTransform
 
@@ -96,7 +96,7 @@ app = DashProxy(__name__,
                "custom.css"  # Custom overrides
            ],
            transforms=[
-               # BlockingCallbackTransform()  # Allows for preventing multiple callbacks from running
+               # BlockingCallbackTransform(),  # Allows for preventing multiple callbacks from running
                MultiplexerTransform(),  # Allow for multiple callbacks to use the same output
                NoOutputTransform(),  # Allow for callbacks to not have an output
                # ServersideOutputTransform(backends=[serverside_backend])  # Allow for callbacks to return a ServersideOutput  FIXME
@@ -108,7 +108,7 @@ app = DashProxy(__name__,
 server = app.server
 
 if celery_app is not None:
-    app.register_callbacks()
+    app.register_celery_tasks()
 
 def access_code_page():
     #page_container = dash.page_container
