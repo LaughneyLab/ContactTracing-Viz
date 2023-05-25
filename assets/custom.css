@@ -72,3 +72,10 @@
     z-index: 1000;
     background-color: #ffffff;
 }
+
+.cbtitle > text {
+    /* Rotate the axis title by 180 degrees and move title down slightly */
+    transform-box: fill-box;
+    transform-origin: center;
+    transform: rotate(90deg);
+}
