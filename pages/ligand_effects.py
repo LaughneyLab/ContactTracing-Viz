@@ -165,7 +165,7 @@ def build_interface() -> list:
                              'watermark': False
                           }),
         help_info=ligand_effects_help(),
-        download_btn_id=None
+        download_btn_id="download_ligand_effects_network_btn"
     )
 
     return [
@@ -176,6 +176,7 @@ def build_interface() -> list:
         controls,
         dcc.Store(id='cin_network_plot', storage_type='memory', data=default_plots[0] if default_plots is not None else {}),
         dcc.Store(id='sting_network_plot', storage_type='memory', data=default_plots[1] if default_plots is not None else {}),
+        dcc.Download(id="download_ligand_effects_network"),
     ]
 
 
@@ -205,6 +206,45 @@ def reset_to_defaults(n_clicks, submission_button_clicks):
             DEFAULT_LIGAND_EFFECT_ARGS['iterations'],
             submission_button_clicks+1]  # Trigger the plotting callback to run on default values
     raise PreventUpdate
+
+
+@callback(
+    Output('download_ligand_effects_network', 'data'),
+    Input('download_ligand_effects_network_btn', 'n_clicks'),
+    State('cell_type', 'value'),
+    State('ligands', 'value'),
+    State('interaction_fdr', 'data'),
+    State('min_logfc', 'data'),
+    State('min_expression', 'data'),
+    State('logfc_fdr', 'data'),
+    State('iterations', 'value'),
+    prevent_initial_call=True
+)
+def download_data(n_clicks,
+                  cell_type, ligands,
+                  interaction_fdr, min_logfc, min_expression,
+                  logfc_fdr, iterations
+                  ):
+    if n_clicks <= 0:
+        from dash.exceptions import PreventUpdate
+        raise PreventUpdate
+
+    from viz.figures import pseudotime_interaction_propagation_graph, DEFAULT_LIGAND_EFFECT_ARGS
+    from networkx import to_pandas_edgelist
+    graph = pseudotime_interaction_propagation_graph(
+        effect_set=DEFAULT_LIGAND_EFFECT_ARGS['effect_set'],  # Keep this fixed
+        seed_cell=cell_type,
+        seed_ligands=ligands,
+        iterations=int(iterations),
+        interaction_fdr_cutoff=float("." + interaction_fdr[3:]),
+        min_logfc=float(min_logfc),
+        min_expression=float(min_expression),
+        logfc_fdr_cutoff=float("." + logfc_fdr[3:]),
+        return_only_raw_data=True
+    )
+    df = to_pandas_edgelist(graph)
+
+    return dcc.send_data_frame(df.to_csv, "ligand_effects_network.csv")
 
 
 @callback(

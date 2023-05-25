@@ -267,6 +267,7 @@ def update_bipartite_plot(inter_set, cin_bipartite_plot, max_bipartite_plot):
     else:
         return max_bipartite_plot
 
+
 @callback(
     Output('download-bipartite-interactions', 'data'),
     Input('download-bipartite-interactions-btn', 'n_clicks'),

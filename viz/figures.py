@@ -1046,7 +1046,8 @@ def pseudotime_interaction_propagation_graph(effect_set: str,
                                              min_logfc=0.01,
                                              min_expression=0.1,
                                              logfc_fdr_cutoff=0.05,
-                                             set_progress_callback=None):
+                                             set_progress_callback=None,
+                                             return_only_raw_data=False):
 
     iterations = iterations + 1  # +1 because the first iteration are the seeds
 
@@ -1265,6 +1266,9 @@ def pseudotime_interaction_propagation_graph(effect_set: str,
 
     if last_graph.number_of_nodes() == 0 or last_graph.number_of_edges() == 0:
         return None
+
+    if return_only_raw_data:
+        return last_graph
 
     return make_plot_from_graph(last_graph, list(celltypes), layout='timeline', colormap='cividis')
 
