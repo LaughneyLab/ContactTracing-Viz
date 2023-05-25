@@ -98,7 +98,8 @@ function highlightGenes(genes) {
         return;
     }
 
-    svg.selectAll(".not-highlighted").classed("not-highlighted", false).classed("searched", false);
+    svg.classed("searched", false);
+    svg.selectAll(".not-highlighted").classed("not-highlighted", false);
 
     if (genes === undefined || genes === null || genes.length === 0) {
         return;
