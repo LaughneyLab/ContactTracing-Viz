@@ -1,4 +1,5 @@
 # ContactTracing-Viz
+[![DOI](https://zenodo.org/badge/569471421.svg)](https://zenodo.org/badge/latestdoi/569471421)
 
 A repository for visualizing ContactTracing Results in a web browser.
 
