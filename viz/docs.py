@@ -81,8 +81,9 @@ def home_dataset_descriptions():
         ]),
         html.P([
             html.H5(html.I("Data Availability")),
-            "The single-cell data used in this study is described in our study (TODO citaiton) and can be accessed "
-            "through the Gene Expression Omnibus (GEO) under accession number ... (TODO LINK)."  # FIXME
+            "The single-cell data used in this study is described in our study (TODO citaiton) and can be accessed "  # FIXME
+            "through the Gene Expression Omnibus (GEO) under accession number ",
+            html.A("GSE189856", href="https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE189856"), "."
         ])
     ]
 
