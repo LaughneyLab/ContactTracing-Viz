@@ -26,7 +26,7 @@
 aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws/d6q7u0s0
 
 # Build locally first
-docker build --compress --rm -t ct-site .
+docker build --platform linux/amd64 --compress --rm -t ct-site .
 
 # To run locally: docker run -v "$(pwd)/data":/app/data -p 8000:8000 ct-site
 

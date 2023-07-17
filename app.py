@@ -156,12 +156,13 @@ layout = html.Div([
                     href="/",
                     style={'textDecoration': 'none'}  # Hide hyperlink underline
                 ),
-                dbc.Nav(
+                dbc.NavbarToggler(id="navbar-toggler", n_clicks=0),
+                dbc.Collapse(dbc.Nav(
                     [dbc.NavItem(dbc.NavLink(page['name'], href=page['relative_path'])) for page in dash.page_registry.values()] +
                     [dbc.NavItem(dbc.NavLink('GitHub', href='https://github.com/LaughneyLab/ContactTracing_tutorial'))],
                     navbar=True,
                     pills=True
-                )
+                ), navbar=True, id='navbar-collapse', className='justify-content-end'),
             ]
         ),
         color='light',
@@ -180,6 +181,17 @@ layout = html.Div([
 
 app.layout = dbc.Container(fluid=True,
                            children=layout)
+
+
+@app.callback(
+    Output("navbar-collapse", "is_open"),
+    [Input("navbar-toggler", "n_clicks")],
+    [State("navbar-collapse", "is_open")],
+)
+def toggle_navbar_collapse(n, is_open):
+    if n:
+        return not is_open
+    return is_open
 
 
 if __name__ == '__main__':
