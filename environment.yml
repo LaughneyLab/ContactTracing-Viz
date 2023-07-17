@@ -21,11 +21,11 @@ dependencies:
   - celery=5.2.7
   - redis-py=4.3.4
   - dash-bootstrap-components=1.4.1
-  - fastwsgi
   # Below are only needed for diskcache local caching, in deployment we use redis
   #- diskcache=5.4.0
   #- multiprocess=0.70.12.2
   #- psutil=5.9.4
   #- dill=0.3.4
-  #- pip:
+  - pip:
+      - fastwsgi
       #- kaleido==0.2.1

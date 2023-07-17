@@ -79,3 +79,7 @@
     transform-origin: center;
     transform: rotate(90deg);
 }
+
+.accordion-body {
+    padding: 1rem 2rem !important;
+}
