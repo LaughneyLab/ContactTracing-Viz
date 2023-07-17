@@ -12,6 +12,16 @@
     font-size: 9pt;
 }
 
+.card-text {
+    text-align: justify;
+    font-size: calc(0.8rem + 0.5vw);
+}
+
+.card-text > * > h5 {
+    font-size: calc(1rem + 0.75vw) !important;
+    text-align: left !important;
+}
+
 /* Apply on all elements except track 0 (text labels) */
 .not-hovered {
     /* Make elements saturated */

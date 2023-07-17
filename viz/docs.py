@@ -41,7 +41,7 @@ def home_welcome_info():
 
 def home_dataset_descriptions():
     return [
-        html.Div(html.Img(src=dash.get_asset_url("contacttracing_summary.png"), style={"width": "40%"},
+        html.Div(html.Img(className='img-fluid', src=dash.get_asset_url("contacttracing_summary.png"), style={"width": "22%"},
                  alt="ContactTracing Summary"), className='text-center'),
         html.P(["By incorporating intrinsic cellular heterogeneity, ",
                 html.I("ContactTracing"),
@@ -53,7 +53,7 @@ def home_dataset_descriptions():
             html.Li("Corresponding receptors selective expressed in a given cell type under a given condition."),
             html.Li("Induced downstream gene expression changes upon activating these receptors by their ligands within a condition.")
         ]),
-        html.Div(html.Img(src=dash.get_asset_url("contacttracing_summary2.png"), style={"width": "40%"},
+        html.Div(html.Img(className='img-fluid', src=dash.get_asset_url("contacttracing_summary2.png"), style={"width": "22%"},
                  alt="ContactTracing Summary 2"), className='text-center'),
         html.P([
             "The ",
@@ -141,7 +141,7 @@ def home_plot_descriptions():
                 dbc.Col(circos_plot_help_button, width=2)
             ])
         ]),
-        html.Div(html.Img(src=dash.get_asset_url("circos_help.png"), style={"width": "50%"}, alt="Circos Plot"), className='text-center'),
+        html.Div(html.Img(className='img-fluid', src=dash.get_asset_url("circos_help.png"), style={"width": "22%"}, alt="Circos Plot"), className='text-center'),
         html.P(["The Circos plot summarizes all condition-specific interactions between cells in the TME as identified "
                 "by ",
                 html.I("ContactTracing"),
@@ -153,7 +153,7 @@ def home_plot_descriptions():
                 dbc.Col(cell_type_plot_help_button, width=2)
             ])
         ]),
-        html.Div(html.Img(src=dash.get_asset_url("pairwise_help2.png"), style={"width": "30%"}, alt="Cell Type Interactions Plot"), className='text-center'),
+        html.Div(html.Img(className='img-fluid', src=dash.get_asset_url("pairwise_help2.png"), style={"width": "16%"}, alt="Cell Type Interactions Plot"), className='text-center'),
         html.P(["The pairwise cell type interactions plot highlights the condition-specific signals sent by a donor "
                 "cell type (emitting ligands) to a target cell type (expressing receptors). This figure gives a "
                 "focused view of cell-cell interactions of interest."]),
@@ -163,7 +163,7 @@ def home_plot_descriptions():
                 dbc.Col(ligand_effect_plot_help_button, width=2)
             ])
         ]),
-        html.Div(html.Img(src=dash.get_asset_url("ligand_effects_help3.png"), style={"width": "25%"}, alt="Downstream Ligand Effects Plot"), className='text-center'),
+        html.Div(html.Img(className='img-fluid', src=dash.get_asset_url("ligand_effects_help3.png"), style={"width": "12%"}, alt="Downstream Ligand Effects Plot"), className='text-center'),
         html.P("This figure illustrates the downstream effects of a ligand within the TME. Given a donor cell type and "
                "ligands of interest, it is possible to visualize each of the receptors that are activated in a "
                "CIN-dependent manner and how these receptors induce cascading transcriptional responses throughout "
@@ -320,37 +320,37 @@ def circos_help():
         html.P("First, we have sections of the rings grouped by cell type annotation. NOTE: If a cell type name is too "
                "large, it is excluded. However, it is possible to identify the cell type by hovering over each section "
                "of the plot in the browser."),
-        html.Div(html.Img(src=dash.get_asset_url('circos_help1.png'), style={'width': '40%', 'align': 'center'},
-                          alt="Cell Types", className='mx-auto'), className='text-center'),
+        html.Div(html.Img(src=dash.get_asset_url('circos_help1.png'), style={"width": '40%', 'align': 'center'},
+                          alt="Cell Types", className='img-fluid mx-auto'), className='text-center'),
         html.P("The next layer represents the value of the first Diffusion Component, as calculated by Palantir. This "
                "value represents the euclidean space embedding of the differential expression score (the Log2FC "
                "between conditions multiplied by the negative Log10-transformed p-value) of a given gene for a cell "
                "type. The diffusion component allows for a consistent ordering of genes along the Circos rings."),
-        html.Div(html.Img(src=dash.get_asset_url('circos_help2.png'), style={'width': '40%', 'align': 'center'},
-                          alt="Diffusion Components", className='mx-auto'), className='text-center'),
+        html.Div(html.Img(src=dash.get_asset_url('circos_help2.png'), style={"width": '40%', 'align': 'center'},
+                          alt="Diffusion Components", className='img-fluid mx-auto'), className='text-center'),
         html.P("Following Diffusion Component 1, the next ring represents the gene-wise differential abundance of a "
                "gene between conditions. The differential abundance is calculated as the Pearson correlation "
                "coefficient of each gene's imputed expression across cells against the corresponding cell type's "
                "differential abundance across conditions as calculated by MILO. This value is then normalized to "
                "range from -1 to 1."),
-        html.Div(html.Img(src=dash.get_asset_url('circos_help3.png'), style={'width': '40%', 'align': 'center'},
-                          alt="Differential Abundance", className='mx-auto'), className='text-center'),
+        html.Div(html.Img(src=dash.get_asset_url('circos_help3.png'), style={"width": '40%', 'align': 'center'},
+                          alt="Differential Abundance", className='img-fluid mx-auto'), className='text-center'),
         html.P("The final ring represents a histogram scaled to the number of significant interaction effects for each "
                "receptor."),
-        html.Div(html.Img(src=dash.get_asset_url('circos_help4.png'), style={'width': '40%', 'align': 'center'},
-                          alt="Interaction Effects", className='mx-auto'), className='text-center'),
+        html.Div(html.Img(src=dash.get_asset_url('circos_help4.png'), style={"width": '40%', 'align': 'center'},
+                          alt="Interaction Effects", className='img-fluid mx-auto'), className='text-center'),
         html.P("Lastly, all interactions that meet the selected requirements and have the same directionality are "
                "depicted as ribbons connecting each receptor to its associated ligands across cell types. Depending on "
                "the number of ribbons, it may be difficult to read some gene labels. Therefore it is possible to hover "
                "over each ribbon to get precise details. The color of these ribbons reflects a ligand's Log2FC between "
                "conditions, and the thickness of the ribbon is relative to the number of significant interaction "
                "effects for the receptor."),
-        html.Div(html.Img(src=dash.get_asset_url('circos_help5.png'), style={'width': '40%', 'align': 'center'},
-                          alt="Ribbons", className='mx-auto'), className='text-center'),
+        html.Div(html.Img(src=dash.get_asset_url('circos_help5.png'), style={"width": '40%', 'align': 'center'},
+                          alt="Ribbons", className='img-fluid mx-auto'), className='text-center'),
         html.P("Additionally, the ribbons can be filtered to emphasize specific ligands or receptors of interest using "
                "the aforementioned \"Genes of Interest\" field."),
-        html.Div(html.Img(src=dash.get_asset_url('circos_help6.png'), style={'width': '40%', 'align': 'center'},
-                          alt="Ribbons Highlighted", className='mx-auto'), className='text-center')
+        html.Div(html.Img(src=dash.get_asset_url('circos_help6.png'), style={"width": '40%', 'align': 'center'},
+                          alt="Ribbons Highlighted", className='img-fluid mx-auto'), className='text-center')
     ]
 
 
@@ -428,7 +428,7 @@ def ligand_effects_help():
                     " signaling, then draw an arrow connecting the ligands to the receptors. Finally, add 1 to the number"
                     " of network building iterations."
                 ]),
-                html.Div(html.Img(src=dash.get_asset_url("ligand_effects_help1.png"), style={'width': '30%', 'align': 'center'}, alt='Step 1', className='mx-auto'), className='text-center')
+                html.Div(html.Img(src=dash.get_asset_url("ligand_effects_help1.png"), style={"width": '30%', 'align': 'center'}, alt='Step 1', className='img-fluid mx-auto'), className='text-center')
             ]),
             html.Li([html.P([
                     "Identify significantly differentially regulated ligands for each added receptor in response to the"
@@ -436,13 +436,13 @@ def ligand_effects_help():
                     " and a ligand available in the microenvironment. Finally, add 1 to the number of network building"
                     " iterations."
                 ]),
-                html.Div(html.Img(src=dash.get_asset_url("ligand_effects_help2.png"), style={'width': '25%', 'align': 'center'}, alt='Step 2', className='mx-auto'), className='text-center')
+                html.Div(html.Img(src=dash.get_asset_url("ligand_effects_help2.png"), style={"width": '25%', 'align': 'center'}, alt='Step 2', className='img-fluid mx-auto'), className='text-center')
             ]),
             html.Li([html.P([
                     "Repeat steps 1 and 2 until the number of network building iterations equals what was specified by"
                     " the user."
                 ]),
-                html.Div(html.Img(src=dash.get_asset_url("ligand_effects_help3.png"), style={'width': '25%', 'align': 'center'}, alt='Step 3', className='mx-auto'), className='text-center')
+                html.Div(html.Img(src=dash.get_asset_url("ligand_effects_help3.png"), style={"width": '25%', 'align': 'center'}, alt='Step 3', className='img-fluid mx-auto'), className='text-center')
             ])
         ]),
         html.P(["As depicted above, each of these iterations is represented by a column of ligands and receptors. In"
@@ -533,7 +533,7 @@ def interactions_help():
                "cell type expressing each gene. Note: when many genes are selected, it is possible for labels to "
                "overlap, in which case the user can toggle the label of each gene by clicking on the representative "
                "node. Columns of genes are illustrated below:"),
-        html.Div(html.Img(src=dash.get_asset_url('pairwise_help1.png'), style={'width': '20%', 'align': 'center'}, alt='Cell Type Columns', className='mx-auto'), className='text-center'),
+        html.Div(html.Img(src=dash.get_asset_url('pairwise_help1.png'), style={"width": '20%', 'align': 'center'}, alt='Cell Type Columns', className='img-fluid mx-auto'), className='text-center'),
         html.P("To illustrate interactions between ligands and receptors, arrows are drawn between pairs that have "
                "interactions that meet the user-defined filters. The colors of these arrows indicate the Log2FC "
                "strength and directionality of the ligand between conditions (red corresponds to up-regulation, and "
@@ -541,5 +541,5 @@ def interactions_help():
                "of significant interaction effects in the receptor. Below is an example of the arrows in a "
                "unidirectional interactions plot. However, users can allow interactions to start at either cell type "
                "by selecting the \"bidirectional\" Interaction Directionality setting."),
-        html.Div(html.Img(src=dash.get_asset_url('pairwise_help2.png'), style={'width': '20%', 'align': 'center'}, alt='Arrows', className='mx-auto'), className='text-center')
+        html.Div(html.Img(src=dash.get_asset_url('pairwise_help2.png'), style={"width": '20%', 'align': 'center'}, alt='Arrows', className='img-fluid mx-auto'), className='text-center')
     ]

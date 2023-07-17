@@ -106,7 +106,7 @@ def make_custom_slider(id: str, min, max, value, step, transform=None) -> html.D
 
 def jumbotron(title, main_content, sub_content, *additional_content, dark=False):
     return html.Div(dbc.Container([
-        html.H1(title, className='display-3'),
+        html.H1(title, className='display-3 d-none d-md-block'),
         html.P(main_content, className='lead'),
         html.Hr(className='my-2'),
         html.P(sub_content),
