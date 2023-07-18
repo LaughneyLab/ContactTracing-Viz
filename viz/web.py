@@ -57,7 +57,7 @@ def make_custom_slider(id: str, min, max, value, step, transform=None) -> html.D
         step=step,
         marks=None,
         tooltip={'placement': 'bottom'},
-        className='form-range'
+        className='form-range ct-slider'
     )
     input = dbc.Input(id=id + '-input',
                       type='number',
@@ -66,13 +66,13 @@ def make_custom_slider(id: str, min, max, value, step, transform=None) -> html.D
                       step=step,
                       value=value)
     value_store = dcc.Store(id=id, data=transform(value) if transform else value)
-    slider_element = html.Div(dbc.Container([
+    slider_element = dbc.Container([
         value_store,
         dbc.Row([
-            dbc.Col(slider, align="end"),
-            dbc.Col(input, width=2, align="start", class_name='slider_text_input')
-        ])
-    ], fluid=True))
+            dbc.Col(slider),
+            dbc.Col(input, className='slider_text_input')
+        ], align='center')
+    ], fluid=True)
 
     @callback(
         Output(value_store, 'data'),
@@ -189,9 +189,11 @@ def figure_output(title, footer, element, help_info, download_btn_id, outline=Tr
         dbc.Card([
             dbc.CardHeader(dbc.Row([
                 dbc.Col(html.H5(title, className='card-title')),
+                html.Div(className="w-100 d-md-none"),
                 dbc.Col(dbc.ButtonGroup(
                     ([download_button] if download_button else []) + [help_button],
-                ), width=1)
+                    className='help-button-group'
+                ), width=1),
             ])),
             dbc.CardBody([
                 html.P([

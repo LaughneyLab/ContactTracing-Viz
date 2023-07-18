@@ -56,12 +56,26 @@
 }
 
 .slider_text_input {
-    max-width: 20.25% !important;
-    flex: 0 0 20.25% !important;
+    max-width: calc(6.5rem + 1vw) !important;
+    min-width: 6.5rem !important;
 }
 
-.accordion-body {
-    padding: 1rem 0 !important;
+.ct-slider {
+    padding: 0 !important;
+    margin: 0 !important;
+    height: unset !important;
+}
+
+.container-fluid {
+    padding-left: 1vw !important;
+    padding-right: 1vw !important;
+}
+.card-group {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+}
+.help-button-group {
+    padding-right: 700rem !important;
 }
 
 .offcanvas {
@@ -97,5 +111,5 @@
 }
 
 .accordion-body {
-    padding: 1rem 2rem !important;
+    padding: 1rem .15vw !important;
 }

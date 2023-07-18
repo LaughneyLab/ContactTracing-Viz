@@ -66,7 +66,7 @@ def build_interface() -> list:
                                                           n_clicks=0),
                                                align='right', width='auto')
                                        ]),
-                                       className='text-center d-grid gap-2'))
+                                       className='text-center d-grid d-md-block gap-1 col-gap-2'))
          ],
         [
             control_panel_element('Emitting Cell Type', 'Select the initial cell type.',
