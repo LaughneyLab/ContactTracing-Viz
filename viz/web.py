@@ -231,13 +231,15 @@ def wrap_icon(icon, *content, right=False, high_margin='.75em', low_margin='.18e
 
 
 def make_data_redirect_buttons():
-    return html.Div(
-            dbc.Container(dbc.Row([
-            dbc.Col(dbc.Button(wrap_icon('fa-circle-dot', 'View Circos'), id='circos-button', href='/circos'), width=4),
-            dbc.Col(dbc.Button(wrap_icon('fa-arrows-left-right-to-line', 'View Cell Type Interactions'), id='ct-interaction-button', href='/interactions'), width=4),
-            dbc.Col(dbc.Button(wrap_icon('fa-maximize', 'View Ligand Effects'), id='ligand-effect-button', href='/ligand-effects'), width=4),
-        ]), fluid=True),
-    className="text-center")
+    return html.Div([
+                dbc.Button(wrap_icon('fa-circle-dot', 'View Circos'), id='circos-button', href='/circos'),
+                html.Span(" "),
+                dbc.Button(wrap_icon('fa-arrows-left-right-to-line', 'View Cell Type Interactions'),
+                           id='ct-interaction-button', href='/interactions'),
+                html.Span(" "),
+                dbc.Button(wrap_icon('fa-maximize', 'View Ligand Effects'), id='ligand-effect-button',
+                           href='/ligand-effects')
+            ], className='text-center d-grid d-md-block gap-1 col-gap-2'),
 
 
 def make_circos_figure(set_progress, progress_offset: int,

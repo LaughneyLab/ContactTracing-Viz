@@ -172,10 +172,11 @@ layout = html.Div([
         className='mb-5',
     ),
     dcc.Store(id='access-code-entered', storage_type='local', data='debug' in sys.argv),  # Temporary session storage
+    html.Br(), html.Br(),
     html.Div(id='page-content', children=dbc.Container([
         dash.page_container,
         # access_code_page() if 'debug' not in sys.argv else None
-    ], fluid=True, class_name='mt-5 pt-5'))
+    ], fluid=True))
 ])
 
 

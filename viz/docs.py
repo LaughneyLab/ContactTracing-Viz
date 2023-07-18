@@ -41,7 +41,7 @@ def home_welcome_info():
 
 def home_dataset_descriptions():
     return [
-        html.Div(html.Img(className='img-fluid', src=dash.get_asset_url("contacttracing_summary.png"), style={"width": "22%"},
+        html.Div(html.Img(className='img-fluid', src=dash.get_asset_url("contacttracing_summary.png"), style={"width": "36%"},
                  alt="ContactTracing Summary"), className='text-center'),
         html.P(["By incorporating intrinsic cellular heterogeneity, ",
                 html.I("ContactTracing"),
@@ -53,7 +53,7 @@ def home_dataset_descriptions():
             html.Li("Corresponding receptors selective expressed in a given cell type under a given condition."),
             html.Li("Induced downstream gene expression changes upon activating these receptors by their ligands within a condition.")
         ]),
-        html.Div(html.Img(className='img-fluid', src=dash.get_asset_url("contacttracing_summary2.png"), style={"width": "22%"},
+        html.Div(html.Img(className='img-fluid', src=dash.get_asset_url("contacttracing_summary2.png"), style={"width": "36%"},
                  alt="ContactTracing Summary 2"), className='text-center'),
         html.P([
             "The ",
@@ -136,34 +136,34 @@ def home_plot_descriptions():
                 html.I("ContactTracing"),
                 ":"]),
         html.H5([
-            dbc.Row([
-                dbc.Col(html.I(html.A("Circos Plot", href="/circos"))),
-                dbc.Col(circos_plot_help_button, width=2)
-            ])
+            html.Div([
+                html.I(html.A("Circos Plot", href="/circos")),
+                circos_plot_help_button,
+            ], className="d-grid d-md-flex gap-1 justify-content-md-between"),
         ]),
-        html.Div(html.Img(className='img-fluid', src=dash.get_asset_url("circos_help.png"), style={"width": "22%"}, alt="Circos Plot"), className='text-center'),
+        html.Div(html.Img(className='img-fluid', src=dash.get_asset_url("circos_help.png"), style={"width": "36%"}, alt="Circos Plot"), className='text-center'),
         html.P(["The Circos plot summarizes all condition-specific interactions between cells in the TME as identified "
                 "by ",
                 html.I("ContactTracing"),
                 ". The ribbons highlight the strongest ligand/receptor interactions across cell types. The Circos "
                 "diagram can be helpful for rapid hypothesis generation from the data."]),
         html.H5([
-            dbc.Row([
-                dbc.Col(html.I(html.A("Cell Type Interactions Plot", href="/interactions"))),
-                dbc.Col(cell_type_plot_help_button, width=2)
-            ])
+            html.Div([
+                html.I(html.A("Cell Type Interactions Plot", href="/interactions")),
+                cell_type_plot_help_button,
+            ], className="d-grid d-md-flex gap-1 justify-content-md-between"),
         ]),
-        html.Div(html.Img(className='img-fluid', src=dash.get_asset_url("pairwise_help2.png"), style={"width": "16%"}, alt="Cell Type Interactions Plot"), className='text-center'),
+        html.Div(html.Img(className='img-fluid', src=dash.get_asset_url("pairwise_help2.png"), style={"width": "34%"}, alt="Cell Type Interactions Plot"), className='text-center'),
         html.P(["The pairwise cell type interactions plot highlights the condition-specific signals sent by a donor "
                 "cell type (emitting ligands) to a target cell type (expressing receptors). This figure gives a "
                 "focused view of cell-cell interactions of interest."]),
         html.H5([
-            dbc.Row([
-                dbc.Col(html.I(html.A("Downstream Ligand Effects Plot", href="/ligand-effects"))),
-                dbc.Col(ligand_effect_plot_help_button, width=2)
-            ])
+            html.Div([
+                html.I(html.A("Downstream Ligand Effects Plot", href="/ligand-effects")),
+                ligand_effect_plot_help_button,
+            ], className="d-grid d-md-flex gap-1 justify-content-md-between"),
         ]),
-        html.Div(html.Img(className='img-fluid', src=dash.get_asset_url("ligand_effects_help3.png"), style={"width": "12%"}, alt="Downstream Ligand Effects Plot"), className='text-center'),
+        html.Div(html.Img(className='img-fluid', src=dash.get_asset_url("ligand_effects_help3.png"), style={"width": "24%"}, alt="Downstream Ligand Effects Plot"), className='text-center'),
         html.P("This figure illustrates the downstream effects of a ligand within the TME. Given a donor cell type and "
                "ligands of interest, it is possible to visualize each of the receptors that are activated in a "
                "CIN-dependent manner and how these receptors induce cascading transcriptional responses throughout "
