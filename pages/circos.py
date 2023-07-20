@@ -147,7 +147,8 @@ def build_interface() -> list:
             circos_toolbar(),
             html.Div(
                 id="circos-graph-holder",
-                children=default_plots[1] if default_plots is not None else None
+                children=default_plots[1] if default_plots is not None else None,
+                style={'paddingTop': '1rem'}
             )
         ]),
         help_info=circos_help(),
@@ -163,7 +164,7 @@ def build_interface() -> list:
         dcc.Store(id='cin_circos_plot', storage_type='memory', data=[default_plots[0] if default_plots is not None else None]),
         dcc.Store(id='sting_circos_plot', storage_type='memory', data=[default_plots[1] if default_plots is not None else None]),
         dcc.Download(id="interactions_download"),
-        # DeferScript(src=dash.get_asset_url('circos_hooks.js'))
+        DeferScript(src=dash.get_asset_url('circos_hooks.js'))
     ]
 
 
@@ -172,12 +173,12 @@ def circos_toolbar():
     zoom_in_button = dbc.Button(wrap_icon('fas fa-search-plus', 'Zoom In'), outline=True, color='dark', id='circos-zoom-in-button')
     zoom_out_button = dbc.Button(wrap_icon('fas fa-search-minus', 'Zoom Out'), outline=True, color='dark', id='circos-zoom-out-button')
     download_button = dbc.Button(wrap_icon('fas fa-download', 'Save'), outline=True, color='dark', id='circos-download-button')
-    return html.Div(
+    return html.Div([
         dbc.ButtonGroup(
             [reset_button, zoom_in_button, zoom_out_button, download_button],
             size='sm'
-        ), id='circos-toolbar'
-    )
+        )
+    ], id='circos-toolbar')
 
 
 # When the graph is updated, inject custom hooks

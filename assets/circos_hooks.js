@@ -18,6 +18,11 @@ function getCircosSvgElement() {
     return doc.querySelector("#Circos-container > #svg-child > g");
 }
 
+function getLegendSvgElements() {
+    let doc = window.document;
+    return doc.querySelectorAll(".circosLegends > div > div.js-plotly-plot > div > div > svg");
+}
+
 function getCircosTransform() {
     let scale = 1.0;
     let translate = [0, 0];
@@ -289,15 +294,6 @@ function injectHoverEffects() {
 }
 
 function circosInjection() {
-    let svg = d3.select("#svg-child");
-    if (svg !== undefined && svg !== null) {
-        // Set the viewbox attribute
-        svg.attr('viewBox', '0 0 800 800');
-        svg.attr('width', '65vw');
-        svg.attr('height', 'auto');
-        svg.attr('transform', 'translate(0, 0) scale(1)');
-    }
-
     moveCircosTooltip();
 
     injectHoverEffects();
@@ -306,7 +302,25 @@ function circosInjection() {
 
     // Add listener for when the transform attribute changes
     const circos_top_level = getCircosSvgElement();
+
     if (circos_top_level !== null) {
+
+        const svg = circos_top_level.parentElement;
+        // Set the viewbox attributes
+        svg.setAttribute('viewBox', '0 0 800 800');
+        svg.setAttribute('width', '60vw');
+        svg.setAttribute('height', '60vw');
+        svg.setAttribute('transform', 'translate(0, 0) scale(1)');
+
+        const legendSvgs = getLegendSvgElements();
+        // Select all <svg> elements
+        legendSvgs.forEach(function (tb) {
+            tb.setAttribute('viewBox', '0 0 250 800');
+            tb.setAttribute('width', '20vw');
+            tb.setAttribute('height', '60vw');
+            tb.setAttribute('transform', 'translate(0, 0) scale(1)');
+        });
+
         circos_observer.observe(circos_top_level, { attributes: true });
     }
 }

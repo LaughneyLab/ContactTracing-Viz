@@ -21,22 +21,26 @@ layout = [
                 dbc.AccordionItem([
                     html.H4([html.I("ContactTracing"), ", studying the impact of chromosomal instability (CIN) & STING on the tumor ecosystem."], className='card-title'),
                     html.Hr(),
-                    html.P(home_welcome_info(), className='card-text'),
+                    html.P(),
+                    html.Div(home_welcome_info(), className='card-text'),
                 ], title='Welcome'),
                 dbc.AccordionItem([
                     html.H4([html.I("ContactTracing"), " is a unique approach for profiling cellular responses to the tumor microenvironment."], className='card-title'),
                     html.Hr(),
-                    html.P(home_dataset_descriptions(), className='card-text'),
+                    html.P(),
+                    html.Div(home_dataset_descriptions(), className='card-text'),
                 ], title='Dataset Information'),
                 dbc.AccordionItem([
                     html.H4([html.I("ContactTracing"), " produces information-rich data on condition-specific genetic responses."], className='card-title'),
                     html.Hr(),
-                    html.P(home_plot_descriptions(), className='card-text'),
+                    html.P(),
+                    html.Div(home_plot_descriptions(), className='card-text'),
                 ], title='Visualization Information'),
                 dbc.AccordionItem([
                     html.H4(['Additional information on ', html.I("ContactTracing"), ' and this website.'], className='card-title'),
                     html.Hr(),
-                    html.P(home_misc_info(), className='card-text'),
+                    html.P(),
+                    html.Div(home_misc_info(), className='card-text'),
                 ], title='Miscellaneous'),
             ], active_item=['item-0', 'item-1', 'item-2', 'item-3'], always_open=True)
         ])
@@ -51,9 +55,11 @@ layout = [
 def show_contact_info(n_clicks):
     if n_clicks > 0:
         return dbc.Card([
-            html.P(['Dr. Ashley Laughney: ',
+            html.P(),
+            html.Div(['Dr. Ashley Laughney: ',
                    html.A('Ashley.laughney@gmail.com', href='mailto:Ashley.laughney@gmail.com')]),
-            html.P(["Austin Varela: ", html.A('aav4003@med.cornell.edu', href='mailto:aav4003@med.cornell.edu')])
+            html.P(),
+            html.Div(["Austin Varela: ", html.A('aav4003@med.cornell.edu', href='mailto:aav4003@med.cornell.edu')])
         ], body=True)
 
 

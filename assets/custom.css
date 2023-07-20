@@ -103,6 +103,11 @@
     background-color: #ffffff;
 }
 
+.circosLegends {
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+}
+
 .cbtitle > text {
     /* Rotate the axis title by 180 degrees and move title down slightly */
     transform-box: fill-box;

@@ -19,7 +19,7 @@ def make_tooltip(content, tooltip_content):
     tooltip_id = str(uuid4())
     content_span = html.Span(content,
                              id=tooltip_id,
-                             style={'display': 'inline', 'text-decoration': 'underline dotted', 'cursor': 'help'})
+                             style={'display': 'inline', 'textDecoration': 'underline dotted', 'cursor': 'help'})
     tooltip = dbc.Tooltip(tooltip_content,
                           target=tooltip_id,
                           placement='auto')
@@ -107,10 +107,12 @@ def make_custom_slider(id: str, min, max, value, step, transform=None) -> html.D
 def jumbotron(title, main_content, sub_content, *additional_content, dark=False):
     return html.Div(dbc.Container([
         html.H1(title, className='display-3 d-none d-md-block'),
-        html.P(main_content, className='lead'),
+        html.P(),
+        html.Div(main_content, className='lead'),
         html.Hr(className='my-2'),
-        html.P(sub_content),
-        *[html.P(content) for content in additional_content]
+        html.P(),
+        html.Div(sub_content),
+        *[html.Div([html.P(), content]) for content in additional_content],
     ], fluid=True, className='py-3'), className="p-3 rounded-3 " + ('dark text-white' if dark else 'light'))
 
 
@@ -120,7 +122,8 @@ def control_panel_element(title, description, input, footer=None, outline=True) 
         elements.append(dbc.CardHeader(title))
     elements.append(dbc.CardBody([
         input,
-        html.P(description, className="card-text")
+        html.P(),
+        html.Div(description, className="card-text")
     ]))
     if footer:
         elements.append(dbc.CardFooter(footer))
@@ -196,7 +199,8 @@ def figure_output(title, footer, element, help_info, download_btn_id, outline=Tr
                 ), width=1),
             ])),
             dbc.CardBody([
-                html.P([
+                html.P(),
+                html.Div([
                     html.Div(id='spinner-holder'),
                     dbc.Progress(id='progress-bar',
                                  striped=True,
@@ -215,7 +219,8 @@ def figure_output(title, footer, element, help_info, download_btn_id, outline=Tr
 def interactive_panel(title, subtitle, *content, dark=False):
     return html.Div(dbc.Container([
         html.H3(title, className='display-7'),
-        html.P(subtitle, className='lead'),
+        html.P(),
+        html.Div(subtitle, className='lead'),
         html.Hr(className='my-2'),
         html.Br(),
         html.Div(dbc.Container(content), className='card-text')
@@ -224,7 +229,7 @@ def interactive_panel(title, subtitle, *content, dark=False):
 
 def wrap_icon(icon, *content, right=False, high_margin='.75em', low_margin='.18em'):
     elements = [(html.Span(c) if isinstance(c, str) else c) for c in content]
-    icon = html.I(className='fas '+icon, style={'margin-left': high_margin if right else low_margin, 'margin-right': low_margin if right else high_margin})
+    icon = html.I(className='fas '+icon, style={'marginLeft': high_margin if right else low_margin, 'marginRight': low_margin if right else high_margin})
     if right:
         elements.append(icon)
     else:
@@ -639,7 +644,7 @@ def make_circos_figure(set_progress, progress_offset: int,
                     'viewBox': '400 400 800 800',
                     'display': 'block',
                     'width': '100%',
-                    'height': 'auto'
+                    'height': '100%'
                 })
         ), width=9), dbc.Col(
                 dcc.Graph(
@@ -653,7 +658,7 @@ def make_circos_figure(set_progress, progress_offset: int,
                         'showLink': False,
                         'watermark': False
                     }
-                )
+                ), className='circosLegends'
         )], className='g-0')
 
 
