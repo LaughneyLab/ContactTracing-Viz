@@ -289,6 +289,15 @@ function injectHoverEffects() {
 }
 
 function circosInjection() {
+    let svg = d3.select("#svg-child");
+    if (svg !== undefined && svg !== null) {
+        // Set the viewbox attribute
+        svg.attr('viewBox', '0 0 800 800');
+        svg.attr('width', '65vw');
+        svg.attr('height', 'auto');
+        svg.attr('transform', 'translate(0, 0) scale(1)');
+    }
+
     moveCircosTooltip();
 
     injectHoverEffects();

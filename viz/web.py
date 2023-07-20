@@ -241,7 +241,7 @@ def make_data_redirect_buttons():
                 html.Span(" "),
                 dbc.Button(wrap_icon('fa-maximize', 'View Ligand Effects'), id='ligand-effect-button',
                            href='/ligand-effects')
-            ], className='text-center d-grid d-md-block gap-1 col-gap-2'),
+            ], className='text-center d-grid d-md-block gap-1 col-gap-2')
 
 
 def make_circos_figure(set_progress, progress_offset: int,
@@ -545,7 +545,7 @@ def make_circos_figure(set_progress, progress_offset: int,
                                       log2fc_colormap, da_colormap, dc1_colormap)
 
     return dbc.Row([
-        dbc.Col(dbc.Container(html.Div(
+        dbc.Col(dbc.Container(
             dashbio.Circos(
                 enableDownloadSVG=False,
                 enableZoomPan=True,
@@ -631,12 +631,17 @@ def make_circos_figure(set_progress, progress_offset: int,
                         "display": False
                     },
                     "innerRadius": 24*ring_width,
-                    "outerRadius": 25*ring_width,
-                    'size': 800
+                    "outerRadius": 25*ring_width
                     #"cornerRadius": 4,
-                }
-            ),
-        style={'height': 800, 'width': 800})), width=9), dbc.Col(
+                },
+                size=800,
+                style={
+                    'viewBox': '400 400 800 800',
+                    'display': 'block',
+                    'width': '100%',
+                    'height': 'auto'
+                })
+        ), width=9), dbc.Col(
                 dcc.Graph(
                     figure=legend_group,
                     config={

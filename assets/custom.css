@@ -111,5 +111,6 @@
 }
 
 .accordion-body {
-    padding: 1rem .15vw !important;
+    padding: 1rem 2vw !important;
+    text-align: justify;
 }
