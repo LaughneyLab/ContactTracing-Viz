@@ -196,7 +196,7 @@ def figure_output(title, footer, element, help_info, download_btn_id, outline=Tr
                 dbc.Col(dbc.ButtonGroup(
                     ([download_button] if download_button else []) + [help_button],
                     className='help-button-group'
-                ), width=1),
+                ), width=2),
             ])),
             dbc.CardBody([
                 html.P(),
@@ -648,6 +648,7 @@ def make_circos_figure(set_progress, progress_offset: int,
                 })
         ), width=9), dbc.Col(
                 dcc.Graph(
+                    id='circos-legend',
                     figure=legend_group,
                     config={
                         'displaylogo': False,

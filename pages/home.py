@@ -55,7 +55,6 @@ layout = [
 def show_contact_info(n_clicks):
     if n_clicks > 0:
         return dbc.Card([
-            html.P(),
             html.Div(['Dr. Ashley Laughney: ',
                    html.A('Ashley.laughney@gmail.com', href='mailto:Ashley.laughney@gmail.com')]),
             html.P(),

@@ -1,4 +1,4 @@
-.circos-tooltip {
+#circos-tooltip {
     /*Place in top left corner*/
     position: absolute !important;
     text-align: left !important;
@@ -75,7 +75,7 @@
     padding-right: 1rem !important;
 }
 .help-button-group {
-    padding-right: 700rem !important;
+    padding-left: 3rem !important;
 }
 
 .offcanvas {
@@ -97,15 +97,20 @@
 
 #circos-toolbar {
     position: absolute !important;
-    top: 7.5%;
-    right: 5%;
+    top: 7vw;
+    right: 1vw;
     z-index: 1000;
     background-color: #ffffff;
 }
 
 .circosLegends {
     margin-left: 0 !important;
-    padding-left: 0 !important;
+    padding-left: 1vw !important;
+}
+
+/* Fix legend scaling */
+#circos-legend > div.js-plotly-plot > div > div {
+    height: 100% !important;
 }
 
 .cbtitle > text {

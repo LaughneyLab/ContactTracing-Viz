@@ -183,10 +183,11 @@ def circos_toolbar():
 
 # When the graph is updated, inject custom hooks
 clientside_callback("""
-function(_) {
+function(ignore, ignore2) {
+    console.log('hi');
     circosInjection();
 }
-""", Input('circos-graph-holder', 'children'))
+""", Input('circos-graph-holder', 'children'), Input('circos-legend', 'children'))
 
 clientside_callback("""
 function(n_clicks) {
