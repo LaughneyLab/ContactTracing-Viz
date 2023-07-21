@@ -4,9 +4,8 @@ function getSvgElements() {
 }
 
 function plotlyInjection(heightRatio) {
-    console.log("hi2")
     // Add listener for when the transform attribute changes
-    const baseSize = 80;
+    const baseSize = 67;
     const width = baseSize;
     const height = baseSize * heightRatio;
     const viewBoxWidth = 1275;
@@ -17,7 +16,6 @@ function plotlyInjection(heightRatio) {
         setTimeout(plotlyInjection, 10, heightRatio);
         return;
     }
-    console.log(svgs)
     svgs.forEach(function (svg) {
         // If icon, adjust viewbox to translate to center (this is for the modebar)
         svg.setAttribute('viewBox', '0 0 ' + viewBoxWidth + ' ' + viewBoxHeight);

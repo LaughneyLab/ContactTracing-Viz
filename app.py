@@ -172,6 +172,7 @@ layout = [
         className='mb-5',
     ),
     # dcc.Store(id='access-code-entered', storage_type='local', data='debug' in sys.argv),  # Temporary session storage
+    # dcc.Store(id='is_mobile_device', storage_type='memory', data=False),  # Temporary session storage
     html.Br(), html.Br(),
     html.Div(id='page-content', children=dbc.Container([
         dash.page_container,
@@ -182,6 +183,13 @@ layout = [
 
 app.layout = dbc.Container(fluid=True,
                            children=layout)
+
+
+# app.clientside_callback("""
+# function() {
+#     return (navigator.maxTouchPoints || 'ontouchstart' in document.documentElement);
+# }
+# """, Output('is_mobile_device', 'data'))
 
 
 @app.callback(

@@ -108,17 +108,31 @@
     padding-left: 1vw !important;
 }
 
+/* Remove mobile interactions */
+@media (max-width: 900px) {
+    .drag {
+        pointer-events: none !important;
+        touch-action: none !important;
+    }
+    .modebar-container{
+      display: none;
+    }
+}
+
 /* Fix legend scaling */
 #circos-legend > div.js-plotly-plot > div > div {
     height: 100% !important;
+    max-width: 100% !important;
 }
 
 #celltype-interaction-graph > div.js-plotly-plot > div > div {
     height: 70vw !important;
+    max-width: 100% !important;
 }
 
 #network_graph > div.js-plotly-plot > div > div {
     height: 70vw !important;
+    max-width: 100% !important;
 }
 
 #celltype-interaction-graph > div.js-plotly-plot > div > div > svg {
