@@ -605,7 +605,7 @@ def bipartite_graph(df,
                         autosize=False,
                         width=height * scaleratio,
                         height=height,
-                        plot_bgcolor='white',
+                        plot_bgcolor='rgba(0,0,0,0)',
                         annotations=annotations,
                         legend=dict(
                             yanchor="top",
@@ -1022,7 +1022,7 @@ def make_plot_from_graph(G: nx.DiGraph, celltypes, layout="planar", colormap=Non
                         autosize=False,
                         width=height * scaleratio,
                         height=height,
-                        plot_bgcolor='white',
+                        plot_bgcolor='rgba(0,0,0,0)',
                         annotations=annotations,
                         legend=dict(
                             yanchor="top",

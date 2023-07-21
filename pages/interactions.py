@@ -1,7 +1,8 @@
 import os.path
 
 import dash
-from dash_extensions.enrich import dcc, callback, Output, Input, State, html, Serverside
+from dash_extensions import DeferScript
+from dash_extensions.enrich import dcc, callback, Output, Input, State, html, Serverside, clientside_callback
 import dash_bootstrap_components as dbc
 
 from viz.docs import interactions_help, interaction_effects_def, ligand_log2fc_def, conditions_def
@@ -200,8 +201,8 @@ def build_interface() -> list:
                               'toImageButtonOptions': {
                                   'format': 'svg',
                                   'filename': 'interactions_image',
-                                  'height': 1275,
-                                  'width': 1275*.8,
+                                  'height': 1020 * 1.3,
+                                  'width': 1020,
                                   'scale': 1
                               },
                               'watermark': False
@@ -219,7 +220,16 @@ def build_interface() -> list:
         dcc.Store(id='cin_bipartite_plot', data=default_plots[0] if default_plots is not None else {}),
         dcc.Store(id='max_bipartite_plot', data=default_plots[1] if default_plots is not None else {}),
         dcc.Download(id="download-bipartite-interactions"),
+        # DeferScript(src=dash.get_asset_url('plotly_hooks.js'))
     ]
+
+
+# When the graph is updated, inject custom hooks
+clientside_callback("""
+function(_) {
+    plotlyInjection(1.3);
+}
+""", Input("celltype-interaction-graph", 'children'))
 
 
 @callback(

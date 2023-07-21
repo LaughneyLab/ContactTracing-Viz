@@ -209,7 +209,8 @@ def figure_output(title, footer, element, help_info, download_btn_id, outline=Tr
                                  style={'visibility': 'hidden'}),
                     element,
                     html.Br()
-                ])
+                ]),
+                html.P()
             ]),
             dbc.CardFooter(footer)
         ], color='light', outline=outline)

@@ -164,7 +164,7 @@ def build_interface() -> list:
         dcc.Store(id='cin_circos_plot', storage_type='memory', data=[default_plots[0] if default_plots is not None else None]),
         dcc.Store(id='sting_circos_plot', storage_type='memory', data=[default_plots[1] if default_plots is not None else None]),
         dcc.Download(id="interactions_download"),
-        DeferScript(src=dash.get_asset_url('circos_hooks.js'))
+        # DeferScript(src=dash.get_asset_url('circos_hooks.js'))
     ]
 
 
@@ -184,7 +184,6 @@ def circos_toolbar():
 # When the graph is updated, inject custom hooks
 clientside_callback("""
 function(ignore, ignore2) {
-    console.log('hi');
     circosInjection();
 }
 """, Input('circos-graph-holder', 'children'), Input('circos-legend', 'children'))

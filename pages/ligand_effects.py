@@ -2,7 +2,8 @@ import os.path
 
 import dash
 import dash_bootstrap_components as dbc
-from dash_extensions.enrich import callback, Output, Input, dcc, State, html, Serverside
+from dash_extensions import DeferScript
+from dash_extensions.enrich import callback, Output, Input, dcc, State, html, Serverside, clientside_callback
 
 from viz.docs import ligand_effects_help, interaction_test_def, conditions_def, deg_test_def
 from viz.web import interactive_panel, wrap_icon, control_panel, control_panel_element, figure_output, \
@@ -158,8 +159,8 @@ def build_interface() -> list:
                              'toImageButtonOptions': {
                                 'format': 'svg',  # one of png, svg, jpeg, webp
                                 'filename': 'ligand_effects_image',
-                                'height': 1800,
-                                'width': 1200,
+                                 'height': 1025 * 1.2,
+                                 'width': 1025,
                                 'scale': 1  # Multiply title/legend/axis/canvas sizes by this factor
                              },
                              'watermark': False
@@ -177,7 +178,16 @@ def build_interface() -> list:
         dcc.Store(id='cin_network_plot', storage_type='memory', data=default_plots[0] if default_plots is not None else {}),
         dcc.Store(id='sting_network_plot', storage_type='memory', data=default_plots[1] if default_plots is not None else {}),
         dcc.Download(id="download_ligand_effects_network"),
+        # DeferScript(src=dash.get_asset_url('plotly_hooks.js'))
     ]
+
+
+# When the graph is updated, inject custom hooks
+clientside_callback("""
+function(ignore) {
+    plotlyInjection(1.2);
+}
+""", Input("network_graph", 'children'))
 
 
 @callback(

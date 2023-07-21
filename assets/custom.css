@@ -113,6 +113,29 @@
     height: 100% !important;
 }
 
+#celltype-interaction-graph > div.js-plotly-plot > div > div {
+    height: 70vw !important;
+}
+
+#network_graph > div.js-plotly-plot > div > div {
+    height: 70vw !important;
+}
+
+#celltype-interaction-graph > div.js-plotly-plot > div > div > svg {
+    background: rgba(0, 0, 0, 0) !important;
+}
+
+#network_graph > div.js-plotly-plot > div > div > svg {
+    background: rgba(0, 0, 0, 0) !important;
+}
+
+.modebar {
+    margin-top: -3rem !important;
+    position: relative !important;
+    align-items: end !important;
+    justify-content: end !important;
+}
+
 .cbtitle > text {
     /* Rotate the axis title by 180 degrees and move title down slightly */
     transform-box: fill-box;

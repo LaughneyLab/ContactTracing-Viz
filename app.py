@@ -78,7 +78,7 @@ app = DashProxy(__name__,
            ],
            title='ContactTracing',
            external_scripts=['https://sharonchoong.github.io/svg-exportJS/svg-export.min.js',
-                             "/assets/circos_hooks.js"],
+                             "/assets/circos_hooks.js", '/assets/plotly_hooks.js'],
            external_stylesheets=[
                # Fonts
                dict(rel="preconnect",
@@ -144,7 +144,7 @@ def access_code_page():
     return container
 
 
-layout = html.Div([
+layout = [
     dbc.Navbar(
         dbc.Container(
             [
@@ -171,13 +171,13 @@ layout = html.Div([
         light=True,
         className='mb-5',
     ),
-    dcc.Store(id='access-code-entered', storage_type='local', data='debug' in sys.argv),  # Temporary session storage
+    # dcc.Store(id='access-code-entered', storage_type='local', data='debug' in sys.argv),  # Temporary session storage
     html.Br(), html.Br(),
     html.Div(id='page-content', children=dbc.Container([
         dash.page_container,
         # access_code_page() if 'debug' not in sys.argv else None
     ], fluid=True))
-])
+]
 
 
 app.layout = dbc.Container(fluid=True,

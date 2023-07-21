@@ -304,7 +304,6 @@ function circosInjection() {
     const circos_top_level = getCircosSvgElement();
 
     if (circos_top_level !== null) {
-
         const svg = circos_top_level.parentElement;
         // Set the viewbox attributes
         svg.setAttribute('viewBox', '0 0 800 800');
@@ -313,6 +312,12 @@ function circosInjection() {
         svg.setAttribute('transform', 'translate(0, 0) scale(1)');
 
         const legendSvgs = getLegendSvgElements();
+
+        if (legendSvgs.length === 0) {
+            // Plotly hasn't rendered the SVG yet, try again in 10ms
+            setTimeout(circosInjection, 10);
+            return;
+        }
         // Select all <svg> elements
         legendSvgs.forEach(function (tb) {
             tb.setAttribute('viewBox', '0 0 250 800');
@@ -322,6 +327,9 @@ function circosInjection() {
         });
 
         circos_observer.observe(circos_top_level, { attributes: true });
+    } else {
+        // Plotly hasn't rendered the SVG yet, try again in 10ms
+        setTimeout(circosInjection, 10);
     }
 }
 
