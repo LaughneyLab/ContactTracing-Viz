@@ -251,3 +251,4 @@ old_data/
 !.elasticbeanstalk/*.global.yml
 
 .xlsx
+tutorial_output

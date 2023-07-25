@@ -267,3 +267,4 @@ run_docker.sh
 aws.sh
 .idea/
 .github/
+tutorial_output

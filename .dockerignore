@@ -16,3 +16,4 @@ requirements.txt
 .git
 *.md
 .github/
+tutorial_output
