@@ -4,6 +4,7 @@ import dash
 from dash_extensions import DeferScript
 from dash_extensions.enrich import dcc, callback, Output, Input, State, html, Serverside, clientside_callback
 import dash_bootstrap_components as dbc
+from plotly import graph_objects as go
 
 from viz.docs import interactions_help, interaction_effects_def, ligand_log2fc_def, conditions_def
 from viz.web import interactive_panel, wrap_icon, control_panel, control_panel_element, figure_output, \
@@ -22,14 +23,18 @@ def build_interface() -> list:
         return []
 
     from viz.figures import DEFAULT_INTERACTIONS_ARGS, INTERACTIONS_SAVE_LOCATION
+    from viz.data import using_custom_data, get_custom_celltypes
 
     import pickle
     default_plots = None
     try:
-        with open(INTERACTIONS_SAVE_LOCATION, 'rb') as f:
-            default_plots = pickle.load(f)
+        if not using_custom_data():
+            with open(INTERACTIONS_SAVE_LOCATION, 'rb') as f:
+                default_plots = pickle.load(f)
     except:
         pass
+
+    custom_celltypes = get_custom_celltypes() if using_custom_data() else []
 
     controls = control_panel("submit-button-bipartite",
          [
@@ -40,6 +45,11 @@ def build_interface() -> list:
                                        " to compare."
                                    ],
                                    dbc.RadioItems(
+                                       id='inter_set',
+                                       options=[{'label': 'Custom', 'value': 'custom'}],
+                                       value='custom',
+                                       persistence=False
+                                   ) if using_custom_data() else dbc.RadioItems(
                                        id='inter_set',
                                        options=[{'label': 'CIN-Dependent Interactions', 'value': 'cin'},
                                                 {'label': 'CIN/STING-Dependent Interactions', 'value': 'max'}],
@@ -70,6 +80,10 @@ def build_interface() -> list:
                                    "The first cell type to examine interactions between.",
                                    dbc.Select(
                                        id='first_celltype',
+                                       options=[{'label': ct, 'value': ct} for ct in custom_celltypes],
+                                       value=custom_celltypes[0]
+                                   ) if using_custom_data() else dbc.Select(
+                                       id='first_celltype',
                                        options=[{'label': ct, 'value': ct} for ct in
                                                 ['Tumor cells',
                                                  'Macrophages/mMDSC',
@@ -88,6 +102,10 @@ def build_interface() -> list:
              control_panel_element("Second Cell Type",
                                    "The second cell type to examine interactions between (need not be unique).",
                                    dbc.Select(
+                                       id='second_celltype',
+                                       options=[{'label': ct, 'value': ct} for ct in custom_celltypes],
+                                       value=custom_celltypes[2]
+                                   ) if using_custom_data() else dbc.Select(
                                        id='second_celltype',
                                        options=[{'label': ct, 'value': ct} for ct in
                                                 ['Tumor cells',
@@ -108,6 +126,10 @@ def build_interface() -> list:
                                    "If specified, include interactions across a third cell type.",
                                    dbc.Select(
                                        id='third_celltype',
+                                       options=[{'label': ct, 'value': ct} for ct in (['(None)']+custom_celltypes)],
+                                       value='(None)'
+                                   ) if using_custom_data() else dbc.Select(
+                                       id='third_celltype',
                                        options=[{'label': ct, 'value': ct} for ct in
                                                 ['(None)',
                                                  'Tumor cells',
@@ -122,7 +144,7 @@ def build_interface() -> list:
                                                  'Endothelial cells',
                                                  'Osteoclasts',
                                                  'Mast cells']],
-                                       value=DEFAULT_INTERACTIONS_ARGS['third_celltype']
+                                       value='(None)'
                                    )),
          ], [
             control_panel_element("Interaction Effect FDR Cutoff",
@@ -194,7 +216,7 @@ def build_interface() -> list:
         title="Cell Type Interactions",
         footer="Circle = Ligand, Square = Receptor, Diamond = Ligand and Receptor",
         element=dcc.Graph(id="celltype-interaction-graph",
-                          figure=default_plots[1] if default_plots is not None else {},
+                          figure=default_plots[1] if default_plots is not None else go.Figure(data=[go.Scatter(x=[], y=[])]),
                           config={
                               'displaylogo': False,
                               'showTips': True,
@@ -272,7 +294,7 @@ def reset_to_defaults(n_clicks, submission_button_clicks):
     prevent_initial_call=True
 )
 def update_bipartite_plot(inter_set, cin_bipartite_plot, max_bipartite_plot):
-    if inter_set == 'cin':
+    if inter_set == 'cin' or inter_set == 'custom':
         return cin_bipartite_plot
     else:
         return max_bipartite_plot
@@ -303,8 +325,11 @@ def download_data(n_clicks,
         from dash.exceptions import PreventUpdate
         raise PreventUpdate
 
-    from viz.data import read_interactions_file
-    df = read_interactions_file('cin' if inter_set == 'cin' else 'sting', inter_fdr)
+    from viz.data import read_interactions_file, using_custom_data
+    if using_custom_data():
+        df = read_interactions_file('custom', inter_fdr)
+    else:
+        df = read_interactions_file('cin' if inter_set == 'cin' else 'sting', inter_fdr)
     logfc_fdr_cutoff = float(logfc_fdr.replace('fdr', '.'))
 
     if cell3 is not None and 'none' in str(cell3).lower():
@@ -369,7 +394,7 @@ def make_graph(set_progress, n_clicks,
                first_ct, second_ct, third_ct,
                min_logfc, min_expression, min_numSigI1,
                inter_fdr, logfc_fdr, bidirectional):
-    from viz.data import read_interactions_file
+    from viz.data import read_interactions_file, using_custom_data
     from viz.figures import bipartite_graph, DEFAULT_INTERACTIONS_ARGS, INTERACTIONS_SAVE_LOCATION
 
     set_progress((0, 2))
@@ -386,15 +411,20 @@ def make_graph(set_progress, n_clicks,
             bidirectional == DEFAULT_INTERACTIONS_ARGS['bidirectional_bipartite']):
         import pickle
         try:
-            with open(INTERACTIONS_SAVE_LOCATION, 'rb') as f:
-                # return [(Serverside(p) if p is not None else None) for p in pickle.load(f)]  FIXME
-                return pickle.load(f)
+            if not using_custom_data():
+                with open(INTERACTIONS_SAVE_LOCATION, 'rb') as f:
+                    # return [(Serverside(p) if p is not None else None) for p in pickle.load(f)]  FIXME
+                    return pickle.load(f)
         except:
             pass
 
     # Do some work
-    cin_interactions = read_interactions_file('cin', inter_fdr)
-    sting_interactions = read_interactions_file('sting', inter_fdr)
+    if using_custom_data():
+        cin_interactions = read_interactions_file('custom', inter_fdr)
+        sting_interactions = None
+    else:
+        cin_interactions = read_interactions_file('cin', inter_fdr)
+        sting_interactions = read_interactions_file('sting', inter_fdr)
 
     cin_fig = bipartite_graph(
         df=cin_interactions,
@@ -411,18 +441,21 @@ def make_graph(set_progress, n_clicks,
 
     set_progress((1, 2))
 
-    sting_fig = bipartite_graph(
-        df=sting_interactions,
-        cin_only=False,
-        cell1=first_ct,
-        cell2=second_ct,
-        cell3=third_ct,
-        numInteractions=min_numSigI1,
-        min_logfc_bipartite=min_logfc,
-        min_expression_bipartite=min_expression,
-        logfc_fdr_bipartite_cutoff=float(logfc_fdr.replace('fdr', '.')),
-        bidirectional=bidirectional
-    )
+    if using_custom_data():
+        sting_fig = None
+    else:
+        sting_fig = bipartite_graph(
+            df=sting_interactions,
+            cin_only=False,
+            cell1=first_ct,
+            cell2=second_ct,
+            cell3=third_ct,
+            numInteractions=min_numSigI1,
+            min_logfc_bipartite=min_logfc,
+            min_expression_bipartite=min_expression,
+            logfc_fdr_bipartite_cutoff=float(logfc_fdr.replace('fdr', '.')),
+            bidirectional=bidirectional
+        )
 
     set_progress((2, 2))
 

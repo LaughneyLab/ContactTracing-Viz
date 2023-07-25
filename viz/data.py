@@ -2,7 +2,7 @@ import functools
 import itertools
 import os
 from collections import namedtuple
-from typing import Dict
+from typing import Dict, List
 
 import anndata as ad
 import scanpy as sc
@@ -26,7 +26,7 @@ def _normalize_condition_name(condition: str) -> str:
     elif condition == 'highCIN_vs_lowCIN' or condition == 'highCIN_vs_noSTING':
         return condition
     else:
-        raise ValueError(f'Unknown condition {condition}')
+        return condition  # Assume it's already normalized
 
 
 def _normalize_fdr_name(fdr: str) -> str:
@@ -79,7 +79,8 @@ def calculate_expressions(adata: ad.AnnData, exp_adata: ad.AnnData):
     return expressions
 
 
-def calculate_aggregated_stats(adata: ad.AnnData, fdr: str) -> pd.DataFrame:
+def calculate_aggregated_stats(adata: ad.AnnData,
+                               fdr: str) -> pd.DataFrame:
     fdr = float("0." + fdr)
 
     data = list()
@@ -201,6 +202,93 @@ def _compile_interactions(interactions: pd.DataFrame,
     interactions_df.reset_index().to_feather(file, compression='zstd')
 
 
+def _custom_aggregated_stats(adata: ad.AnnData,
+                             deg_adata: ad.AnnData,
+                             target_stats: pd.DataFrame,
+                             fdr: str) -> pd.DataFrame:
+    fdr = float("0." + fdr)
+    data = list()
+    for i, row in adata.obs.iterrows():
+        celltype = row['cell type']
+        target = row['target']
+        expression = row['fracExp']
+        selected_info = target_stats[(target_stats['cell type'] == celltype) & (target_stats['target'] == target)]
+        if selected_info.shape[0] == 0:
+            logfc = 0
+            logfc_fdr = 1
+        else:
+            logfc = selected_info['log2FC'].values[0]
+            logfc_fdr = selected_info['fdr'].values[0]
+        selected_deg = deg_adata[(deg_adata.obs['cell type'] == celltype) & (deg_adata.obs['receptor'] == target)]
+        if selected_deg.shape[0] == 0:
+            numSigI1 = 0
+        else:
+            numSigI1 = int((selected_deg.layers['fdr.i1'].flatten() < fdr).sum())
+        selected_adata = adata[(adata.obs['cell type'] == celltype) & (adata.obs['target'] == target)]
+        if selected_adata.shape[0] == 0:
+            numDEG = 0
+        else:
+            numDEG = int((selected_adata.layers['fdr'].flatten() < fdr).sum())
+        data.append({
+            'cell_type': celltype,
+            'target': target,
+            'expression': expression,
+            'numDEG': numDEG,
+            'numSigI1': numSigI1,
+            'MAST_log2FC': logfc,
+            'MAST_fdr': logfc_fdr
+        })
+
+    return pd.DataFrame(data)
+
+
+def _compile_custom_interactions(adata: ad.AnnData,
+                                 target_stats: pd.DataFrame,
+                                 interactions: pd.DataFrame,
+                                 agg_stats: pd.DataFrame,
+                                 condition_name: str,
+                                 fdr: str):
+    prefix = 'data/compiled/interactions'
+    os.makedirs(prefix, exist_ok=True)
+    file = _filename(prefix, 'custom', fdr, 'feather')
+
+    all_celltypes = set(adata.obs['cell type'])
+    full_df = pd.DataFrame()
+    for donor_celltype, target_celltype in itertools.product(all_celltypes, repeat=2):
+        lig_data = target_stats[(target_stats['cell type'] == donor_celltype) &
+                                (target_stats['target'].isin(interactions.ligand))]
+        # Only include select columns
+        lig_data = lig_data[['target', 'cell type', 'fracExp', 'cell_type_dc1']]
+        lig_data.rename(columns={'target': 'ligand',
+                                 'cell type': 'cell_type_ligand',
+                                 'fracExp': 'expression_ligand'}, inplace=True)
+        rec_data = target_stats[(target_stats['cell type'] == target_celltype) &
+                                (target_stats['target'].isin(interactions.receptor))]
+        # Only include select columns
+        rec_data = rec_data[['target', 'cell type', 'fracExp', 'fdr']]
+        rec_data.rename(columns={'target': 'receptor',
+                                 'cell type': 'cell_type_receptor',
+                                 'fracExp': 'expression_receptor'}, inplace=True)
+        agg_df = agg_stats[agg_stats['cell_type'] == donor_celltype]
+        # Don't need cell type in the df anymore
+        agg_df = agg_df.drop(columns=['cell_type', 'numSigI1', 'numDEG', 'expression'])
+        lig_data = pd.merge(lig_data, agg_df, left_on='ligand', right_on='target', how='inner', suffixes=('', '_ignore'))
+        agg_df = agg_stats[agg_stats['cell_type'] == target_celltype]
+        # Don't need cell type in the df anymore
+        agg_df = agg_df.drop(columns=['cell_type'])
+        rec_data = pd.merge(rec_data, agg_df, left_on='receptor', right_on='target', how='inner', suffixes=('', '_ignore'))
+
+        interactions_ct = pd.merge(interactions, lig_data, on='ligand', suffixes=('', '_ligand'))
+        interactions_ct = pd.merge(interactions_ct, rec_data, on='receptor', suffixes=('_ligand', '_receptor'))
+
+        if interactions_ct.shape[0] == 0:
+            continue
+        full_df = pd.concat([full_df, interactions_ct])
+    full_df['DA_receptor'] = 0
+    full_df['DA_ligand'] = 0
+    full_df.reset_index().to_feather(file, compression='zstd')
+
+
 def _compile_ligand_effects(interactions: pd.DataFrame,
                             exp_adata: ad.AnnData,
                             adata: ad.AnnData,
@@ -319,6 +407,90 @@ def _compile_ligand_effects(interactions: pd.DataFrame,
             df.reset_index().to_feather(filename, compression='zstd')
 
 
+def _compile_custom_ligand_effects(interactions: pd.DataFrame,
+                                   adata: ad.AnnData,
+                                   deg_adata: ad.AnnData,
+                                   target_stats: pd.DataFrame,
+                                   condition_name: str):
+    prefix = 'data/compiled/ligand_effects'
+    os.makedirs(prefix, exist_ok=True)
+    prefix += '/' + 'custom' + "_"
+
+    all_celltypes = set(adata.obs['cell type'])
+
+    for receptor in set(interactions.receptor):
+        filename = prefix + receptor + ".feather"
+        df = pd.DataFrame()
+        for celltype in all_celltypes:
+            rec_adata = adata[(adata.obs['cell type'] == celltype) &
+                                (adata.obs['target'] == receptor)]
+            rec_deg_adata = deg_adata[(deg_adata.obs['cell type'] == celltype) &
+                                        (deg_adata.obs['receptor'] == receptor), rec_adata.var.index.values]
+            if rec_adata.n_obs == 0 or rec_adata.n_vars == 0:
+                continue
+
+            cell_df = pd.DataFrame({
+                'gene': rec_adata.var.index.values,
+                'log2FC': rec_adata.layers['lfc'].flatten(),
+                'fdr': rec_adata.layers['fdr'].flatten(),
+            })
+            cell_df['gene_expression'] = 1
+            cell_df['gene_is_ligand'] = cell_df['gene'].isin(interactions.ligand)
+            cell_df['gene_is_receptor'] = cell_df['gene'].isin(interactions.receptor)
+            cell_df['i1.fdr'] = rec_deg_adata.layers['fdr.i1'].flatten()
+            cell_df['gene_max_ligand_expression'] = 1
+            cell_df['cell_type'] = celltype
+            cell_df['target'] = receptor
+            cell_df['target_expression'] = 1
+            cell_df['receptor'] = True
+            cell_df['ligand'] = receptor in interactions.ligand
+            filtered_target_stats = target_stats[(target_stats['cell type'] == celltype) &
+                                                    (target_stats['target'] == receptor)]
+            cell_df['MAST_log2FC'] = filtered_target_stats['log2FC'].values[0] if filtered_target_stats.shape[0] > 0 else 0
+            cell_df['MAST_fdr'] = filtered_target_stats['fdr'].values[0] if filtered_target_stats.shape[0] > 0 else 1
+            df = pd.concat([df, cell_df])
+        if df.shape[0] == 0:
+            continue
+        else:
+            df.reset_index().to_feather(filename, compression='zstd')
+
+    for ligand in set(interactions.ligand):
+        if ligand in interactions.receptor:
+            continue
+
+        filename = prefix + ligand + ".feather"
+        df = pd.DataFrame()
+        for celltype in all_celltypes:
+            lig_adata = adata[(adata.obs['cell type'] == celltype) &
+                              (adata.obs['target'] == ligand)]
+            if lig_adata.n_obs == 0 or lig_adata.n_vars == 0:
+                continue
+            cell_df = pd.DataFrame({
+                'gene': lig_adata.var.index.values,
+                'log2FC': lig_adata.layers['lfc'].flatten(),
+                'fdr': lig_adata.layers['fdr'].flatten(),
+            })
+            cell_df['gene_expression'] = 1
+            cell_df['gene_is_ligand'] = cell_df['gene'].isin(interactions.ligand)
+            cell_df['gene_is_receptor'] = cell_df['gene'].isin(interactions.receptor)
+            cell_df['i1.fdr'] = 1
+            cell_df['gene_max_ligand_expression'] = 1
+            cell_df['cell_type'] = celltype
+            cell_df['target'] = ligand
+            cell_df['target_expression'] = 1
+            cell_df['receptor'] = ligand in interactions.receptor
+            cell_df['ligand'] = True
+            filtered_target_stats = target_stats[(target_stats['cell type'] == celltype) &
+                                                    (target_stats['target'] == ligand)]
+            cell_df['MAST_log2FC'] = filtered_target_stats['log2FC'].values[0] if filtered_target_stats.shape[0] > 0 else 0
+            cell_df['MAST_fdr'] = filtered_target_stats['fdr'].values[0] if filtered_target_stats.shape[0] > 0 else 1
+            df = pd.concat([df, cell_df])
+        if df.shape[0] == 0:
+            continue
+        else:
+            df.reset_index().to_feather(filename, compression='zstd')
+
+
 def _compile_circos(interactions: pd.DataFrame,
                     exp_adata: ad.AnnData,
                     cin_adata: ad.AnnData,
@@ -384,6 +556,38 @@ def _compile_circos(interactions: pd.DataFrame,
     return df
 
 
+def _compile_custom_circos(interactions: pd.DataFrame,
+                           target_stats: pd.DataFrame,
+                           agg_stats: pd.DataFrame,
+                           condition_name: str,
+                           fdr: str):
+    prefix = 'data/compiled/circos'
+    os.makedirs(prefix, exist_ok=True)
+    file = _filename(prefix, 'custom', fdr, 'feather')
+
+    df = pd.DataFrame({
+        'cell_type': target_stats['cell type'],
+        'target': target_stats['target'],
+        'ligand': target_stats['ligand'],
+        'receptor': target_stats['receptor'],
+        'cell_type_dc1': target_stats['cell_type_dc1']
+    })
+    df['DA_score'] = 0
+
+    df = pd.merge(df, agg_stats, on=['cell_type', 'target'], how='right', suffixes=('_old', ''))
+    df['receptor'] = df['target'].isin(interactions.receptor)
+    df['ligand'] = df['target'].isin(interactions.ligand)
+    df['MAST_log2FC'].fillna(0, inplace=True)
+    df['MAST_fdr'].fillna(1, inplace=True)
+    df['cell_type_dc1'].fillna(0, inplace=True)
+    df['DA_score'].fillna(0, inplace=True)
+    # Replace numSigI1 for ligands that are not receptors to 0
+    df['numSigI1'] = np.where(~df['receptor'], df['numSigI1'], 0)
+
+    df.reset_index().to_feather(file, compression='zstd')
+    return df
+
+
 def read_ct_data(path: str) -> ad.AnnData:
     ct = sc.read(path, backed='r')  # Low memory mode
     return ct
@@ -431,6 +635,49 @@ def compile_data(
     # touch file to indicate that we've compiled the data
     with open('data/compiled/is_compiled', 'w') as f:
         f.write('compiled')
+
+
+def compile_custom_dataset(adata: ad.AnnData,
+                           deg_adata: ad.AnnData,
+                           target_stats: pd.DataFrame,
+                           interactions: pd.DataFrame,
+                           condition_name: str):
+    """
+    Compile a custom dataset. Intended for importing non-CIN-TME data.
+    """
+    # Compile to a feather file (no need to compress since this is a pretty small file)
+    os.makedirs('data/compiled', exist_ok=True)
+    interactions.reset_index().to_feather('data/compiled/interactions.feather')
+
+    # Compile a bunch of FDRs
+    for fdr in reversed(range(1, 26)):
+        fdr = str(fdr).zfill(2)
+        print("Compiling FDR", fdr, flush=True)
+
+        agg_stats = _custom_aggregated_stats(adata, deg_adata, target_stats, fdr)
+
+        _compile_custom_interactions(adata, target_stats, interactions, agg_stats, condition_name, fdr)
+
+        _compile_custom_circos(interactions, target_stats, agg_stats, condition_name, fdr)
+
+    _compile_custom_ligand_effects(interactions, adata, deg_adata, target_stats, condition_name)
+
+    # touch file to indicate that we've compiled the data
+    with open('data/compiled/is_compiled', 'w') as f:
+        f.write('compiled')
+    with open('data/compiled/custom_data_cell_type_list', 'w') as f:
+        f.write('\n'.join(set(adata.obs['cell type'])))
+    with open('data/compiled/is_custom', 'w') as f:
+        f.write('custom')
+
+
+def using_custom_data() -> bool:
+    return os.path.exists('data/compiled/is_custom')
+
+
+def get_custom_celltypes() -> List[str]:
+    with open('data/compiled/custom_data_cell_type_list', 'r') as f:
+        return f.read().splitlines()
 
 
 if __name__ == '__main__':

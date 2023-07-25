@@ -4,6 +4,7 @@ import dash
 import dash_bootstrap_components as dbc
 from dash_extensions import DeferScript
 from dash_extensions.enrich import callback, Output, Input, dcc, State, html, Serverside, clientside_callback
+from plotly import graph_objects as go
 
 from viz.docs import ligand_effects_help, interaction_test_def, conditions_def, deg_test_def
 from viz.web import interactive_panel, wrap_icon, control_panel, control_panel_element, figure_output, \
@@ -22,14 +23,18 @@ def build_interface() -> list:
         return []
 
     from viz.figures import DEFAULT_LIGAND_EFFECT_ARGS, LIGAND_EFFECT_SAVE_LOCATION
+    from viz.data import using_custom_data, get_custom_celltypes
 
     import pickle
     default_plots = None
     try:
-        with open(LIGAND_EFFECT_SAVE_LOCATION, 'rb') as f:
-            default_plots = pickle.load(f)
+        if not using_custom_data():
+            with open(LIGAND_EFFECT_SAVE_LOCATION, 'rb') as f:
+                default_plots = pickle.load(f)
     except:
         pass
+
+    custom_celltypes = get_custom_celltypes() if using_custom_data() else []
 
     controls = control_panel("submit_button",
          [
@@ -40,6 +45,11 @@ def build_interface() -> list:
                                        " to compare."
                                    ],
                                    dbc.RadioItems(
+                                       id='effect_set',
+                                       options=[{'label': 'Custom', 'value': 'custom'}],
+                                       value='custom',
+                                       persistence=False
+                                   ) if using_custom_data() else dbc.RadioItems(
                                        id='effect_set',
                                        options=[{'label': 'CIN-Dependent Interactions', 'value': 'cin'},
                                                 {'label': 'CIN/STING-Dependent Interactions', 'value': 'max',
@@ -72,6 +82,10 @@ def build_interface() -> list:
         [
             control_panel_element('Emitting Cell Type', 'Select the initial cell type.',
                                   dbc.Select(
+                                      id='cell_type',
+                                      options=[{'label': ct, 'value': ct} for ct in custom_celltypes],
+                                      value=custom_celltypes[0]
+                                  ) if using_custom_data() else dbc.Select(
                                     id='cell_type',
                                     options=[{'label': ct, 'value': ct} for ct in
                                              ['Tumor cells',
@@ -152,7 +166,7 @@ def build_interface() -> list:
         title='Ligand Network Figure',
         footer="Circle = Ligand, Square = Receptor, Diamond = Ligand and Receptor",
         element=dcc.Graph(id='network_graph',
-                          figure=default_plots[0] if default_plots else {},
+                          figure=default_plots[0] if default_plots else go.Figure(data=[go.Scatter(x=[], y=[])]),
                           config={
                              'displaylogo': False,
                              'showTips': True,
@@ -239,10 +253,11 @@ def download_data(n_clicks,
         from dash.exceptions import PreventUpdate
         raise PreventUpdate
 
+    from viz.data import using_custom_data
     from viz.figures import pseudotime_interaction_propagation_graph, DEFAULT_LIGAND_EFFECT_ARGS
     from networkx import to_pandas_edgelist
     graph = pseudotime_interaction_propagation_graph(
-        effect_set=DEFAULT_LIGAND_EFFECT_ARGS['effect_set'],  # Keep this fixed
+        effect_set='custom' if using_custom_data() else DEFAULT_LIGAND_EFFECT_ARGS['effect_set'],  # Keep this fixed
         seed_cell=cell_type,
         seed_ligands=ligands,
         iterations=int(iterations),
@@ -265,7 +280,7 @@ def download_data(n_clicks,
     prevent_initial_call=True
 )
 def update_network_figure(effect_set, cin_network_plot, sting_network_plot):
-    if effect_set == 'cin':
+    if effect_set == 'cin' or effect_set == 'custom':
         return cin_network_plot
     else:
         return sting_network_plot
@@ -300,6 +315,7 @@ def make_graph(set_progress, n_clicks,
                interaction_fdr, min_logfc, min_expression,
                logfc_fdr, iterations):
     from viz.figures import pseudotime_interaction_propagation_graph, DEFAULT_LIGAND_EFFECT_ARGS, LIGAND_EFFECT_SAVE_LOCATION
+    from viz.data import using_custom_data
 
     set_progress((0, iterations))
 
@@ -313,14 +329,15 @@ def make_graph(set_progress, n_clicks,
         iterations == DEFAULT_LIGAND_EFFECT_ARGS['iterations']):
         import pickle
         try:
-            with open(LIGAND_EFFECT_SAVE_LOCATION, 'rb') as f:
-                # return [(Serverside(p) if p is not None else None) for p in pickle.load(f)]  FIXME
-                return pickle.load(f)
+            if not using_custom_data():
+                with open(LIGAND_EFFECT_SAVE_LOCATION, 'rb') as f:
+                    # return [(Serverside(p) if p is not None else None) for p in pickle.load(f)]  FIXME
+                    return pickle.load(f)
         except:
             pass
 
     fig = pseudotime_interaction_propagation_graph(
-        effect_set=DEFAULT_LIGAND_EFFECT_ARGS['effect_set'],  # Keep this fixed
+        effect_set='custom' if using_custom_data() else DEFAULT_LIGAND_EFFECT_ARGS['effect_set'],  # Keep this fixed
         seed_cell=cell_type,
         seed_ligands=ligands,
         iterations=int(iterations),
