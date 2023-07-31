@@ -14,8 +14,8 @@ dash.register_page(__name__,
 
 layout = [
     jumbotron(
-        "ContactTracing Interactive Visualizer",
-        "This is a web application that allows for ContactTracing outputs to be easily interpreted.",
+        html.Div(),  # "ContactTracing Interactive Visualizer",
+        html.Div(),   # "This is a web application that allows for ContactTracing outputs to be easily interpreted.",
         dbc.Row([
             dbc.Accordion([
                 dbc.AccordionItem([

@@ -456,8 +456,8 @@ def make_circos_plot(set_progress, n_clicks,
 
 
 layout = [
-    interactive_panel(wrap_icon('fa-circle-dot', 'Circos Plot of Interactions'),
-                      "Visualize all interactions across an experiment.",
+    interactive_panel(html.Div(),  # wrap_icon('fa-circle-dot', 'Circos Plot of Interactions'),
+                      html.Div(),  # "Visualize all interactions across an experiment.",
                       *build_interface())
 ]
 

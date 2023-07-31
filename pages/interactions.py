@@ -495,7 +495,8 @@ def make_graph(set_progress, n_clicks,
 
 
 layout = [
-    interactive_panel(wrap_icon('fa-arrows-left-right-to-line', 'Cell Type to Cell Type Interactions'), "Identify crosstalk between cell types.",
+    interactive_panel(html.Div(),  # wrap_icon('fa-arrows-left-right-to-line', 'Cell Type to Cell Type Interactions'),
+                      html.Div(),  # "Identify crosstalk between cell types.",
                       *build_interface()
                       )
 ]
