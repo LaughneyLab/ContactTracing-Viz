@@ -597,8 +597,6 @@ def bipartite_graph(df,
 
     fig = go.Figure(data=[celltype_bg_trace] + edge_traces + [node_trace, interpolation_trace] + legend_traces,
                     layout=go.Layout(
-                        title='&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Detected Interactions',
-                        titlefont_size=16,
                         showlegend=True,
                         hovermode='closest',
                         margin=dict(b=40, l=5, r=5, t=40),
@@ -1014,8 +1012,6 @@ def make_plot_from_graph(G: nx.DiGraph, celltypes, layout="planar", colormap=Non
 
     fig = go.Figure(data=edge_traces + nodes + [interpolation_trace] + legends,
                     layout=go.Layout(
-                        title='&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Detected Interactions',
-                        titlefont_size=16,
                         showlegend=True,
                         hovermode='closest',
                         margin=dict(b=10, l=1, r=15, t=30),

@@ -1,11 +1,12 @@
 function getSvgElements() {
     let doc = window.document;
-    return doc.querySelectorAll("div.js-plotly-plot > div > div > svg");
+    return doc.querySelectorAll("div.js-plotly-plot > div > div > *");
 }
 
 function plotlyInjection(heightRatio) {
     // Add listener for when the transform attribute changes
-    const baseSize = 67;
+    return;  // Current unneeded with current CSS settings
+    const baseSize = 75;
     const width = baseSize;
     const height = baseSize * heightRatio;
     const viewBoxWidth = 1275;
