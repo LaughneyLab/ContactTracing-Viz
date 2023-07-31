@@ -151,7 +151,7 @@ layout = [
                 html.A(
                     dbc.Row([
                         dbc.Col(html.Img(src=app.get_asset_url('ct_logo.png'), height="30px"), width='auto'),
-                        dbc.Col(dbc.NavbarBrand(html.Strong('ContactTracing'))),
+                        dbc.Col(dbc.NavbarBrand(html.Strong('ContactTracing', style={'fontSize': '1.75rem'}))),
                     ], align='center', className="g-0"),
                     href="/",
                     style={'textDecoration': 'none'}  # Hide hyperlink underline
