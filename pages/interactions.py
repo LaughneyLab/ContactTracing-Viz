@@ -213,7 +213,7 @@ def build_interface() -> list:
     )
 
     results = figure_output(
-        title="Cell Type Interactions",
+        title="Pairwise Cell Interactions",
         footer="Circle = Ligand, Square = Receptor, Diamond = Ligand and Receptor",
         element=dcc.Graph(id="celltype-interaction-graph",
                           figure=default_plots[1] if default_plots is not None else go.Figure(data=[go.Scatter(x=[], y=[])]),

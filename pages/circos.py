@@ -141,7 +141,7 @@ def build_interface() -> list:
     )
 
     results = figure_output(
-        title="Interactive Circos Plot",
+        title="Systems-Level CIN-dependent Interactions in the Tumor Microenvironment",
         footer=[
             "Layers from outside ring to center: Cell Type, ",
             *diffusion_component_def("Diffusion Component 1"),
