@@ -191,7 +191,7 @@ def figure_output(title, footer, element, help_info, download_btn_id, outline=Tr
         help_modal,
         dbc.Card([
             dbc.CardHeader(dbc.Row([
-                dbc.Col(html.H5(title, className='card-title')),
+                dbc.Col(html.H5(title, className='card-title', style={'fontSize': '1.2rem'})),
                 html.Div(className="w-100 d-md-none"),
                 dbc.Col(dbc.ButtonGroup(
                     ([download_button] if download_button else []) + [help_button],

@@ -97,7 +97,7 @@
 
 #circos-toolbar {
     position: absolute !important;
-    top: 7vw;
+    margin-top: -2.5rem;
     right: 1vw;
     z-index: 1000;
     background-color: #ffffff;
