@@ -307,8 +307,8 @@ function circosInjection() {
         const svg = circos_top_level.parentElement;
         // Set the viewbox attributes
         svg.setAttribute('viewBox', '0 0 800 800');
-        svg.setAttribute('width', '47vw');
-        svg.setAttribute('height', '47vw');
+        svg.setAttribute('width', 'min(900px,47vw)');
+        svg.setAttribute('height', 'min(900px,47vw)');
         svg.setAttribute('transform', 'translate(0, 0) scale(1)');
 
         const legendSvgs = getLegendSvgElements();
@@ -321,8 +321,8 @@ function circosInjection() {
         // Select all <svg> elements
         legendSvgs.forEach(function (tb) {
             tb.setAttribute('viewBox', '0 0 250 800');
-            tb.setAttribute('width', '17vw');
-            tb.setAttribute('height', '47vw');
+            tb.setAttribute('width', 'min(375px,17vw)');
+            tb.setAttribute('height', 'min(900px,47vw)');
             tb.setAttribute('transform', 'translate(0, 0) scale(1)');
         });
 
