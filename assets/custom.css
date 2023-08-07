@@ -115,12 +115,12 @@
 }
 
 #celltype-interaction-graph > div.js-plotly-plot > div > div {
-    height: 70vw !important;
+    height: min(980px, 70vw) !important;
     max-width: 100% !important;
 }
 
 #network_graph > div.js-plotly-plot > div > div {
-    height: 70vw !important;
+    height: min(980px, 70vw) !important;
     max-width: 100% !important;
 }
 
@@ -137,6 +137,7 @@
     position: relative !important;
     align-items: end !important;
     justify-content: end !important;
+    margin-left: 8rem !important;
 }
 
 .cbtitle > text {
