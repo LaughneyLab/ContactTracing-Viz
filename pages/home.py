@@ -3,7 +3,8 @@ import dash_bootstrap_components as dbc
 from dash_extensions.enrich import html, callback, Output, Input
 from dash.exceptions import PreventUpdate
 
-from viz.docs import home_welcome_info, home_dataset_descriptions, home_plot_descriptions, home_misc_info
+from viz.docs import home_welcome_info, home_dataset_descriptions, home_plot_descriptions, home_misc_info, \
+    home_approach_description
 from viz.web import jumbotron
 
 dash.register_page(__name__,
@@ -19,29 +20,23 @@ layout = [
         dbc.Row([
             dbc.Accordion([
                 dbc.AccordionItem([
-                    html.H4([html.I("ContactTracing"), ", studying the impact of chromosomal instability (CIN) & STING on the tumor ecosystem."], className='card-title'),
-                    html.Hr(),
-                    html.P(),
                     html.Div(home_welcome_info(), className='card-text'),
-                ], title='Welcome'),
+                ], title="ContactTracing the impact of chromosomal instability(CIN)-induced STING signaling on the tumor ecosystem."),
                 dbc.AccordionItem([
-                    html.H4([html.I("ContactTracing"), " is a unique approach for profiling cellular responses to the tumor microenvironment."], className='card-title'),
-                    html.Hr(),
-                    html.P(),
+                    html.Div(home_approach_description(), className='card-text')
+                ], title="The Approach"),
+                dbc.AccordionItem([
                     html.Div(home_dataset_descriptions(), className='card-text'),
                 ], title='Dataset Information'),
+                # dbc.AccordionItem([
+                #     html.H4([html.I("ContactTracing"), " produces information-rich data on condition-specific genetic responses."], className='card-title'),
+                #     html.Hr(),
+                #     html.P(),
+                #     html.Div(home_plot_descriptions(), className='card-text'),
+                # ], title='Visualization Information'),
                 dbc.AccordionItem([
-                    html.H4([html.I("ContactTracing"), " produces information-rich data on condition-specific genetic responses."], className='card-title'),
-                    html.Hr(),
-                    html.P(),
-                    html.Div(home_plot_descriptions(), className='card-text'),
-                ], title='Visualization Information'),
-                dbc.AccordionItem([
-                    html.H4(['Additional information on ', html.I("ContactTracing"), ' and this website.'], className='card-title'),
-                    html.Hr(),
-                    html.P(),
                     html.Div(home_misc_info(), className='card-text'),
-                ], title='Miscellaneous'),
+                ], title="Additional information on ContactTracing and this website."),
             ], active_item=['item-0', 'item-1', 'item-2', 'item-3'], always_open=True)
         ])
     ),

@@ -10,26 +10,33 @@ def home_welcome_info():
         html.Img(src=dash.get_asset_url("website_header.png"), style={"width": "55%"}, alt="ContactTracing Header"),
         html.Br(),
         html.P(),
-        html.Div(["Chromosomal Instability (CIN) is a hallmark of human cancer that is associated with metastasis and immune evasion. Through the "
-               "development of ",
-                html.I("ContactTracing"),
-                "– a fundamentally new, systems level approach that exploits inter- and intra-sample variability to infer "
-                "the effect of ligand-receptor-mediated interactions on the tumor microenvironment (TME), we unveil how "
-                "CIN-induced chronic activation of the cGAS-STING innate immune pathway promotes cancer progression in a "
-                "tumor cell non-autonomous manner. Use this dashboard to explore how CIN-induced STING signaling in cancer "
-                "cells shapes the TME. Or use ",
-                html.I("ContactTracing"),
-                " on your own data by checking out our ",
-                html.A("GitHub repository", href="https://github.com/LaughneyLab/ContactTracing_tutorial"),
-                "!"
-                ]),
+        html.Div(["Chromosomal Instability (CIN) is a hallmark of human cancer that is associated with metastasis and "
+                  "immune evasion; yet how CIN shapes the tumor ecosystem remained poorly understood. Exploiting "
+                  "intrinsic biological variability in single cell data, we developed a systems level approach called ",
+                  html.I("ContactTracing"),
+                  " that predicts ",
+                  html.I(html.U("the effect")),
+                  " of ligand-receptor-mediated interactions on the tumor microenvironment. Coupling ",
+                  html.I("ContactTracing"),
+                  " with isogenic breast cancer models distinguished by tumor cell-intrinsic rates of chromosomal "
+                  "instability (CIN) or downstream activation of the cGAS-STING pathway, we identified tumor ligands "
+                  "emanating from an ER-stress response as critical mediators of immune suppression in tumors with CIN. "
+                  "Use this dashboard to explore how CIN-induced STING signaling in cancer cells shapes the tumor "
+                  "microenvironment (TME). Or use ",
+                  html.I("ContactTracing"),
+                  " on your own data by checking out our ",
+                  html.A("GitHub repository", href="https://github.com/LaughneyLab/ContactTracing_tutorial"),
+                  "!"]),
         html.P(),
         html.Div([
             html.H5(html.I("Key Features of ContactTracing")),
             html.Ul([
-                html.Li("Identifies condition-specific ligand/receptor interactions."),
-                html.Li("Examines the induced transcriptional response of downstream genes to ligand/receptor interactions."),
-                html.Li("Exploits intrinsic cellular heterogeneity to identify cell-type specific responses."),
+                html.Li("Identifies conditionally-dependent cell-cell interactions in the microenvironment."),
+                html.Li("Infers ligand effects on gene expression in target (receptor-expressing) cells without prior "
+                        "knowledge of downstream signaling."),
+                html.Li("Captures cell type-specific responses to ligand-receptor-mediated interactions."),
+                html.Li("Prioritizes responsive cell-cell interactions that more frequently co-localize in matched "
+                        "spatial transcriptomics data.")
             ])
         ]),
         html.P(),
@@ -43,54 +50,123 @@ def home_welcome_info():
     ]
 
 
+def home_approach_description():
+    return [
+        html.Div([
+            html.Div(html.Img(className='img-fluid', src=dash.get_asset_url("contacttracing_summary.png"),
+                              style={"width": "36%"},
+                              alt="ContactTracing Summary"), className='text-center'),
+            html.P(),
+            "Cells typically send messages to their microenvironment by emitting ligands, which bind to complimentary "
+            "receptors on the surfaces of target cells; then triggering a change in the behavior of the target cell. "
+            "Complimentary ligand-receptor-pairs are well annotated and methods have been developed to infer cell-cell "
+            "interactions from single cell expression data based on their mutual expression. ",
+            html.I("ContactTracing"),
+            " builds upon these existing methods by evaluating ",
+            html.I(html.U("the effect")),
+            " of such cell-cell interaction on gene expression in the target (receptor-expressing) cell upon ligand "
+            "engagement. How does ",
+            html.I("ContactTracing"),
+            " do this? It makes the simple assumption that not all cells are actively engaged in a putative cell-cell "
+            "interaction. By exploiting intrinsic biological variability in (1) receptor expression on target cells and "
+            "(2) ligand availability in the tumor microenvironment through a series of nested comparisons, "
+            "we infer downstream gene expression changes in the target (receptor-expressing) cell type upon ligand "
+            "engagement."
+        ])
+    ]
+
+
 def home_dataset_descriptions():
     return [
-        html.Div(html.Img(className='img-fluid', src=dash.get_asset_url("contacttracing_summary.png"), style={"width": "36%"},
-                 alt="ContactTracing Summary"), className='text-center'),
-        html.P(),
-        html.Div(["By incorporating intrinsic cellular heterogeneity, ",
-                html.I("ContactTracing"),
-                " can identify highly specific and biologically meaningful transcriptional responses to conditions in "
-                "the microenvironment. These responses are detected by using a nested set of comparisons to select and "
-                "combine: "]),
-        html.Ol([
-            html.Li("Ligands that are differentially available between conditions."),
-            html.Li("Corresponding receptors selective expressed in a given cell type under a given condition."),
-            html.Li("Induced downstream gene expression changes upon activating these receptors by their ligands within a condition.")
-        ]),
         html.Div(html.Img(className='img-fluid', src=dash.get_asset_url("contacttracing_summary2.png"), style={"width": "36%"},
                  alt="ContactTracing Summary 2"), className='text-center'),
         html.P(),
         html.Div([
-            "The ",
+            "Foundational work towards benchmarking a validation of this method was performed in isogenic breast cancer "
+            "models distinguished by tumor cell-intrinsic rates of chromosome missegregation (a cellular process called "
+            "chromosomal instability, or CIN) or its downstream activation of the cGAS-STING antiviral sensing pathway. "
+            "Through this, we identified tumor ligands emanating from an endoplasmic reticulum (ER)-stress response as "
+            "potential mediators of immune suppression in chromosomally  unstable tumors. Indeed, CIN-induced chronic "
+            "STING activation led to rapid interferon-selective desentization and a switch to ER-stress-dependent "
+            "transcription. Moreover, inhibition of chronic STING - or key mediators of its unfolded protein response "
+            "to ER-stress - suppressed metastasis in syngeneic models of melanoma, breast, and colorectal cancer; "
+            "validating this innovative methodology and identtifying a targetable mediator of cancer metastasis! Read "
+            "more about our findings ",
+            html.A("here", href="TODO"),  # FIXME: add link to paper
+            "."
+        ]),
+        html.P(),
+        html.Div([
+            html.H5(html.U("Models to study CIN-dependent effects on the tumor microenvironment (TME)")),
+            "CIN itself is an ",
+            html.I("ongoing process"),
+            " of chromosome segregation errors during mitosis. To test whether this ",
+            html.I("active process"),
+            " itself contributes to disease progression independent of the aneuploidy that arises as a result of it, we "
+            "developed experimental tools that enable us to manipulate chromosome missgregation rates in otherwise "
+            "isogenic tumor models by altering kinetochore-microtubule attachment stability, (link to papers: ",
+            html.A("https://www.nature.com/articles/ncb1809", href="https://www.nature.com/articles/ncb1809"),
+            " and ",
+            html.A("https://www.nature.com/articles/nature25432", href="https://www.nature.com/articles/nature25432"),
+            "). Critically, both CIN",
+            html.Sup("high"),
+            " and CIN",
+            html.Sup("low"),
+            " tumors are equally aneuploid, yet differ in their ongoing rates of segregation errors during cell "
+            "division. As such, this experimental system enables us to dissect the relative contributions of CIN - as "
+            "defined by the ",
+            html.I("rate"),
+            " of ongoing chromosome missegregation - from aneuploidy, which is a ",
+            html.I("state"),
+            " of abnormal chromosome numbers. Here, 10X Chromium scRNA-seq data was collected from the 4T1 murine model "
+            "of metastatic, triple negative breast cancer, in which we selectively ",
+            html.I("dialed up"),
+            " (CIN",
+            html.Sup("high"),
+            ") or ",
+            html.I("dialed down"),
+            " (CIN",
+            html.Sup("low"),
+            ") rates of chromosome missegregation in otherwise isogeneic tumor models."
+        ]),
+        html.P(),
+        html.Div(html.Img(className='img-fluid', src=dash.get_asset_url("cin_chromosome_diagram.png"),
+                          style={"width": "25%"},
+                          alt="CIN Diagram"), className='text-center'),
+        html.P(),
+        html.Div(html.Img(className='img-fluid', src=dash.get_asset_url("chomosome_missgregation.png"),
+                          style={"width": "36%"},
+                          alt="Missegregation"), className='text-center'),
+        html.P(),
+        html.Div([
+            html.H5(html.U("The impact of CIN-induced STING signaling on the TME")),
+            "Previously, we demonstrated ongoing chromosome segregation errors generate rupture-prone micronuclei that "
+            "expose genomic double-stranded DNA (dsDNA) to the cytosol, persistently activating the cGAS-STING pathway "
+            "to drive metastasis (",
+            html.A("https://www.nature.com/articles/nature25432", "https://www.nature.com/articles/nature25432"),
+            "). This begged the question: why doesn't STING activation trigger robust anti-tumor immunity? To quantify "
+            "how CIN-induced STING signaling impacts cellular crosstalk in the tumor ecosystem, we knocked down (KD) "
+            "STING expression in CIN",
+            html.Sup("high"),
+            " tumors and applied ",
             html.I("ContactTracing"),
-            " approach was applied to the two datasets available for viewing on this website (for a more in-depth description, please refer to our paper):"
+            " (STING",
+            html.Sup("WT"),
+            " vs. STING",
+            html.Sup("KD"),
+            " in CIN",
+            html.Sup("high"),
+            " tumors). All conserved CIN- and STING-dependent interactions were intersected, the resultant set was "
+            "defined as the maximum value of each respective aggregate statistic across conditions. This dataset "
+            "represents the default interaction set visualized by the Circos and Pairwise Interactions Plots.",
         ]),
         html.P(),
-        html.Div([
-            html.H5(html.I("Mouse model of chromosomal instability (CIN).")),
-            "10X Chromium scRNA-seq data was collected from a murine model for metastatic breast cancer (TODO citation)."  #FIXME
-        ]),
+        html.Div(html.Img(className='img-fluid', src=dash.get_asset_url("sting_effects.png"),
+                          style={"width": "36%"},
+                          alt="STING"), className='text-center'),
         html.P(),
         html.Div([
-            html.H5(html.I("Mouse models of chromosomal instability versus STING knockout (STING-KO).")),
-            "In addition to a high-CIN versus low-CIN comparison, we compared the high-CIN mice with wild-type "
-            "STING to mice with a STING knockout (TODO CITATION). This comparison allows us to identify the effects of the TME "  # FIXME
-            "that are both STING-dependent within the chromosomally unstable tumors."
-        ]),
-        html.P(),
-        html.Div([
-            html.H5(html.I("Intersectional comparison of CIN- and STING-dependent effects (CIN/STING Max Effects).")),
-            "To get a systems-level view of how chromosomal instability and STING both affect the TME, we select the "
-            "interactions that are identified by ",
-            html.I("ContactTracing"),
-            " in both the CIN and STING-KO comparisons (TODO CITATION). The resultant interaction sets are then further analyzed by "  # FIXME
-            "selecting the maximum value of each respective aggregate statistic across conditions. This dataset "
-            "represents the default interaction set visualized by the Circos and Cell Type Interactions plots."
-        ]),
-        html.P(),
-        html.Div([
-            html.H5(html.I("Data Availability")),
+            html.H5(html.U("Data Availability")),
             "The single-cell data used in this study is described in our study (TODO citaiton) and can be accessed "  # FIXME
             "through the Gene Expression Omnibus (GEO) under accession number ",
             html.A("GSE189856", href="https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE189856"), "."
