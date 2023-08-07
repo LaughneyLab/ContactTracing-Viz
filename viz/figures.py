@@ -254,7 +254,7 @@ def bipartite_graph(df,
                 len=0.25,
                 tickmode='array',
                 tickvals=[min_color_threshold, max_color_threshold],
-                ticktext=["CIN<sup>low</sup>", "CIN<sup>high</sup>" + ("" if cin_only else "/<br>STING<sup>KO</sup>")]
+                ticktext=["CIN<sup>low</sup>", "CIN<sup>high</sup>" + ("" if cin_only else "/<br>STING<sup>KD</sup>")]
             ),
             colorscale=colorscale.make_plotly_colorscale()
         )

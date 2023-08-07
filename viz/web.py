@@ -721,7 +721,7 @@ def make_circos_legend(min_numSigI1, max_numSigI1,
                 y=0,
                 tickmode='array',
                 tickvals=[logfc_transformer.min, logfc_transformer.max],
-                ticktext=["CIN<sup>low</sup>", "CIN<sup>high</sup>" + ("" if cin_only else "/<br>STING<sup>KO</sup>")],
+                ticktext=["CIN<sup>low</sup>", "CIN<sup>high</sup>" + ("" if cin_only else "/<br>STING<sup>KD</sup>")],
             ),
             colorscale=logfc_transformer.make_plotly_colorscale()
         )

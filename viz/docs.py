@@ -310,8 +310,8 @@ def conditions_def(text):
     return make_tooltip(text, [
         html.I("ContactTracing"),
         " compares the transcriptional profiles of genes between two conditions. In our study, we compared "
-        "CINlow vs CINhigh tumors and CINhigh vs STING-KO tumors. Presented are the results for the CINlow vs CINhigh "
-        "comparison and the intersection between the CINlow vs CINhigh and CINhigh vs STING-KO comparisons."
+        "CINlow vs CINhigh tumors and CINhigh vs STING-KD tumors. Presented are the results for the CINlow vs CINhigh "
+        "comparison and the intersection between the CINlow vs CINhigh and CINhigh vs STING-KD comparisons."
     ])
 
 
