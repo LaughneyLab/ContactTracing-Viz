@@ -18,8 +18,9 @@
 }
 
 .card-text > * > h5 {
-    font-size: calc(1rem + 0.75vw) !important;
+    font-size: min(1.75rem, calc(1rem + 0.75vw)) !important;
     text-align: left !important;
+    text-decoration: underline !important;
 }
 
 .card-title {
@@ -71,6 +72,7 @@
 .container-fluid {
     padding-left: 1vw !important;
     padding-right: 1vw !important;
+    max-width: 1440px !important;
 }
 .card-group {
     padding-left: 1rem !important;

@@ -29,7 +29,7 @@ def home_welcome_info():
                   "!"]),
         html.P(),
         html.Div([
-            html.H5(html.I("Key Features of ContactTracing")),
+            html.H5("Key Features of ContactTracing"),
             html.Ul([
                 html.Li("Identifies conditionally-dependent cell-cell interactions in the microenvironment."),
                 html.Li("Infers ligand effects on gene expression in target (receptor-expressing) cells without prior "
@@ -41,11 +41,11 @@ def home_welcome_info():
         ]),
         html.P(),
         html.Div([
-            html.H5(html.I("Included Visualizations")),
+            html.H5("Included Visualizations"),
             make_data_redirect_buttons()
         ]),
         html.P(),
-        html.Div([html.H5(html.I("Citation")),
+        html.Div([html.H5("Citation"),
                 dbc.Card("TBA", body=True)])
     ]
 
@@ -97,7 +97,7 @@ def home_dataset_descriptions():
         ]),
         html.P(),
         html.Div([
-            html.H5(html.U("Models to study CIN-dependent effects on the tumor microenvironment (TME)")),
+            html.H5("Models to study CIN-dependent effects on the tumor microenvironment (TME)"),
             "CIN itself is an ",
             html.I("ongoing process"),
             " of chromosome segregation errors during mitosis. To test whether this ",
@@ -139,7 +139,7 @@ def home_dataset_descriptions():
                           alt="Missegregation"), className='text-center'),
         html.P(),
         html.Div([
-            html.H5(html.U("The impact of CIN-induced STING signaling on the TME")),
+            html.H5("The impact of CIN-induced STING signaling on the TME"),
             "Previously, we demonstrated ongoing chromosome segregation errors generate rupture-prone micronuclei that "
             "expose genomic double-stranded DNA (dsDNA) to the cytosol, persistently activating the cGAS-STING pathway "
             "to drive metastasis (",
@@ -166,7 +166,7 @@ def home_dataset_descriptions():
                           alt="STING"), className='text-center'),
         html.P(),
         html.Div([
-            html.H5(html.U("Data Availability")),
+            html.H5("Data Availability"),
             "The single-cell data used in this study is described in our study (TODO citaiton) and can be accessed "  # FIXME
             "through the Gene Expression Omnibus (GEO) under accession number ",
             html.A("GSE189856", href="https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE189856"), "."
@@ -265,13 +265,13 @@ def home_misc_info():
     contact_info_button = dbc.Button(wrap_icon("fa-envelope", "View Email"), color="info", n_clicks=0, size='lg', id='contact-info-button')
     contact_div = html.Div([], id="contact-info")
 
-    return [
+    return html.Div([
         html.P(),
         html.Div(["Below are some details regarding the implementation of ",
                 html.I("ContactTracing"),
                 " and the dashboards presented on this website. For more details, please refer to our paper."]),
         html.P(),
-        html.H5(html.I("ContactTracing Information")),
+        html.H5([html.I("ContactTracing"), " Information"]),
         html.P(),
         html.Div([html.I("ContactTracing"),
                 " uses the ligand/receptor pairing databases from ",
@@ -283,7 +283,7 @@ def home_misc_info():
                 ", which fits a zero-inflated hurdle model using our model design specifications to the scRNA-seq "
                 "expression counts data. "]),
         html.P(),
-        html.H5(html.I("Website Information")),
+        html.H5("Website Information"),
         html.P(),
         html.Div(["The website is implemented using the ",
                 html.A("Plotly Dash framework", href="https://dash.plotly.com/"),
@@ -298,12 +298,12 @@ def home_misc_info():
                 ". If any issues are encountered with this "
                 "site, or there are any other concerns, please contact us using the information below:"]),
         html.P(),
-        html.H5(html.I("Contact Information")),
+        html.H5("Contact Information"),
         html.P(),
         html.Div(contact_info_button),
         html.P(),
         html.Div(contact_div)
-    ]
+    ])
 
 
 def conditions_def(text):
