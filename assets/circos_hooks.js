@@ -65,7 +65,12 @@ function setCircosTransform(transform) {
 
 function resetCircosTransform() {
     const circos_top_level = getCircosSvgElement().parentElement;
-    setCircosTransform({ translate: [circos_top_level.getAttribute("width")/2, circos_top_level.getAttribute("height")/2], scale: 1.0 });
+    // Emulate a double click (which circos uses to reset the transform)
+    circos_top_level.dispatchEvent(new MouseEvent("dblclick", {
+        bubbles: true,
+        cancelable: true,
+        view: window
+    }));
 }
 
 // Hook the circos plot
