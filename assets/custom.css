@@ -119,12 +119,10 @@
 }
 
 #celltype-interaction-graph > div.js-plotly-plot > div > div {
-    height: min(980px, 70vw) !important;
     max-width: 100% !important;
 }
 
 #network_graph > div.js-plotly-plot > div > div {
-    height: min(980px, 70vw) !important;
     max-width: 100% !important;
 }
 
@@ -162,7 +160,6 @@ svg {
 
 .dash-graph {
   zoom: 0.33;
-  margin-bottom: 900px;
 }
 
 #celltype-interaction-graph {
@@ -172,15 +169,12 @@ svg {
 @media (min-width: 475px) {
   .dash-graph {
     zoom: 0.6;
-    margin-bottom: 800px;
   }
 }
 
 @media (min-width: 768px) {
   .dash-graph {
     zoom: 0.85;
-    margin-bottom: 600px;
-    translate: -100px !important;
   }
 
   #celltype-interaction-graph {
@@ -191,8 +185,6 @@ svg {
 @media (min-width: 1200px) {
   .dash-graph {
     zoom: 1;
-    margin-bottom: 400px;
-    translate: -100px;
   }
 }
 

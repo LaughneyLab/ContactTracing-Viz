@@ -794,7 +794,7 @@ def make_circos_legend(min_numSigI1, max_numSigI1,
             titlefont_size=14,
             showlegend=True,
             hovermode='closest',
-            autosize=False,
+            autosize=True,
             width=250,
             height=800,  # Match circos
             plot_bgcolor='rgba(0,0,0,0)',
