@@ -48,7 +48,7 @@ def build_interface() -> list:
                                    ) if using_custom_data() else dbc.RadioItems(
                                        id='circos_set',
                                        options=[{'label': 'CIN-Dependent Interactions', 'value': 'cin'},
-                                                {'label': 'CIN/STING-Dependent Interactions',
+                                                {'label': 'CIN & STING-Dependent Interactions',
                                                  'value': 'sting'}],
                                        value=DEFAULT_CIRCOS_ARGS['circos_set'],
                                        persistence=False

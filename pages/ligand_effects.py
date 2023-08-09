@@ -51,7 +51,7 @@ def build_interface() -> list:
                                    ) if using_custom_data() else dbc.RadioItems(
                                        id='effect_set',
                                        options=[{'label': 'CIN-Dependent Interactions', 'value': 'cin'},
-                                                {'label': 'CIN/STING-Dependent Interactions', 'value': 'max',
+                                                {'label': 'CIN & STING-Dependent Interactions', 'value': 'max',
                                                  'disabled': True}
                                                 ],
                                        value=DEFAULT_LIGAND_EFFECT_ARGS['effect_set'],

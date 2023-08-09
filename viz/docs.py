@@ -422,8 +422,8 @@ def circos_help():
             ])]),
             html.Li([html.P(),
                 html.Div([
-                "Interaction Set: We have evaluated both CIN-dependent and CIN/STING-dependent interaction effects. "
-                "This toggle lets users instantly see the plot under both conditions. Note that the CIN/STING "
+                "Interaction Set: We have evaluated both CIN-dependent and CIN & STING-dependent interaction effects. "
+                "This toggle lets users instantly see the plot under both conditions. Note that the CIN & STING "
                 "effects represent the maximum value between shared interactions across both conditions and require "
                 "interaction effects to have the same directionality."
             ])])
@@ -542,8 +542,8 @@ def ligand_effects_help():
             ])]),
             html.Li([html.P(),
                 html.Div([
-                "Interaction Set: While we have evaluated both CIN-dependent and CIN/STING-dependent interaction"
-                " effects, the CIN/STING intersection data set does not have statistical power for examining"
+                "Interaction Set: While we have evaluated both CIN-dependent and CIN & STING-dependent interaction"
+                " effects, the CIN & STING intersection data set does not have statistical power for examining"
                 " individually induced downstream effects of interactions. Therefore, only CIN-dependent interaction"
                 " effects are enabled."
             ])])
@@ -668,8 +668,8 @@ def interactions_help():
             ])]),
             html.Li([html.P(),
                 html.Div([
-                "Interaction Set: We have evaluated both CIN-dependent and CIN/STING-dependent interaction effects. "
-                "This toggle lets users instantly see the plot under both conditions. Note that the CIN/STING "
+                "Interaction Set: We have evaluated both CIN-dependent and CIN & STING-dependent interaction effects. "
+                "This toggle lets users instantly see the plot under both conditions. Note that the CIN & STING "
                 "effects represent the maximum value between shared interactions across both conditions and require "
                 "interaction effects to have the same directionality."
             ])])
