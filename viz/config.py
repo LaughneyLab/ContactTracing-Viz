@@ -1,2 +1,2 @@
 ALLOW_UPLOADS = False
-LONG_CALLBACK_EXPIRY = 60 * 60 * 1  # 1 hours
+LONG_CALLBACK_EXPIRY = 2 * 60 * 1  # 2 minutes
