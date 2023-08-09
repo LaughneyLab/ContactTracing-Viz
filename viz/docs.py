@@ -52,14 +52,16 @@ def home_welcome_info():
 
 def home_approach_description():
     return [
-        html.Div(html.Img(className='img-fluid', src=dash.get_asset_url("contacttracing_summary2.png"), style={"width": "36%"},
-                 alt="ContactTracing Summary 2"), className='text-center'),
+        dbc.Row([
+            dbc.Col(html.Img(className='img-fluid', src=dash.get_asset_url("contacttracing_summary2.png"),
+                              style={"width": "46%"},
+                              alt="ContactTracing Summary 2"), className='text-center'),
+            dbc.Col(html.Img(className='img-fluid', src=dash.get_asset_url("contacttracing_summary.png"),
+                              style={"width": "66%"},
+                              alt="ContactTracing Summary"), className='text-center'),
+        ]),
         html.P(),
         html.Div([
-            html.Div(html.Img(className='img-fluid', src=dash.get_asset_url("contacttracing_summary.png"),
-                              style={"width": "36%"},
-                              alt="ContactTracing Summary"), className='text-center'),
-            html.P(),
             "Cells typically send messages to their microenvironment by emitting ligands, which bind to complimentary "
             "receptors on the surfaces of target cells; then triggering a change in the behavior of the target cell. "
             "Complimentary ligand-receptor-pairs are well annotated and methods have been developed to infer cell-cell "
@@ -130,13 +132,14 @@ def home_dataset_descriptions():
             ") rates of chromosome missegregation in otherwise isogeneic tumor models."
         ]),
         html.P(),
-        html.Div(html.Img(className='img-fluid', src=dash.get_asset_url("cin_chromosome_diagram.png"),
-                          style={"width": "25%"},
-                          alt="CIN Diagram"), className='text-center'),
-        html.P(),
-        html.Div(html.Img(className='img-fluid', src=dash.get_asset_url("chomosome_missgregation.png"),
-                          style={"width": "36%"},
-                          alt="Missegregation"), className='text-center'),
+        dbc.Row([
+            dbc.Col(html.Img(className='img-fluid', src=dash.get_asset_url("cin_chromosome_diagram.png"),
+                              style={"width": "40%"},
+                              alt="CIN Diagram"), className='text-center'),
+            dbc.Col(html.Img(className='img-fluid', src=dash.get_asset_url("chomosome_missgregation.png"),
+                              style={"width": "100%"},
+                              alt="Missegregation"), className='text-center'),
+        ]),
         html.P(),
         html.Div([
             html.H5("The impact of CIN-induced STING signaling on the TME"),
