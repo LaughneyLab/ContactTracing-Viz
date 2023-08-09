@@ -12,7 +12,7 @@ from viz.web import interactive_panel, wrap_icon, control_panel, control_panel_e
 if __name__ != '__main__':
     dash.register_page(__name__,
                        path='/interactions',
-                       name='Interactions',
+                       name='Pairwise Interactions',
                        order=2)
 
 
@@ -94,7 +94,6 @@ def build_interface() -> list:
                                                  'pDC',
                                                  'Fibroblast cells',
                                                  'Endothelial cells',
-                                                 'Osteoclasts',
                                                  'Mast cells']],
                                        value=DEFAULT_INTERACTIONS_ARGS['first_celltype']
                                    )),
@@ -117,7 +116,6 @@ def build_interface() -> list:
                                                  'pDC',
                                                  'Fibroblast cells',
                                                  'Endothelial cells',
-                                                 'Osteoclasts',
                                                  'Mast cells']],
                                        value=DEFAULT_INTERACTIONS_ARGS['second_celltype']
                                    )),
@@ -141,7 +139,6 @@ def build_interface() -> list:
                                                  'pDC',
                                                  'Fibroblast cells',
                                                  'Endothelial cells',
-                                                 'Osteoclasts',
                                                  'Mast cells']],
                                        value='(None)'
                                    )),
@@ -212,7 +209,7 @@ def build_interface() -> list:
     )
 
     results = figure_output(
-        title="Pairwise Cell Interactions",
+        title="Pairwise Cell-Cell Interactions",
         footer="Circle = Ligand, Square = Receptor, Diamond = Ligand and Receptor",
         element=dcc.Graph(id="celltype-interaction-graph",
                           figure=default_plots[1] if default_plots is not None else go.Figure(data=[go.Scatter(x=[], y=[])]),

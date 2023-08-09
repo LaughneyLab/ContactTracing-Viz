@@ -97,7 +97,6 @@ def build_interface() -> list:
                                              'pDC',
                                              'Fibroblast cells',
                                              'Endothelial cells',
-                                             'Osteoclasts',
                                              'Mast cells']],
                                     value=DEFAULT_LIGAND_EFFECT_ARGS['cell_type']
                                   )),
