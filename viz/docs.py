@@ -52,6 +52,9 @@ def home_welcome_info():
 
 def home_approach_description():
     return [
+        html.Div(html.Img(className='img-fluid', src=dash.get_asset_url("contacttracing_summary2.png"), style={"width": "36%"},
+                 alt="ContactTracing Summary 2"), className='text-center'),
+        html.P(),
         html.Div([
             html.Div(html.Img(className='img-fluid', src=dash.get_asset_url("contacttracing_summary.png"),
                               style={"width": "36%"},
@@ -78,9 +81,6 @@ def home_approach_description():
 
 def home_dataset_descriptions():
     return [
-        html.Div(html.Img(className='img-fluid', src=dash.get_asset_url("contacttracing_summary2.png"), style={"width": "36%"},
-                 alt="ContactTracing Summary 2"), className='text-center'),
-        html.P(),
         html.Div([
             "Foundational work towards benchmarking a validation of this method was performed in isogenic breast cancer "
             "models distinguished by tumor cell-intrinsic rates of chromosome missegregation (a cellular process called "
