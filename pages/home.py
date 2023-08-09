@@ -21,7 +21,7 @@ layout = [
             dbc.Accordion([
                 dbc.AccordionItem([
                     html.Div(home_welcome_info(), className='card-text'),
-                ], title="ContactTracing the impact of chromosomal instability(CIN)-induced STING signaling on the tumor ecosystem."),
+                ], title="ContactTracing the impact of chromosomal instability (CIN)-induced STING signaling on the tumor ecosystem."),
                 dbc.AccordionItem([
                     html.Div(home_approach_description(), className='card-text')
                 ], title="The Approach"),

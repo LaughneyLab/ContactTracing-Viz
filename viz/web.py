@@ -164,11 +164,11 @@ def control_panel(submit_btn_id: str, *element_rows: List[dbc.Card]) -> html.Div
 def figure_output(title, footer, element, help_info, download_btn_id, outline=True) -> html.Div:
     if download_btn_id:
         download_button = dbc.Button(wrap_icon('fa-file-csv', 'Download', right=False), id=download_btn_id,
-                                     color='primary', outline=True, className='float-end', type='button', n_clicks=0, style={'fontSize': '.8rem'})
+                                     color='primary', outline=True, className='float-end', type='button', n_clicks=0, style={'fontSize': '.9rem'})
     else:
         download_button = None
     help_button = dbc.Button(wrap_icon('fa-circle-question', "Help", right=False),
-                             color='primary', outline=True, className='float-end', type='button', n_clicks=0, style={'fontSize': '.8rem'})
+                             color='primary', outline=True, className='float-end', type='button', n_clicks=0, style={'fontSize': '.9rem'})
     close_button = dbc.Button("Close", className="ms-auto", n_clicks=0)
     help_modal = dbc.Modal([
         dbc.ModalHeader(dbc.ModalTitle(wrap_icon('fa-info-circle', "Plot Information"))),
