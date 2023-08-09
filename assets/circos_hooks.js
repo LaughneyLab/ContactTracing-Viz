@@ -340,11 +340,19 @@ function circosInjection() {
 
 function downloadCircosSvg() {
     let svg = getCircosSvgElement().parentElement;
+    let svgCopy = svg.cloneNode(true);
+    svgCopy.setAttribute('transform', 'translate(0, 0) scale(1)');
+    svgCopy.setAttribute('width', '800');
+    svgCopy.setAttribute('height', '800');
+    svgCopy.setAttribute('viewBox', '0 0 800 800');
     svgExport.downloadSvg(
-        svg,
+        svgCopy,
         "circos",
         {
-            useCSS: false
+            useCSS: true,
+            width: 800,
+            height: 800,
+            excludeByCSSSelector: "[fill=transparent]"
         }
     );
 }
