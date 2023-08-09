@@ -161,7 +161,7 @@ def build_interface() -> list:
     )
 
     results = figure_output(
-        title='CIN-dependent Ligand Cascading Effects',
+        title='Cascading CIN-Dependent Ligand Effects',
         footer="Circle = Ligand, Square = Receptor, Diamond = Ligand and Receptor",
         element=dcc.Graph(id='network_graph',
                           figure=default_plots[0] if default_plots else go.Figure(data=[go.Scatter(x=[], y=[])]),
