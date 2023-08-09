@@ -2,8 +2,7 @@ import os.path
 
 import dash
 import dash_bootstrap_components as dbc
-from dash_extensions import DeferScript
-from dash_extensions.enrich import callback, Output, Input, dcc, State, html, Serverside, clientside_callback
+from dash import callback, Output, Input, dcc, State, html, clientside_callback
 from plotly import graph_objects as go
 
 from viz.docs import ligand_effects_help, interaction_test_def, conditions_def, deg_test_def
@@ -189,6 +188,7 @@ def build_interface() -> list:
         html.Hr(),
         html.Br(),
         controls,
+        dcc.Store(id='network-placeholder', storage_type='memory', data=None),
         dcc.Store(id='cin_network_plot', storage_type='memory', data=default_plots[0] if default_plots is not None else {}),
         dcc.Store(id='sting_network_plot', storage_type='memory', data=default_plots[1] if default_plots is not None else {}),
         dcc.Download(id="download_ligand_effects_network"),
@@ -200,8 +200,12 @@ def build_interface() -> list:
 clientside_callback("""
 function(ignore) {
     plotlyInjection(1.2);
+    return null;
 }
-""", Input("network_graph", 'children'))
+""",
+Output("network-placeholder", 'data'),
+Input("network_graph", 'children'),
+)
 
 
 @callback(

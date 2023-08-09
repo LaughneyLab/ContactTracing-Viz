@@ -4,10 +4,8 @@ import sys
 from uuid import uuid4
 
 import dash
-from dash_extensions.enrich import html, dcc, Output, Input, State, NoOutputTransform, ServersideOutputTransform, \
-    FileSystemBackend, BlockingCallbackTransform
+from dash import html, dcc, Output, Input, State, Dash
 import dash_bootstrap_components as dbc
-from dash_extensions.enrich import DashProxy, MultiplexerTransform
 
 from viz.config import LONG_CALLBACK_EXPIRY
 
@@ -42,12 +40,9 @@ callback_manager = None
 if 'REDIS_URL' in os.environ:
     try:
         from dash import CeleryManager
-        from dash_extensions.enrich import RedisBackend
         from celery import Celery
         celery_app = Celery(__name__, broker=os.environ['REDIS_URL'] + "/0", backend=os.environ['REDIS_URL'] + "/1")
         callback_manager = CeleryManager(celery_app, cache_by=[lambda: launch_uuid], expire=LONG_CALLBACK_EXPIRY)
-        # FIXME: Serverside is broken in long callbacks with the redis backend, see: https://github.com/thedirtyfew/dash-extensions/issues/207
-        # serverside_backend = RedisBackend(host=os.environ['REDIS_URL'], port=6379, db=2, key_prefix="serverside_cache_")
     except:
         callback_manager = None
 if callback_manager is None:
@@ -59,7 +54,6 @@ if callback_manager is None:
     if __name__ == "__main__" and os.path.exists('./ct_viz_cache'):
         shutil.rmtree('./ct_viz_cache')
     callback_manager = DiskcacheManager(Cache('./ct_viz_cache'), cache_by=[lambda: launch_uuid], expire=LONG_CALLBACK_EXPIRY)
-    serverside_backend = FileSystemBackend("./ct_viz_cache")
 
 
 # Custom style made with https://bootstrap.build/ based on FLATLY
@@ -67,7 +61,7 @@ STYLESHEET = "bootstrap.min.css"
 
 debug = len(sys.argv) > 1 and sys.argv[1] == 'debug'
 
-app = DashProxy(__name__,
+app = Dash(__name__,
            suppress_callback_exceptions=True,
            compress=True,
            update_title="Please wait...",
@@ -95,20 +89,12 @@ app = DashProxy(__name__,
                STYLESHEET,
                "custom.css"  # Custom overrides
            ],
-           transforms=[
-               # BlockingCallbackTransform(),  # Allows for preventing multiple callbacks from running
-               MultiplexerTransform(),  # Allow for multiple callbacks to use the same output
-               NoOutputTransform(),  # Allow for callbacks to not have an output
-               # ServersideOutputTransform(backends=[serverside_backend])  # Allow for callbacks to return a ServersideOutput  FIXME
-           ],
            use_pages=True,
            background_callback_manager=callback_manager,
            show_undo_redo=debug
            )
 server = app.server
 
-if celery_app is not None:
-    app.register_celery_tasks()
 
 def access_code_page():
     #page_container = dash.page_container

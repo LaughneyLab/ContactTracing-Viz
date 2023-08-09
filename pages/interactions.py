@@ -1,8 +1,7 @@
 import os.path
 
 import dash
-from dash_extensions import DeferScript
-from dash_extensions.enrich import dcc, callback, Output, Input, State, html, Serverside, clientside_callback
+from dash import dcc, callback, Output, Input, State, html, clientside_callback
 import dash_bootstrap_components as dbc
 from plotly import graph_objects as go
 
@@ -239,6 +238,7 @@ def build_interface() -> list:
         html.Hr(),
         html.Br(),
         controls,
+        dcc.Store(id='bipartite-placeholder', storage_type='memory', data=None),
         dcc.Store(id='cin_bipartite_plot', data=default_plots[0] if default_plots is not None else {}),
         dcc.Store(id='max_bipartite_plot', data=default_plots[1] if default_plots is not None else {}),
         dcc.Download(id="download-bipartite-interactions"),
@@ -250,8 +250,12 @@ def build_interface() -> list:
 clientside_callback("""
 function(_) {
     plotlyInjection(1.3);
+    return null;
 }
-""", Input("celltype-interaction-graph", 'children'))
+""",
+Output('bipartite-placeholder', 'data'),
+Input("celltype-interaction-graph", 'children'),
+)
 
 
 @callback(

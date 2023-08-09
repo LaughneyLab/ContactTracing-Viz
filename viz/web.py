@@ -6,7 +6,7 @@ import dash_bootstrap_components as dbc
 import numpy as np
 import plotly.graph_objects as go
 import pandas as pd
-from dash_extensions.enrich import html, Output, Input, dcc, callback, State
+from dash import html, Output, Input, dcc, callback, State
 import dash_bio as dashbio
 from dash.exceptions import PreventUpdate
 

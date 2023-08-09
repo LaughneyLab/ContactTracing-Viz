@@ -1,6 +1,5 @@
 import dash
-from dash_extensions import DeferScript
-from dash_extensions.enrich import html, callback, Output, Input, State, dcc, clientside_callback, Serverside
+from dash import html, callback, Output, Input, State, dcc, clientside_callback
 import dash_bootstrap_components as dbc
 
 from viz.docs import circos_help, interaction_effects_def, diffusion_component_def, differential_abundance_def, \
@@ -169,6 +168,7 @@ def build_interface() -> list:
         html.Hr(),
         html.Br(),
         controls,
+        dcc.Store(id='circos-placeholder', storage_type='memory', data=None),
         dcc.Store(id='cin_circos_plot', storage_type='memory', data=[default_plots[0] if default_plots is not None else None]),
         dcc.Store(id='sting_circos_plot', storage_type='memory', data=[default_plots[1] if default_plots is not None else None]),
         dcc.Download(id="interactions_download"),
@@ -193,45 +193,70 @@ def circos_toolbar():
 clientside_callback("""
 function(ignore, ignore2) {
     circosInjection();
+    return null;
 }
-""", Input('circos-graph-holder', 'children'), Input('circos-legend', 'children'))
+""",
+Output('circos-placeholder', 'data'),
+Input('circos-graph-holder', 'children'),
+Input('circos-legend', 'children'))
 
 clientside_callback("""
 function(n_clicks) {
     if (n_clicks > 0) {
         downloadCircosSvg();
     }
+    return null;
 }
-""", Input('circos-download-button', 'n_clicks'), prevent_initial_call=True)
+""",
+Output('circos-placeholder', 'data', allow_duplicate=True),
+Input('circos-download-button', 'n_clicks'),
+prevent_initial_call=True)
 
 clientside_callback("""
 function(n_clicks) {
     if (n_clicks > 0) {
         resetCircosTransform();
     }
+    return null;
 }
-""", Input('circos-reset-button', 'n_clicks'), prevent_initial_call=True)
+""",
+Output('circos-placeholder', 'data', allow_duplicate=True),
+Input('circos-reset-button', 'n_clicks'),
+prevent_initial_call=True)
 
 clientside_callback("""
 function(n_clicks) {
     if (n_clicks > 0) {
         zoomInCircos();
     }
+    return null;
 }
-""", Input('circos-zoom-in-button', 'n_clicks'), prevent_initial_call=True)
+""",
+Output('circos-placeholder', 'data', allow_duplicate=True),
+Input('circos-zoom-in-button', 'n_clicks'),
+prevent_initial_call=True)
 
 clientside_callback("""
 function(n_clicks) {
     if (n_clicks > 0) {
         zoomOutCircos();
     }
+    return null;
 }
-""", Input('circos-zoom-out-button', 'n_clicks'), prevent_initial_call=True)
+""",
+Output('circos-placeholder', 'data', allow_duplicate=True),
+Input('circos-zoom-out-button', 'n_clicks'),
+prevent_initial_call=True)
 
 clientside_callback("""
 function(genes, circos_set) {
     highlightGenes(genes);
-}""", Input('genes', 'value'), Input('circos-graph-holder', 'children'), prevent_initial_call=True)
+    return null;
+}""",
+Output('circos-placeholder', 'data', allow_duplicate=True),
+Input('genes', 'value'),
+Input('circos-graph-holder', 'children'),
+prevent_initial_call=True)
 
 
 @callback(
