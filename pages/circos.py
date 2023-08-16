@@ -133,6 +133,19 @@ def build_interface() -> list:
 
     results = figure_output(
         title="Systems-Level Interactions in the Tumor Microenvironment",
+        subtitle=dbc.Alert([
+            html.I("ContactTracing"),
+            " plot highlighting all (CIN, or CIN & STING) dependent interactions. Each segment represents a cell type, "
+            "and cell types are further divided into ligands and receptors, which are ordered according to the first "
+            "diffusion component (DC1) computed on DEGs in each cell type conditioned on ligand/receptor expression. "
+            "Rings from outside to inside represent: Cell Type, ",
+            *diffusion_component_def("Diffusion Component 1"),
+            ", ",
+            *differential_abundance_def("Differential Abundance"),
+            ", Number of significant ",
+            *interaction_effects_def("interaction effects"),
+            ", and ligand/receptor interactions."
+        ], color='dark'),
         footer=[
             "Layers from outside ring to center: Cell Type, ",
             *diffusion_component_def("Diffusion Component 1"),
@@ -140,7 +153,7 @@ def build_interface() -> list:
             *differential_abundance_def("Differential Abundance"),
             ", Number of significant ",
             *interaction_effects_def("interaction effects"),
-            ", ligand/receptor interactions. Tip: You can copy the information you are hovering over by hitting Ctrl+C and clear highlighting/zoom by double-clicking."
+            ", and ligand/receptor interactions. Tip: You can copy the information you are hovering over by hitting Ctrl+C and clear highlighting/zoom by double-clicking."
         ],
         element=html.Div([
             circos_toolbar(),

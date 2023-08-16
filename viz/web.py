@@ -161,7 +161,7 @@ def control_panel(submit_btn_id: str, *element_rows: List[dbc.Card]) -> html.Div
     )
 
 
-def figure_output(title, footer, element, help_info, download_btn_id, outline=True, search_bar_elem=None) -> html.Div:
+def figure_output(title, subtitle, footer, element, help_info, download_btn_id, outline=True, search_bar_elem=None) -> html.Div:
     if download_btn_id:
         download_button = dbc.Button(wrap_icon('fa-file-csv', 'Download', right=False), id=download_btn_id,
                                      color='primary', outline=True, className='float-end', type='button', n_clicks=0, style={'fontSize': '.9rem'})
@@ -199,6 +199,7 @@ def figure_output(title, footer, element, help_info, download_btn_id, outline=Tr
                 ), width=2),
             ])),
             dbc.CardBody([
+                subtitle if subtitle else html.Div(),
                 search_bar_elem if search_bar_elem else html.P(),
                 html.Div([
                     html.Div(id='spinner-holder'),
