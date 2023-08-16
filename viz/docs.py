@@ -53,13 +53,13 @@ def home_welcome_info():
 def home_approach_description():
     return [
         dbc.Row([
-            dbc.Col(html.Img(className='img-fluid', src=dash.get_asset_url("contacttracing_summary2.png"),
-                              style={"width": "46%"},
-                              alt="ContactTracing Summary 2"), className='text-center'),
             dbc.Col(html.Img(className='img-fluid', src=dash.get_asset_url("contacttracing_summary.png"),
                               style={"width": "66%"},
-                              alt="ContactTracing Summary"), className='text-center'),
-        ]),
+                              alt="ContactTracing Summary"), className='g-0 text-end', align='right'),
+            dbc.Col(html.Img(className='img-fluid', src=dash.get_asset_url("contacttracing_summary2.png"),
+                              style={"width": "46%"},
+                              alt="ContactTracing Summary 2"), className='g-0', align='left'),
+        ], className='g-0 justify-content-center'),
         html.P(),
         html.Div([
             "Cells typically send messages to their microenvironment by emitting ligands, which bind to complimentary "
@@ -133,12 +133,9 @@ def home_dataset_descriptions():
         ]),
         html.P(),
         dbc.Row([
-            dbc.Col(html.Img(className='img-fluid', src=dash.get_asset_url("cin_chromosome_diagram.png"),
-                              style={"width": "40%"},
+            dbc.Col(html.Img(className='img-fluid', src=dash.get_asset_url("CIN_figure.png"),
+                              style={"width": "80%"},
                               alt="CIN Diagram"), className='text-center'),
-            dbc.Col(html.Img(className='img-fluid', src=dash.get_asset_url("chomosome_missgregation.png"),
-                              style={"width": "100%"},
-                              alt="Missegregation"), className='text-center'),
         ]),
         html.P(),
         html.Div([
@@ -146,7 +143,7 @@ def home_dataset_descriptions():
             "Previously, we demonstrated ongoing chromosome segregation errors generate rupture-prone micronuclei that "
             "expose genomic double-stranded DNA (dsDNA) to the cytosol, persistently activating the cGAS-STING pathway "
             "to drive metastasis (",
-            html.A("https://www.nature.com/articles/nature25432", "https://www.nature.com/articles/nature25432"),
+            html.A("https://www.nature.com/articles/nature25432", href="https://www.nature.com/articles/nature25432"),
             "). This begged the question: why doesn't STING activation trigger robust anti-tumor immunity? To quantify "
             "how CIN-induced STING signaling impacts cellular crosstalk in the tumor ecosystem, we knocked down (KD) "
             "STING expression in CIN",
@@ -165,7 +162,7 @@ def home_dataset_descriptions():
         ]),
         html.P(),
         html.Div(html.Img(className='img-fluid', src=dash.get_asset_url("sting_effects.png"),
-                          style={"width": "36%"},
+                          style={"width": "60%"},
                           alt="STING"), className='text-center'),
         html.P(),
         html.Div([
