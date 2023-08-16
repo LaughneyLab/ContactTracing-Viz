@@ -134,10 +134,6 @@
     background: rgba(0, 0, 0, 0) !important;
 }
 
-svg {
-    overflow: visible !important;
-}
-
 .modebar {
     margin-top: -3rem !important;
     position: relative !important;

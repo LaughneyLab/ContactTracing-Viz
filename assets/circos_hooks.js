@@ -345,6 +345,8 @@ function downloadCircosSvg() {
     svgCopy.setAttribute('width', '800');
     svgCopy.setAttribute('height', '800');
     svgCopy.setAttribute('viewBox', '0 0 800 800');
+    // Change style to allow overflow
+    svgCopy.setAttribute('style', 'overflow: visible !important;');
     svgExport.downloadSvg(
         svgCopy,
         "circos",
