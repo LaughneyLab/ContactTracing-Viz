@@ -53,14 +53,6 @@ def build_interface() -> list:
                                        value=DEFAULT_CIRCOS_ARGS['circos_set'],
                                        persistence=False
                                    )),
-            control_panel_element("Genes of Interest",
-                                  'Comma-separated list of genes to highlight in the plot.',
-                                  dbc.Input(
-                                      id='genes',
-                                      autofocus=False,
-                                      value=DEFAULT_CIRCOS_ARGS['genes'],
-                                      placeholder='Example: Ccl2,Apoe',
-                                  )),
              control_panel_element("Plot", "You must click submit to update the plot.",
                                    html.Div(
                                        dbc.Row([dbc.Col(
@@ -159,7 +151,14 @@ def build_interface() -> list:
             )
         ]),
         help_info=circos_help(),
-        download_btn_id='circos_data_download_btn'
+        download_btn_id='circos_data_download_btn',
+        search_bar_elem=dbc.Row([#dbc.Col(html.Strong("Genes of Interest:"), width=2, className='align-top'),
+                                 dbc.Col(dbc.Input(
+                                      id='genes',
+                                      autofocus=False,
+                                      value=DEFAULT_CIRCOS_ARGS['genes'],
+                                      placeholder='Comma-separated gene filter, example: Ccl2,Apoe',
+                                  ), align="left", width=6, style={'translate': '0 12px'})]),
     )
 
     return [
