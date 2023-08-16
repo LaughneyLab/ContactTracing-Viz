@@ -437,18 +437,20 @@ def circos_help():
         html.Div(html.Img(src=dash.get_asset_url('circos_help1.png'), style={"width": '40%', 'align': 'center'},
                           alt="Cell Types", className='img-fluid mx-auto'), className='text-center'),
         html.P(),
-        html.Div("The next layer represents the value of the first Diffusion Component, as calculated by Palantir. This "
-               "value represents the euclidean space embedding of the differential expression score (the Log2FC "
+        html.Div(["The next layer represents the value of the first Diffusion Component, as calculated by ",
+                 html.A("Palantir", href="https://www.nature.com/articles/s41587-019-0068-4"),
+               ". This value represents the euclidean space embedding of the differential expression score (the Log2FC "
                "between conditions multiplied by the negative Log10-transformed p-value) of a given gene for a cell "
-               "type. The diffusion component allows for a consistent ordering of genes along the Circos rings."),
+               "type. The diffusion component allows for a consistent ordering of genes along the Circos rings."]),
         html.Div(html.Img(src=dash.get_asset_url('circos_help2.png'), style={"width": '40%', 'align': 'center'},
                           alt="Diffusion Components", className='img-fluid mx-auto'), className='text-center'),
         html.P(),
-        html.Div("Following Diffusion Component 1, the next ring represents the gene-wise differential abundance of a "
+        html.Div(["Following Diffusion Component 1, the next ring represents the gene-wise differential abundance of a "
                "gene between conditions. The differential abundance is calculated as the Pearson correlation "
                "coefficient of each gene's imputed expression across cells against the corresponding cell type's "
-               "differential abundance across conditions as calculated by MILO. This value is then normalized to "
-               "range from -1 to 1."),
+               "differential abundance across conditions as calculated by ",
+                 html.A("MILO", href="https://www.nature.com/articles/s41587-021-01033-z"),
+                 ". This value is then normalized to range from -1 to 1."]),
         html.Div(html.Img(src=dash.get_asset_url('circos_help3.png'), style={"width": '40%', 'align': 'center'},
                           alt="Differential Abundance", className='img-fluid mx-auto'), className='text-center'),
         html.P(),
