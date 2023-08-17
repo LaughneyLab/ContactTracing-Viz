@@ -210,7 +210,9 @@ def build_interface() -> list:
 
     results = figure_output(
         title="Pairwise Cell-Cell Interactions",
-        subtitle=None,
+        subtitle=dbc.Alert(["The pairwise cell type interactions plot highlights the condition-specific signals sent by a donor "
+                "cell type (emitting ligands) to a target cell type (expressing receptors). This figure gives a "
+                "focused view of cell-cell interactions of interest."], color='dark'),
         footer="Circle = Ligand, Square = Receptor, Diamond = Ligand and Receptor",
         element=dcc.Graph(id="celltype-interaction-graph",
                           figure=default_plots[1] if default_plots is not None else go.Figure(data=[go.Scatter(x=[], y=[])]),

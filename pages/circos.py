@@ -147,13 +147,7 @@ def build_interface() -> list:
             ", and ligand/receptor interactions."
         ], color='dark'),
         footer=[
-            "Layers from outside ring to center: Cell Type, ",
-            *diffusion_component_def("Diffusion Component 1"),
-            ", ",
-            *differential_abundance_def("Differential Abundance"),
-            ", Number of significant ",
-            *interaction_effects_def("interaction effects"),
-            ", and ligand/receptor interactions. Tip: You can copy the information you are hovering over by hitting Ctrl+C and clear highlighting/zoom by double-clicking."
+            "Tip: You can copy the information you are hovering over by hitting Ctrl+C and clear highlighting/zoom by double-clicking."
         ],
         element=html.Div([
             circos_toolbar(),

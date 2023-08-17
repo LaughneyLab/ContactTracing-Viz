@@ -162,7 +162,10 @@ def build_interface() -> list:
 
     results = figure_output(
         title='Cascading CIN-Dependent Ligand Effects',
-        subtitle=None,
+        subtitle=dbc.Alert(["This figure illustrates the downstream effects of a ligand within the TME. Given a donor cell type and "
+               "ligands of interest, it is possible to visualize each of the receptors that are activated in a "
+               "CIN-dependent manner and how these receptors induce cascading transcriptional responses throughout "
+               "the microenvironment."], color='dark'),
         footer="Circle = Ligand, Square = Receptor, Diamond = Ligand and Receptor",
         element=dcc.Graph(id='network_graph',
                           figure=default_plots[0] if default_plots else go.Figure(data=[go.Scatter(x=[], y=[])]),

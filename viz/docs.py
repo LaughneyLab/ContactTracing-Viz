@@ -133,7 +133,7 @@ def home_dataset_descriptions():
         ]),
         html.P(),
         dbc.Row([
-            dbc.Col(html.Img(className='img-fluid', src=dash.get_asset_url("CIN_figure.png"),
+            dbc.Col(html.Img(className='img-fluid', src=dash.get_asset_url("cin_figure.png"),
                               style={"width": "80%"},
                               alt="CIN Diagram"), className='text-center'),
         ]),

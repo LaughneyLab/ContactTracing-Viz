@@ -17,3 +17,4 @@ requirements.txt
 *.md
 .github/
 tutorial_output
+!assets/
