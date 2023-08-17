@@ -236,6 +236,16 @@ function injectHoverEffects() {
         let receiving_celltypes = d.receiving_celltypes;
         let sending_celltypes = d.sending_celltypes;
 
+        // Tooltip for cell type labels
+        let tooltip_content = "<h4>" + celltype + "</h4>";
+        window.document.querySelector(".circos-clipboard").setAttribute("value", tooltip_content);
+        let tooltip_elem = window.document.querySelector(".circos-tooltip");
+        tooltip_elem.innerHTML = tooltip_content;
+        tooltip_elem.style.opacity = 0.9;
+        tooltip_elem.style.left = (d3.event.pageX + 10) + "px";
+        tooltip_elem.style.top = (d3.event.pageY + 10) + "px";
+
+        // Styling
         svg.selectAll("path").filter(function (d) {  // Select tracks that don't contain the hovered chord properties
             // Ignore elements with undefined properties
             if (d.celltype === undefined || d.target === undefined) {
@@ -258,6 +268,7 @@ function injectHoverEffects() {
     }).on("mouseout", function (d) {
         svg.selectAll(".not-hovered").classed("not-hovered", false);  // Remove the not-hovered class
         svg.classed("moused-over", false);
+        window.document.querySelector(".circos-tooltip").style.opacity = 0;
     });
 
     svg.selectAll(".block > g > text").on("mouseover", function (d) {  // Cell type labels
