@@ -26,7 +26,14 @@ def home_welcome_info():
                   html.I("ContactTracing"),
                   " on your own data by checking out our ",
                   html.A("GitHub repository", href="https://github.com/LaughneyLab/ContactTracing_tutorial"),
-                  "!"]),
+                  "!",
+                  html.P(),
+                  html.Div([
+                      dbc.Button(wrap_icon("fa-brands fa-github", "Run ", html.I("ContactTracing"), " on your data"),
+                                 color="info", size='lg',
+                                 href='https://github.com/LaughneyLab/ContactTracing_tutorial')
+                  ], className='text-center')
+              ]),
         html.P(),
         html.Div([
             html.H5("Key Features of ContactTracing"),
@@ -62,8 +69,8 @@ def home_approach_description():
         ], className='g-0 justify-content-center'),
         html.P(),
         html.Div([
-            "Cells typically send messages to their microenvironment by emitting ligands, which bind to complimentary "
-            "receptors on the surfaces of target cells; then triggering a change in the behavior of the target cell. "
+            "Cells typically send messages to their microenvironment by emitting ligands, which bind to cognate "
+            "receptors on the surfaces of target cells; then triggering a change in signaling response in the target cell. "
             "Complimentary ligand-receptor-pairs are well annotated and methods have been developed to infer cell-cell "
             "interactions from single cell expression data based on their mutual expression. ",
             html.I("ContactTracing"),
