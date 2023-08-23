@@ -53,7 +53,13 @@ def home_welcome_info():
         ]),
         html.P(),
         html.Div([html.H5("Citation"),
-                dbc.Card("TBA", body=True)])
+                dbc.Card([
+                    "Li, J., Hubisz, M., Earlie, E., Duran, M., et al. “Non-cell-autonomous Progression of Cancer Cells From Chromosomal Instability.” ",
+                    html.I("Nature"),
+                    ", 2023, ",
+                    html.A("https://doi.org/10.1038/s41586-023-06464-z", href="https://doi.org/10.1038/s41586-023-06464-z"),
+                    "."
+                ], body=True, color='secondary')])
     ]
 
 
@@ -101,7 +107,7 @@ def home_dataset_descriptions():
             "to ER-stress - suppressed metastasis in syngeneic models of melanoma, breast, and colorectal cancer; "
             "validating this innovative methodology and identtifying a targetable mediator of cancer metastasis! Read "
             "more about our findings ",
-            html.A("here", href="TODO"),  # FIXME: add link to paper
+            html.A("here", href="https://doi.org/10.1038/s41586-023-06464-z"),
             "."
         ]),
         html.P(),
@@ -174,8 +180,9 @@ def home_dataset_descriptions():
         html.P(),
         html.Div([
             html.H5("Data Availability"),
-            "The single-cell data used in this study is described in our study (TODO citaiton) and can be accessed "  # FIXME
-            "through the Gene Expression Omnibus (GEO) under accession number ",
+            "The single-cell data used in this study is described in our study (",
+            html.A("Li et al, 2023", href="https://doi.org/10.1038/s41586-023-06464-z"),
+            ") and can be accessed through the Gene Expression Omnibus (GEO) under accession number ",
             html.A("GSE189856", href="https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE189856"), "."
         ])
     ]
